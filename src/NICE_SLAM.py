@@ -40,8 +40,10 @@ class NICE_SLAM():
         else:
             self.output = args.output
         self.ckptsdir = os.path.join(self.output, 'ckpts')
+        self.logdir = f'{self.output}/log'
         os.makedirs(self.output, exist_ok=True)
         os.makedirs(self.ckptsdir, exist_ok=True)
+        os.makedirs(f'{self.output}/log', exist_ok=True)
         os.makedirs(f'{self.output}/mesh', exist_ok=True)
         self.H, self.W, self.fx, self.fy, self.cx, self.cy = cfg['cam']['H'], cfg['cam'][
             'W'], cfg['cam']['fx'], cfg['cam']['fy'], cfg['cam']['cx'], cfg['cam']['cy']
@@ -65,6 +67,7 @@ class NICE_SLAM():
         except RuntimeError:
             pass
 
+        # self.summary_writer = SummaryWriter(f'{self.output}/log')
         self.frame_reader = get_dataset(cfg, args, self.scale)
         self.n_img = len(self.frame_reader)
         self.estimate_c2w_list = torch.zeros((self.n_img, 4, 4))

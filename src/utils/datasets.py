@@ -2,11 +2,18 @@ import glob
 import os
 
 import cv2
+from cv2 import undistort
 import numpy as np
 import torch
 import torch.nn.functional as F
 from src.common import as_intrinsics_matrix
 from torch.utils.data import Dataset
+
+from src.omni_utils.array import *
+from src.omni_utils.camera import *
+from src.omni_utils.common import *
+from src.omni_utils.geometry import *
+from src.omni_utils.image import *
 
 
 def readEXR_onlydepth(filename):
@@ -321,10 +328,148 @@ class TUM_RGBD(BaseDataset):
         return pose
 
 
+class OCam_perspective(BaseDataset):
+    def __init__(self, cfg, args, scale, device='cuda:0'
+                 ):
+        super(OCam_perspective, self).__init__(cfg, args, scale, device)
+        self.load_paths_n_poses()
+        self.n_img = len(self.color_paths)
+
+    def load_paths_n_poses(self):
+        ocam_config_path = os.path.join(self.input_folder, 'config.yaml')
+        rig_poses_path = os.path.join(self.input_folder, 'trajectory_no_dynamic_lidar.txt')
+        
+        self.ocams = loadCameraListFromYAML(ocam_config_path)
+        fidxs, rig_poses, _ = self.splitTrajectoryResult(np.loadtxt(rig_poses_path).T)
+        
+        cams_poses = self.convertToOCamsPose(rig_poses, self.ocams)
+        
+        self.color_paths = []
+        self.depth_paths = []
+        self.poses = []
+        self.ocam_idxs = []
+        for i, fidx in enumerate(fidxs):
+            if i%3 != 0:
+                continue
+            for ocam_idx in range(len(self.ocams)):
+                # if ocam_idx > 0: break
+                
+                self.color_paths.append(os.path.join(self.input_folder, ('cam%d/%05d.png' % (ocam_idx+1, fidx))))
+                self.depth_paths.append(os.path.join(self.input_folder, ('depth_perspective_125/cam%d/%05d.tiff' % (ocam_idx+1, fidx))))
+                self.ocam_idxs.append(ocam_idx)
+
+                R, tr = getRot(cams_poses[i, ocam_idx]), getTr(cams_poses[i, ocam_idx])
+                c2w = np.eye(4)
+                c2w[:3, :] = np.concatenate((R, tr), axis=1)
+                c2w[:3, 1] *= -1
+                c2w[:3, 2] *= -1
+                c2w = torch.from_numpy(c2w).float()
+                self.poses.append(c2w)
+    
+    def __getitem__(self, index):
+        color_path = self.color_paths[index]
+        depth_path = self.depth_paths[index]
+        
+        color_data = np.array(Image.open(color_path), dtype=np.float32) / 255.
+        H, W = color_data.shape[0:2]
+        pcam = PinholeModel.getPerspectiveModel(W//2, H//2, wfov_deg=125.0)
+        color_data = self.undistortImage(color_data, self.ocams[self.ocam_idxs[index]], pcam)
+        
+        depth_data = 1.0 / readImageFloat(depth_path)
+        
+        crop_x = 0
+        crop_y = 60
+        
+        color_data = self.cropImage(color_data, crop_x, crop_y)
+        depth_data = self.cropImage(depth_data, crop_x, crop_y)
+        
+        H, W = color_data.shape[0:2]
+        
+        color_data = torch.from_numpy(color_data)
+        depth_data = torch.from_numpy(depth_data)*self.scale
+        
+        pose = self.poses[index]
+        pose[:3, 3] *= self.scale
+        
+        return index, color_data.to(self.device), depth_data.to(self.device), pose.to(self.device)
+        
+
+    def load_poses(self, path):
+        self.poses = []
+        pose_paths = sorted(glob.glob(os.path.join(path, '*.txt')),
+                            key=lambda x: int(os.path.basename(x)[:-4]))
+        for pose_path in pose_paths:
+            with open(pose_path, "r") as f:
+                lines = f.readlines()
+            ls = []
+            for line in lines:
+                l = list(map(float, line.split(' ')))
+                ls.append(l)
+            c2w = np.array(ls).reshape(4, 4)
+            c2w[:3, 1] *= -1
+            c2w[:3, 2] *= -1
+            c2w = torch.from_numpy(c2w).float()
+            self.poses.append(c2w)
+
+    def splitTrajectoryResult(self, trajectory: np.ndarray) \
+          -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+        rows = trajectory.shape[0]
+        if rows != 8:
+            sys.exit(
+                'Trajectory must has 8 rows '
+                '(fidx, rx, ry, rz, tx ty, tz, timestamp)')
+        fidxs = trajectory[0, :].astype(np.int32)
+        poses = trajectory[1:7, :].astype(np.float32)
+        timestamps = trajectory[-1, :].astype(np.int64)
+        return fidxs, poses, timestamps
+  
+    def convertToOCamsPose(self, rig2worlds: np.ndarray, cams: List[CameraModel]):
+        rows, nposes = rig2worlds.shape
+        cams_poses = []
+        for i in range(nposes):
+            rig2world = rig2worlds[:, i]
+            cam2worlds = []
+            for j in range(len(cams)):
+                cam = cams[j]
+                cam2world = mergedTransform(rig2world, cam.cam2rig).squeeze()
+                cam2worlds.append(cam2world)
+            cam2worlds = np.stack(cam2worlds, axis=0)
+            cams_poses.append(cam2worlds)
+        cams_poses = np.stack(cams_poses, axis=0)    # [N, 4, 6]
+        return cams_poses
+
+    
+    def undistortImage(self, img: np.ndarray, cam: CameraModel, ecam: CameraModel):
+        if len(img.shape) == 3:
+            inv_mask = np.tile(cam.invalid_mask[...,np.newaxis], (1, 1, 3))
+            img[inv_mask] = 0
+        else:
+            img[cam.invalid_mask] = 0
+        if isTorchArray(img): img = img.astype(torch.float64)
+        else: img = img.astype(np.float64)
+        p = ecam.getPixelGrid()
+        ray = ecam.pixelToRay(p)
+        #R = rodrigues(np.array([0, np.deg2rad(-70), 0])) # side ##
+        #R = rodrigues(np.array([np.deg2rad(70), 0, 0])) # up-down
+        p_ = cam.rayToPixel(ray)
+        grid = pixelToGrid(p_, ecam.image_size, cam.image_size)
+        I = interp2DNumpy(img, grid)
+        return I
+    
+    def cropImage(self, img: np.ndarray, crop_x: int, crop_y: int):
+        if crop_x > 0:
+            img = img[:, crop_x:-crop_x]
+        if crop_y > 0:
+            img = img[crop_y:-crop_y, :]
+        return img
+
+
 dataset_dict = {
     "replica": Replica,
     "scannet": ScanNet,
     "cofusion": CoFusion,
     "azure": Azure,
-    "tumrgbd": TUM_RGBD
+    "tumrgbd": TUM_RGBD,
+    # "ocam": OCam,
+    "ocam_perspective": OCam_perspective,
 }

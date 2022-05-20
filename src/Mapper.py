@@ -6,6 +6,8 @@ import numpy as np
 import torch
 from colorama import Fore, Style
 from torch.autograd import Variable
+from tqdm import tqdm
+from tensorboardX import SummaryWriter
 
 from src.common import (get_camera_from_tensor, get_samples,
                         get_tensor_from_camera, random_select)
@@ -41,6 +43,8 @@ class Mapper(object):
         self.decoders = slam.shared_decoders
         self.estimate_c2w_list = slam.estimate_c2w_list
         self.mapping_first_frame = slam.mapping_first_frame
+        # self.summary_writer = slam.summary_writer
+        self.logdir = slam.logdir
 
         self.scale = cfg['scale']
         self.coarse = cfg['coarse']
@@ -84,10 +88,10 @@ class Mapper(object):
         self.frame_reader = get_dataset(
             cfg, args, self.scale, device=self.device)
         self.n_img = len(self.frame_reader)
-        if 'Demo' not in self.output:  # disable this visualization in demo
-            self.visualizer = Visualizer(freq=cfg['mapping']['vis_freq'], inside_freq=cfg['mapping']['vis_inside_freq'],
-                                         vis_dir=os.path.join(self.output, 'mapping_vis'), renderer=self.renderer,
-                                         verbose=self.verbose, device=self.device)
+        # if 'Demo' not in self.output:  # disable this visualization in demo
+        self.visualizer = Visualizer(freq=cfg['mapping']['vis_freq'], inside_freq=cfg['mapping']['vis_inside_freq'],
+                                        vis_dir=os.path.join(self.output, 'mapping_vis'), renderer=self.renderer,
+                                        verbose=self.verbose, device=self.device)
         self.H, self.W, self.fx, self.fy, self.cx, self.cy = slam.H, slam.W, slam.fx, slam.fy, slam.cx, slam.cy
 
     def get_mask_from_c2w(self, c2w, key, val_shape, depth_np):
@@ -388,7 +392,8 @@ class Mapper(object):
             from torch.optim.lr_scheduler import StepLR
             scheduler = StepLR(optimizer, step_size=200, gamma=0.8)
 
-        for joint_iter in range(num_joint_iters):
+        for joint_iter in tqdm(range(num_joint_iters)):
+            self.global_iter += 1
             if self.nice:
                 if self.frustum_feature_selection:
                     for key, val in c.items():
@@ -423,9 +428,10 @@ class Mapper(object):
                 if self.BA:
                     optimizer.param_groups[1]['lr'] = self.BA_cam_lr
 
-            if (not (idx == 0 and self.no_vis_on_first_frame)) and ('Demo' not in self.output):
+            # if (not (idx == 0 and self.no_vis_on_first_frame)) and ('Demo' not in self.output):
+            if (not (idx == 0 and self.no_vis_on_first_frame)):
                 self.visualizer.vis(
-                    idx, joint_iter, cur_gt_depth, cur_gt_color, cur_c2w, self.c, self.decoders)
+                    idx, joint_iter, cur_gt_depth, cur_gt_color, cur_c2w, self.c, self.decoders, self.summary_writer)
 
             optimizer.zero_grad()
             batch_rays_d_list = []
@@ -486,19 +492,23 @@ class Mapper(object):
 
             depth_mask = (batch_gt_depth > 0)
             loss = torch.abs(
-                batch_gt_depth[depth_mask]-depth[depth_mask]).sum()
+                batch_gt_depth[depth_mask]-depth[depth_mask]).mean()
+            self.summary_writer.add_scalar(f'{self.stage}/mapping_depth_loss', loss, global_step=self.global_iter)
             if ((not self.nice) or (self.stage == 'color')):
-                color_loss = torch.abs(batch_gt_color - color).sum()
+                color_loss = torch.abs(batch_gt_color - color).mean()
                 weighted_color_loss = self.w_color_loss*color_loss
                 loss += weighted_color_loss
+                self.summary_writer.add_scalar(f'{self.stage}/mapping_color_loss', color_loss, global_step=self.global_iter)
 
             # for imap*, it use volume density
             regulation = (not self.occupancy)
             if regulation:
                 point_sigma = self.renderer.regulation(
                     c, self.decoders, batch_rays_d, batch_rays_o, batch_gt_depth, device, self.stage)
-                regulation_loss = torch.abs(point_sigma).sum()
+                regulation_loss = torch.abs(point_sigma).mean()
                 loss += 0.0005*regulation_loss
+                
+            self.summary_writer.add_scalar(f'{self.stage}/mapping_loss', loss, global_step=self.global_iter)
 
             loss.backward(retain_graph=False)
             optimizer.step()
@@ -540,12 +550,14 @@ class Mapper(object):
             return None
 
     def run(self):
+        self.summary_writer = SummaryWriter(self.logdir)
         cfg = self.cfg
         idx, gt_color, gt_depth, gt_c2w = self.frame_reader[0]
 
         self.estimate_c2w_list[0] = gt_c2w.cpu()
         init = True
         prev_idx = -1
+        self.global_iter = 0
         while (1):
             while True:
                 idx = self.idx[0].clone()

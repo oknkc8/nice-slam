@@ -1,7 +1,7 @@
 dataset: 'scannet'
 sync_method: loose
 coarse: True
-verbose: False
+verbose: True
 meshing:
   resolution: 256
 tracking:
@@ -11,6 +11,7 @@ tracking:
   ignore_edge_H: 20
   seperate_LR: False
   const_speed_assumption: True
+  gt_camera: True
   lr: 0.0005      
   pixels: 1000
   iters: 30
@@ -27,6 +28,7 @@ mapping:
   iters: 10
   bound: [[0.0,6.5],[0.0,4.0],[0,3.5]]
   marching_cubes_bound: [[0.0,6.5],[0.0,4.0],[0,3.5]]
+  no_vis_on_first_frame: False
 cam: 
   H: 480 
   W: 640
@@ -38,4 +40,4 @@ cam:
   crop_edge: 10
 data:
   input_folder: Datasets/Demo
-  output: output/Demo
+  output: output/Demo/Demo_tmp_color

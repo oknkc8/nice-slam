@@ -4,6 +4,7 @@ import skimage
 import torch
 import torch.nn.functional as F
 import trimesh
+import gc
 from packaging import version
 from src.utils.datasets import get_dataset
 
@@ -569,4 +570,9 @@ class Mesher(object):
             mesh.export(mesh_out_file)
             if self.verbose:
                 print('Saved mesh at', mesh_out_file)
-                
+            
+            del vertices
+            del faces
+            del vertex_colors
+            del mesh
+            gc.collect()
