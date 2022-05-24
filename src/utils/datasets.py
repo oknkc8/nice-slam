@@ -8,6 +8,7 @@ import torch
 import torch.nn.functional as F
 from src.common import as_intrinsics_matrix
 from torch.utils.data import Dataset
+from tqdm import tqdm
 
 from src.omni_utils.array import *
 from src.omni_utils.camera import *
@@ -348,8 +349,8 @@ class OCam_perspective(BaseDataset):
         self.depth_paths = []
         self.poses = []
         self.ocam_idxs = []
-        for i, fidx in enumerate(fidxs):
-            if i%3 != 0:
+        for i, fidx in tqdm(enumerate(fidxs)):
+            if i%5 != 0:
                 continue
             for ocam_idx in range(len(self.ocams)):
                 # if ocam_idx > 0: break

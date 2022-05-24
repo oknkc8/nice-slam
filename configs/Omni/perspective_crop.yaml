@@ -1,13 +1,16 @@
 dataset: 'ocam_perspective'
 data:
-  input_folder: /data/multipleye/201029_coex_s9
-  output: output/Omni/201029_coex_s9_19_tmp
+  input_folder: /data/chsung/201029_coex_s9
+  output: output/Omni/201029_coex_s9_large_dense_3
 grid_len:
   coarse: 2 
   middle: 0.32 
   fine: 0.16
   color: 0.16
   bound_divisable: 0.32
+meshing:
+  level_set: 0
+  resolution: 512 # change to 512 for higher resolution geometry
 tracking:
   vis_freq: 50
   vis_inside_freq: 25
@@ -21,23 +24,26 @@ tracking:
   pixels: 1000
   iters: 50
 mapping:
+  device: "cuda:1"
   BA: False
   middle_iter_ratio: 0.4
-  fine_iter_ratio: 0.4
+  fine_iter_ratio: 0.6
   every_frame: 1
-  vis_freq: 1
-  vis_inside_freq: 10
-  mesh_freq: 10
-  ckpt_freq: 10
+  vis_freq: 3
+  vis_inside_freq: 50
+  mesh_freq: 100
+  ckpt_freq: 100
   keyframe_every: 1
   mapping_window_size: 10
   pixels: 2000
-  iters_first: 500
+  iters_first: 300
   iters: 300
+  bound: [[-25.0, 60.0], [-5.0, 2.0], [-60.0, 25.0]]
   # bound: [[-33.0, 28.0], [-5.0, 2.0], [-23.0, 26.0]]
-  bound: [[-14.0, 10.0], [-5.0, 2.0], [-15.0, 10.0]] 
+  # bound: [[-14.0, 10.0], [-5.0, 2.0], [-15.0, 10.0]] 
+  marching_cubes_bound: [[-25.0, 60.0], [-5.0, 2.0], [-60.0, 25.0]]
   # marching_cubes_bound: [[-33.0, 28.0], [-5.0, 2.0], [-23.0, 26.0]]
-  marching_cubes_bound: [[-14.0, 10.0], [-5.0, 2.0], [-15.0, 10.0]] 
+  # marching_cubes_bound: [[-14.0, 10.0], [-5.0, 2.0], [-15.0, 10.0]] 
   no_vis_on_first_frame: False
 cam:
   H: 264
