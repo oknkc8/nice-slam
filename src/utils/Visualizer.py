@@ -155,7 +155,7 @@ class Visualizer(object):
                 if summary_writer is not None:
                     prev_output = cv2.cvtColor(prev_output, cv2.COLOR_BGR2RGB)
                     prev_output = torch.tensor(prev_output, dtype=torch.float64).permute(2,0,1) / 255
-                    summary_writer.add_image('optimize', prev_output, iter)
+                    summary_writer.add_image(f'{iter}/optimize', prev_output, idx)
                 
                 del prev_output
                 

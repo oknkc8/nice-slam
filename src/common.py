@@ -89,6 +89,38 @@ def get_rays_from_uv(i, j, c2w, H, W, fx, fy, cx, cy, device):
     return rays_o, rays_d
 
 
+def get_rays_from_uv_omni(i, j, c2w, H, W, phi_deg, phi_max_deg, device):
+    """
+    Get corresponding rays from input uv in omni system.
+
+    """
+    if isinstance(c2w, np.ndarray):
+        c2w = torch.from_numpy(c2w).to(device)
+
+    W_2, H_2 = W / 2.0, (H - 1) / 2.0
+    i = (i - W_2) / W_2 * np.pi + (np.pi / 2.0)
+    
+    if phi_max_deg > 0.0:
+        med = np.deg2rad((phi_max_deg - phi_deg) / 2.0)
+        med2 = np.deg2rad((phi_max_deg + phi_deg) / 2.0)
+        j = (j - H_2) / H_2 * med - med2
+    else:
+        j = (j - H_2) / H_2 * np.deg2rad(phi_deg)
+        
+    X = -torch.cos(j) * torch.cos(i)
+    Y = torch.sin(j)
+    # Y = np.sin(j) / np.cos(j) # cylinder
+    # Y = j / np.deg2rad(phi_deg) # perspective cylinder
+    Z = torch.cos(j) * torch.sin(j)
+    dirs = torch.stack([X.reshape(-1), Y.reshape(-1), Z.reshape(-1)], -1).to(device)
+    dirs = dirs.reshape(-1, 1, 3)
+    # Rotate ray directions from camera frame to the world frame
+    # dot product, equals to: [c2w.dot(dir) for dir in dirs]
+    rays_d = torch.sum(dirs * c2w[:3, :3], -1)
+    rays_o = c2w[:3, -1].expand(rays_d.shape)
+    return rays_o, rays_d
+
+
 def select_uv(i, j, n, depth, color, device='cuda:0'):
     """
     Select n uv from dense uv.
@@ -131,6 +163,18 @@ def get_samples(H0, H1, W0, W1, n, H, W, fx, fy, cx, cy, c2w, depth, color, devi
     i, j, sample_depth, sample_color = get_sample_uv(
         H0, H1, W0, W1, n, depth, color, device=device)
     rays_o, rays_d = get_rays_from_uv(i, j, c2w, H, W, fx, fy, cx, cy, device)
+    return rays_o, rays_d, sample_depth, sample_color
+
+
+def get_samples_omni(H0, H1, W0, W1, n, H, W, phi_deg, phi_max_deg, c2w, depth, color, device):
+    """
+    Get n rays from the image region H0..H1, W0..W1.
+    c2w is its camera pose and depth/color is the corresponding image tensor.
+
+    """
+    i, j, sample_depth, sample_color = get_sample_uv(
+        H0, H1, W0, W1, n, depth, color, device=device)
+    rays_o, rays_d = get_rays_from_uv_omni(i, j, c2w, H, W, phi_deg, phi_max_deg, device)
     return rays_o, rays_d, sample_depth, sample_color
 
 

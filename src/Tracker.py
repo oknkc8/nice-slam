@@ -9,7 +9,7 @@ from torch.autograd import Variable
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
-from src.common import (get_camera_from_tensor, get_samples,
+from src.common import (get_camera_from_tensor, get_samples, get_samples_omni,
                         get_tensor_from_camera)
 from src.utils.datasets import get_dataset
 from src.utils.Visualizer import Visualizer
@@ -67,6 +67,8 @@ class Tracker(object):
                                      vis_dir=os.path.join(self.output, 'vis' if 'Demo' in self.output else 'tracking_vis'),
                                      renderer=self.renderer, verbose=self.verbose, device=self.device)
         self.H, self.W, self.fx, self.fy, self.cx, self.cy = slam.H, slam.W, slam.fx, slam.fy, slam.cx, slam.cy
+        self.cam_method = slam.cam_method
+        self.phi_deg, self.phi_max_deg = slam.phi_deg, slam.phi_max_deg
 
     def optimize_cam_in_batch(self, camera_tensor, gt_color, gt_depth, batch_size, optimizer):
         """
@@ -84,12 +86,17 @@ class Tracker(object):
         """
         device = self.device
         H, W, fx, fy, cx, cy = self.H, self.W, self.fx, self.fy, self.cx, self.cy
+        phi_deg, phi_max_deg = self.phi_deg, self.phi_max_deg
         optimizer.zero_grad()
         c2w = get_camera_from_tensor(camera_tensor)
         Wedge = self.ignore_edge_W
         Hedge = self.ignore_edge_H
-        batch_rays_o, batch_rays_d, batch_gt_depth, batch_gt_color = get_samples(
-            Hedge, H-Hedge, Wedge, W-Wedge, batch_size, H, W, fx, fy, cx, cy, c2w, gt_depth, gt_color, self.device)
+        if self.cam_method == 'perspective':
+            batch_rays_o, batch_rays_d, batch_gt_depth, batch_gt_color = get_samples(
+                Hedge, H-Hedge, Wedge, W-Wedge, batch_size, H, W, fx, fy, cx, cy, c2w, gt_depth, gt_color, self.device)
+        elif self.cam_method == 'panorama':
+            batch_rays_o, batch_rays_d, batch_gt_depth, batch_gt_color = get_samples_omni(
+                Hedge, H-Hedge, Wedge, W-Wedge, batch_size, H, W, phi_deg, phi_max_deg, c2w, gt_depth, gt_color, self.device)
         if self.nice:
             # should pre-filter those out of bounding box depth value
             with torch.no_grad():

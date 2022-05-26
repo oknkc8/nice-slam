@@ -1,0 +1,1 @@
+python -W ignore run.py configs/Omni/panorama.yaml

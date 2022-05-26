@@ -9,7 +9,7 @@ from torch.autograd import Variable
 from tqdm import tqdm
 from tensorboardX import SummaryWriter
 
-from src.common import (get_camera_from_tensor, get_samples,
+from src.common import (get_camera_from_tensor, get_samples, get_samples_omni,
                         get_tensor_from_camera, random_select)
 from src.utils.datasets import get_dataset
 from src.utils.Visualizer import Visualizer
@@ -93,6 +93,8 @@ class Mapper(object):
                                         vis_dir=os.path.join(self.output, 'mapping_vis'), renderer=self.renderer,
                                         verbose=self.verbose, device=self.device)
         self.H, self.W, self.fx, self.fy, self.cx, self.cy = slam.H, slam.W, slam.fx, slam.fy, slam.cx, slam.cy
+        self.cam_method = slam.cam_method
+        self.phi_deg, self.phi_max_deg = slam.phi_deg, slam.phi_max_deg
 
     def get_mask_from_c2w(self, c2w, key, val_shape, depth_np):
         """
@@ -185,9 +187,14 @@ class Mapper(object):
         """
         device = self.device
         H, W, fx, fy, cx, cy = self.H, self.W, self.fx, self.fy, self.cx, self.cy
-
-        rays_o, rays_d, gt_depth, gt_color = get_samples(
-            0, H, 0, W, pixels, H, W, fx, fy, cx, cy, c2w, gt_depth, gt_color, self.device)
+        phi_deg, phi_max_deg = self.phi_deg, self.phi_max_deg
+        
+        if self.cam_method == 'perspective':
+            rays_o, rays_d, gt_depth, gt_color = get_samples(
+                0, H, 0, W, pixels, H, W, fx, fy, cx, cy, c2w, gt_depth, gt_color, self.device)
+        elif self.cam_method == 'panorama':
+            rays_o, rays_d, gt_depth, gt_color = get_samples_omni(
+                0, H, 0, W, pixels, H, W, phi_deg, phi_max_deg, c2w, gt_depth, gt_color, self.device)
 
         gt_depth = gt_depth.reshape(-1, 1)
         gt_depth = gt_depth.repeat(1, N_samples)
@@ -251,6 +258,7 @@ class Mapper(object):
             cur_c2w/None (tensor/None): return the updated cur_c2w, return None if no BA
         """
         H, W, fx, fy, cx, cy = self.H, self.W, self.fx, self.fy, self.cx, self.cy
+        phi_deg, phi_max_deg = self.phi_deg, self.phi_max_deg
         c = self.c
         cfg = self.cfg
         device = self.device
@@ -459,9 +467,14 @@ class Mapper(object):
                         c2w = get_camera_from_tensor(camera_tensor)
                     else:
                         c2w = cur_c2w
+                
+                if self.cam_method == 'perspective':
+                    batch_rays_o, batch_rays_d, batch_gt_depth, batch_gt_color = get_samples(
+                        0, H, 0, W, pixs_per_image, H, W, fx, fy, cx, cy, c2w, gt_depth, gt_color, self.device)
+                elif self.cam_method == 'panorama':
+                    batch_rays_o, batch_rays_d, batch_gt_depth, batch_gt_color = get_samples_omni(
+                        0, H, 0, W, pixs_per_image, H, W, phi_deg, phi_max_deg, c2w, gt_depth, gt_color, self.device)
 
-                batch_rays_o, batch_rays_d, batch_gt_depth, batch_gt_color = get_samples(
-                    0, H, 0, W, pixs_per_image, H, W, fx, fy, cx, cy, c2w, gt_depth, gt_color, self.device)
                 batch_rays_o_list.append(batch_rays_o.float())
                 batch_rays_d_list.append(batch_rays_d.float())
                 batch_gt_depth_list.append(batch_gt_depth.float())

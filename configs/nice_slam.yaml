@@ -102,6 +102,9 @@ cam:
   cy: 339.5
   png_depth_scale: 6553.5 #for depth image in png format
   crop_edge: 0
+  method: 'perspective'
+  phi_deg: -45.0
+  phi_max_deg: 45.0
 rendering:
   N_samples: 32
   N_surface: 16

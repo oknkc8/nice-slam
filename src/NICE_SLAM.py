@@ -47,6 +47,8 @@ class NICE_SLAM():
         os.makedirs(f'{self.output}/mesh', exist_ok=True)
         self.H, self.W, self.fx, self.fy, self.cx, self.cy = cfg['cam']['H'], cfg['cam'][
             'W'], cfg['cam']['fx'], cfg['cam']['fy'], cfg['cam']['cx'], cfg['cam']['cy']
+        self.cam_method = cfg['cam']['method']
+        self.phi_deg, self.phi_max_deg = cfg['cam']['phi_deg'], cfg['cam']['phi_max_deg']
         self.update_cam()
 
         model = config.get_model(cfg,  nice=self.nice)
