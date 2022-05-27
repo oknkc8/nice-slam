@@ -1,5 +1,5 @@
 import torch
-from src.common import get_rays, raw2outputs_nerf_color, sample_pdf
+from src.common import get_rays, get_rays_omni, raw2outputs_nerf_color, sample_pdf
 
 
 class Renderer(object):
@@ -17,6 +17,8 @@ class Renderer(object):
         self.occupancy = cfg['occupancy']
         self.nice = slam.nice
         self.bound = slam.bound
+        self.cam_method = slam.cam_method
+        self.phi_deg, self.phi_max_deg = slam.phi_deg, slam.phi_max_deg
 
         self.H, self.W, self.fx, self.fy, self.cx, self.cy = slam.H, slam.W, slam.fx, slam.fy, slam.cx, slam.cy
 
@@ -217,8 +219,12 @@ class Renderer(object):
         with torch.no_grad():
             H = self.H
             W = self.W
-            rays_o, rays_d = get_rays(
-                H, W, self.fx, self.fy, self.cx, self.cy,  c2w, device)
+            if self.cam_method == 'perspective':
+                rays_o, rays_d = get_rays(
+                    H, W, self.fx, self.fy, self.cx, self.cy,  c2w, device)
+            elif self.cam_method == 'panorama':
+                rays_o, rays_d = get_rays_omni(
+                    H, W, self.phi_deg, self.phi_max_deg, c2w, device)
             rays_o = rays_o.reshape(-1, 3)
             rays_d = rays_d.reshape(-1, 3)
 

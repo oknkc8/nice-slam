@@ -1,7 +1,7 @@
-dataset: 'ocam_perspective'
+dataset: 'ocam_panorama'
 data:
   input_folder: /data/chsung/201029_coex_s9
-  output: output/Omni_panorama/201029_coex_s9_small
+  output: output/Omni_panorama/tmp_201029_coex_s9_small_6
 grid_len:
   coarse: 2 
   middle: 0.32 
@@ -29,14 +29,14 @@ mapping:
   middle_iter_ratio: 0.4
   fine_iter_ratio: 0.6
   every_frame: 1
-  vis_freq: 3
+  vis_freq: 1
   vis_inside_freq: 50
-  mesh_freq: 100
-  ckpt_freq: 100
+  mesh_freq: 10
+  ckpt_freq: 10
   keyframe_every: 1
   mapping_window_size: 10
-  pixels: 2000
-  iters_first: 300
+  pixels: 20000
+  iters_first: 500
   iters: 300
   # bound: [[-25.0, 60.0], [-5.0, 2.0], [-60.0, 25.0]]
   # bound: [[-33.0, 28.0], [-5.0, 2.0], [-23.0, 26.0]]
@@ -50,6 +50,8 @@ cam:
   W: 640
   crop_edge: 0
   method: 'panorama'
+  phi_deg: -45.0
+  phi_max_deg: 45.0
 rendering:
   N_samples: 128
   N_surface: 64

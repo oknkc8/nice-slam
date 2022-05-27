@@ -111,8 +111,8 @@ def get_rays_from_uv_omni(i, j, c2w, H, W, phi_deg, phi_max_deg, device):
     Y = torch.sin(j)
     # Y = np.sin(j) / np.cos(j) # cylinder
     # Y = j / np.deg2rad(phi_deg) # perspective cylinder
-    Z = torch.cos(j) * torch.sin(j)
-    dirs = torch.stack([X.reshape(-1), Y.reshape(-1), Z.reshape(-1)], -1).to(device)
+    Z = torch.cos(j) * torch.sin(i)
+    dirs = torch.stack([X.reshape(1, -1), -Y.reshape(1, -1), -Z.reshape(1, -1)], -1).to(device)
     dirs = dirs.reshape(-1, 1, 3)
     # Rotate ray directions from camera frame to the world frame
     # dot product, equals to: [c2w.dot(dir) for dir in dirs]
@@ -309,6 +309,40 @@ def get_rays(H, W, fx, fy, cx, cy, c2w, device):
     rays_o = c2w[:3, -1].expand(rays_d.shape)
     return rays_o, rays_d
 
+def get_rays_omni(H, W, phi_deg, phi_max_deg, c2w, device):
+    """
+    Get rays for a whole image in omni system.
+
+    """
+    if isinstance(c2w, np.ndarray):
+        c2w = torch.from_numpy(c2w)
+    # pytorch's meshgrid has indexing='ij'
+    i, j = torch.meshgrid(torch.linspace(0, W-1, W), torch.linspace(0, H-1, H))
+    i = i.t()  # transpose
+    j = j.t()
+    
+    W_2, H_2 = W / 2.0, (H - 1) / 2.0
+    i = (i - W_2) / W_2 * np.pi + (np.pi / 2.0)
+    
+    if phi_max_deg > 0.0:
+        med = np.deg2rad((phi_max_deg - phi_deg) / 2.0)
+        med2 = np.deg2rad((phi_max_deg + phi_deg) / 2.0)
+        j = (j - H_2) / H_2 * med - med2
+    else:
+        j = (j - H_2) / H_2 * np.deg2rad(phi_deg)
+        
+    X = -torch.cos(j) * torch.cos(i)
+    Y = torch.sin(j)
+    # Y = np.sin(j) / np.cos(j) # cylinder
+    # Y = j / np.deg2rad(phi_deg) # perspective cylinder
+    Z = torch.cos(j) * torch.sin(i)
+    dirs = torch.stack([X.reshape(1, -1), -Y.reshape(1, -1), -Z.reshape(1, -1)], -1).to(device)
+    dirs = dirs.reshape(-1, 1, 3)
+    # Rotate ray directions from camera frame to the world frame
+    # dot product, equals to: [c2w.dot(dir) for dir in dirs]
+    rays_d = torch.sum(dirs * c2w[:3, :3], -1)
+    rays_o = c2w[:3, -1].expand(rays_d.shape)
+    return rays_o, rays_d
 
 def normalize_3d_coordinate(p, bound):
     """

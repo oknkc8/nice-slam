@@ -9,6 +9,7 @@ import torch.nn.functional as F
 from src.common import as_intrinsics_matrix
 from torch.utils.data import Dataset
 from tqdm import tqdm
+import pdb
 
 from src.omni_utils.array import *
 from src.omni_utils.camera import *
@@ -462,8 +463,7 @@ class OCam_panorama(BaseDataset):
         
         self.ocams = loadCameraListFromYAML(ocam_config_path)
         fidxs, rig_poses, _ = self.splitTrajectoryResult(np.loadtxt(rig_poses_path).T)
-        
-        cam_poses = rig_poses
+        cam_poses = rig_poses.T
         
         skip = 5
         
@@ -474,8 +474,8 @@ class OCam_panorama(BaseDataset):
         for i, fidx in tqdm(enumerate(fidxs)):
             if i % skip != 0:
                 continue
-            self.color_paths.append(os.path.join(self.input_folder, ('rgb_omni_160/%05d.png' % (fidx))))
-            self.color_paths.append(os.path.join(self.input_folder, ('depth_omni_160/%05d.tiff' % (fidx))))
+            self.color_paths.append(os.path.join(self.input_folder, ('rgb_omni_160/sigma_3/%05d.png' % (fidx))))
+            self.depth_paths.append(os.path.join(self.input_folder, ('depth_omni_160/%05d.tiff' % (fidx))))
             R, tr = getRot(cam_poses[i]), getTr(cam_poses[i])
             c2w = np.eye(4)
             c2w[:3, :] = np.concatenate((R, tr), axis=1)
@@ -488,21 +488,8 @@ class OCam_panorama(BaseDataset):
         color_path = self.color_paths[index]
         depth_path = self.depth_paths[index]
         
-        # color_data = np.array(Image.open(color_path), dtype=np.float32) / 255.
-        # H, W = color_data.shape[0:2]
-        # pcam = PinholeModel.getPerspectiveModel(W//2, H//2, wfov_deg=125.0)
-        # color_data = self.undistortImage(color_data, self.ocams[self.ocam_idxs[index]], pcam)
-        
         color_data = np.array(Image.open(color_path), dtype=np.float32) / 255.
         depth_data = 1.0 / readImageFloat(depth_path)
-        
-        # crop_x = 0
-        # crop_y = 60
-        
-        # color_data = self.cropImage(color_data, crop_x, crop_y)
-        # depth_data = self.cropImage(depth_data, crop_x, crop_y)
-        
-        # H, W = color_data.shape[0:2]
         
         color_data = torch.from_numpy(color_data)
         depth_data = torch.from_numpy(depth_data)*self.scale
@@ -523,39 +510,6 @@ class OCam_panorama(BaseDataset):
         poses = trajectory[1:7, :].astype(np.float32)
         timestamps = trajectory[-1, :].astype(np.int64)
         return fidxs, poses, timestamps
-  
-    # def convertToOCamsPose(self, rig2worlds: np.ndarray, cams: List[CameraModel]):
-    #     rows, nposes = rig2worlds.shape
-    #     cams_poses = []
-    #     for i in range(nposes):
-    #         rig2world = rig2worlds[:, i]
-    #         cam2worlds = []
-    #         for j in range(len(cams)):
-    #             cam = cams[j]
-    #             cam2world = mergedTransform(rig2world, cam.cam2rig).squeeze()
-    #             cam2worlds.append(cam2world)
-    #         cam2worlds = np.stack(cam2worlds, axis=0)
-    #         cams_poses.append(cam2worlds)
-    #     cams_poses = np.stack(cams_poses, axis=0)    # [N, 4, 6]
-    #     return cams_poses
-
-    
-    # def undistortImage(self, img: np.ndarray, cam: CameraModel, ecam: CameraModel):
-    #     if len(img.shape) == 3:
-    #         inv_mask = np.tile(cam.invalid_mask[...,np.newaxis], (1, 1, 3))
-    #         img[inv_mask] = 0
-    #     else:
-    #         img[cam.invalid_mask] = 0
-    #     if isTorchArray(img): img = img.astype(torch.float64)
-    #     else: img = img.astype(np.float64)
-    #     p = ecam.getPixelGrid()
-    #     ray = ecam.pixelToRay(p)
-    #     #R = rodrigues(np.array([0, np.deg2rad(-70), 0])) # side ##
-    #     #R = rodrigues(np.array([np.deg2rad(70), 0, 0])) # up-down
-    #     p_ = cam.rayToPixel(ray)
-    #     grid = pixelToGrid(p_, ecam.image_size, cam.image_size)
-    #     I = interp2DNumpy(img, grid)
-    #     return I
     
     def cropImage(self, img: np.ndarray, crop_x: int, crop_y: int):
         if crop_x > 0:
@@ -571,6 +525,6 @@ dataset_dict = {
     "cofusion": CoFusion,
     "azure": Azure,
     "tumrgbd": TUM_RGBD,
-    # "ocam": OCam,
     "ocam_perspective": OCam_perspective,
+    "ocam_panorama": OCam_panorama,
 }

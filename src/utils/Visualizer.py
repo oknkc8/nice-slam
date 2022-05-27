@@ -131,6 +131,7 @@ class Visualizer(object):
                 gt_depth_np = gt_depth_np.astype(np.float64)
                 gt_color_np = gt_color_np.astype(np.float64)
                 color_np = color_np.astype(np.float64)
+                color_residual = color_residual.astype(np.float64)
                 
                 # tmp_gt_depth_np = gt_depth_np.copy()
                 # gt_depth_np[tmp_gt_depth_np == 0] = EPS
