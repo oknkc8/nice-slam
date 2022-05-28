@@ -112,7 +112,13 @@ def get_rays_from_uv_omni(i, j, c2w, H, W, phi_deg, phi_max_deg, device):
     # Y = np.sin(j) / np.cos(j) # cylinder
     # Y = j / np.deg2rad(phi_deg) # perspective cylinder
     Z = torch.cos(j) * torch.sin(i)
-    dirs = torch.stack([X.reshape(1, -1), -Y.reshape(1, -1), -Z.reshape(1, -1)], -1).to(device)
+    X = X.reshape(1, -1)
+    Y = Y.reshape(1, -1)
+    Z = Z.reshape(1, -1)
+    # X = X / Z
+    # Y = Y / Z
+    # Z = Z / Z
+    dirs = torch.stack([X, -Y, -Z], -1).to(device)
     dirs = dirs.reshape(-1, 1, 3)
     # Rotate ray directions from camera frame to the world frame
     # dot product, equals to: [c2w.dot(dir) for dir in dirs]
@@ -336,7 +342,13 @@ def get_rays_omni(H, W, phi_deg, phi_max_deg, c2w, device):
     # Y = np.sin(j) / np.cos(j) # cylinder
     # Y = j / np.deg2rad(phi_deg) # perspective cylinder
     Z = torch.cos(j) * torch.sin(i)
-    dirs = torch.stack([X.reshape(1, -1), -Y.reshape(1, -1), -Z.reshape(1, -1)], -1).to(device)
+    X = X.reshape(1, -1)
+    Y = Y.reshape(1, -1)
+    Z = Z.reshape(1, -1)
+    # X = X / Z
+    # Y = Y / Z
+    # Z = Z / Z
+    dirs = torch.stack([X, -Y, -Z], -1).to(device)
     dirs = dirs.reshape(-1, 1, 3)
     # Rotate ray directions from camera frame to the world frame
     # dot product, equals to: [c2w.dot(dir) for dir in dirs]
