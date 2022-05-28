@@ -416,19 +416,20 @@ class Mesher(object):
                 z[unseen_mask] = -100
 
             else:
-                mesh_bound = self.get_bound_from_frames(
-                    keyframe_dict, self.scale)
+                pass
+                # mesh_bound = self.get_bound_from_frames(
+                #     keyframe_dict, self.scale)
                 z = []
-                mask = []
-                for i, pnts in enumerate(torch.split(points, self.points_batch_size, dim=0)):
-                    mask.append(mesh_bound.contains(pnts.cpu().numpy()))
-                mask = np.concatenate(mask, axis=0)
+                # mask = []
+                # for i, pnts in enumerate(torch.split(points, self.points_batch_size, dim=0)):
+                #     mask.append(mesh_bound.contains(pnts.cpu().numpy()))
+                # mask = np.concatenate(mask, axis=0)
                 for i, pnts in enumerate(torch.split(points, self.points_batch_size, dim=0)):
                     z.append(self.eval_points(pnts, decoders, c, 'fine',
                                               device).cpu().numpy()[:, -1])
 
                 z = np.concatenate(z, axis=0)
-                z[~mask] = 100
+                # z[~mask] = 100
 
             z = z.astype(np.float32)
 
@@ -486,12 +487,13 @@ class Mesher(object):
                     mesh = trimesh.Trimesh(vertices=vertices,
                                            faces=faces,
                                            process=False)
-                    seen_mask, forecast_mask, unseen_mask = self.point_masks(
-                        points, keyframe_dict, estimate_c2w_list, idx, device=device, 
-                        get_mask_use_all_frames=get_mask_use_all_frames)
-                    unseen_mask = ~seen_mask
-                    face_mask = unseen_mask[mesh.faces].all(axis=1)
-                    mesh.update_faces(~face_mask)
+                                        
+                    # seen_mask, forecast_mask, unseen_mask = self.point_masks(
+                    #     points, keyframe_dict, estimate_c2w_list, idx, device=device, 
+                    #     get_mask_use_all_frames=get_mask_use_all_frames)
+                    # unseen_mask = ~seen_mask
+                    # face_mask = unseen_mask[mesh.faces].all(axis=1)
+                    # mesh.update_faces(~face_mask)
 
                 # get connected components
                 components = mesh.split(only_watertight=False)

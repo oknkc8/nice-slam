@@ -2,7 +2,7 @@ dataset: 'ocam_panorama'
 data:
   # input_folder: /data/chsung/201029_coex_s9
   input_folder: /data/multipleye/201029_coex_s9
-  output: output/Omni_panorama/tmp_201029_coex_s9_small_6
+  output: output/Omni_panorama/201029_coex_s9_middle_2
 grid_len:
   coarse: 2 
   middle: 0.32 
@@ -31,21 +31,23 @@ mapping:
   fine_iter_ratio: 0.6
   every_frame: 1
   vis_freq: 1
-  vis_inside_freq: 50
+  vis_inside_freq: 100
   mesh_freq: 10
   ckpt_freq: 10
   keyframe_every: 1
   mapping_window_size: 10
   frustum_feature_selection: False
-  pixels: 10000
+  pixels: 5000
   iters_first: 1000
   iters: 1000
   # bound: [[-25.0, 60.0], [-5.0, 2.0], [-60.0, 25.0]]
   # bound: [[-33.0, 28.0], [-5.0, 2.0], [-23.0, 26.0]]
-  bound: [[-14.0, 10.0], [-5.0, 2.0], [-15.0, 10.0]] 
+  # bound: [[-20.0, 20.0], [-5.0, 2.0], [-20.0, 20.0]] 
+  bound: [[-20.0, 30.0], [-5.0, 2.0], [-30.0, 20.0]] 
   # marching_cubes_bound: [[-25.0, 60.0], [-5.0, 2.0], [-60.0, 25.0]]
   # marching_cubes_bound: [[-33.0, 28.0], [-5.0, 2.0], [-23.0, 26.0]]
-  marching_cubes_bound: [[-14.0, 10.0], [-5.0, 2.0], [-15.0, 10.0]] 
+  # marching_cubes_bound: [[-20.0, 20.0], [-5.0, 2.0], [-20.0, 20.0]] 
+  marching_cubes_bound: [[-20.0, 30.0], [-5.0, 2.0], [-30.0, 20.0]]
   no_vis_on_first_frame: False
 cam:
   H: 160
