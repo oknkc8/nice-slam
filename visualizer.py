@@ -57,11 +57,13 @@ if __name__ == '__main__':
     estimate_c2w_list = estimate_c2w_list.cpu().numpy()
     gt_c2w_list = gt_c2w_list.cpu().numpy()
 
-    frontend = SLAMFrontend(output, init_pose=estimate_c2w_list[0], cam_scale=0.3,
+    frontend = SLAMFrontend(output, init_pose=estimate_c2w_list[0], cam_scale=1,
                             save_rendering=args.save_rendering, near=0,
                             estimate_c2w_list=estimate_c2w_list, gt_c2w_list=gt_c2w_list).start()
 
     for i in tqdm(range(0, N+1)):
+        # import pdb
+        # pdb.set_trace()
         # show every second frame for speed up
         if args.vis_input_frame and i % 2 == 0:
             idx, gt_color, gt_depth, gt_c2w = frame_reader[i]
@@ -73,22 +75,23 @@ if __name__ == '__main__':
             color_np = np.clip(color_np, 0, 255)
             whole = np.concatenate([color_np, depth_np], axis=0)
             H, W, _ = whole.shape
-            whole = cv2.resize(whole, (W//4, H//4))
+            whole = cv2.resize(whole, (W//1, H//1))
             cv2.imshow(f'Input RGB-D Sequence', whole[:, :, ::-1])
             cv2.waitKey(1)
-        time.sleep(0.03)
+        time.sleep(1)
         meshfile = f'{output}/mesh/{i:05d}_mesh.ply'
         if os.path.isfile(meshfile):
             frontend.update_mesh(meshfile)
+            time.sleep(10)
         frontend.update_pose(1, estimate_c2w_list[i], gt=False)
         if not args.no_gt_traj:
-            frontend.update_pose(1, gt_c2w_list[i], gt=True)
+            frontend.update_pose(1, gt_c2w_list[i], gt=False)
         # the visualizer might get stucked if update every frame
         # with a long sequence (10000+ frames)
         if i % 10 == 0:
             frontend.update_cam_trajectory(i, gt=False)
             if not args.no_gt_traj:
-                frontend.update_cam_trajectory(i, gt=True)
+                frontend.update_cam_trajectory(i, gt=False)
 
     if args.save_rendering:
         time.sleep(1)

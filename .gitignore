@@ -5,6 +5,7 @@ output
 .vscode
 3rdparty
 Datasets
+novel_view_results*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

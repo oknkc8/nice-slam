@@ -193,6 +193,22 @@ class NICE_SLAM():
                     fine_dict[key] = val
         self.shared_decoders.middle_decoder.load_state_dict(middle_dict)
         self.shared_decoders.fine_decoder.load_state_dict(fine_dict)
+        
+    def load_pretrain_full(self, cfg, ckpt_path):
+        """
+        Load parameters of pretrained checkpoints to the decoders and variables.
+
+        Args:
+            cfg (dict): parsed config dict
+        """
+        
+        print('Get ckpt : ', ckpt_path)
+        ckpt = torch.load(ckpt_path, map_location=cfg['mapping']['device'])
+        self.estimate_c2w_list = ckpt['estimate_c2w_list']
+        self.gt_c2w_list = ckpt['gt_c2w_list']
+        self.shared_c = ckpt['c']
+        self.shared_decoders.load_state_dict(ckpt['decoder_state_dict'])
+        
 
     def grid_init(self, cfg):
         """

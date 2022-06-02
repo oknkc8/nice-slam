@@ -32,11 +32,21 @@ def getTr(transform: np.ndarray) -> np.ndarray:
         transform = transform.reshape((6, 1))
         return transform[3:6].reshape((3, 1))
     elif transform.shape == (3, 4) or transform.shape == (4, 4):
-        return transform[:3, :3].reshape((3, 1))
+        return transform[:3, 3].reshape((3, 1))
     else:
         LOG_ERROR(
             'Invalid shape of input transform: {}'.format(transform.shape))
         return None
+    
+def rotateAxis(t: np.ndarray, deg_x: float, deg_y: float, deg_z: float) -> np.ndarray:
+    # import pdb
+    # pdb.set_trace()
+    R1 = R.from_euler('xyz', [deg_x, deg_y, deg_z], degrees=True).as_matrix()
+    R2, tr2 = getRot(t), getTr(t)
+    new_R = np.matmul(R1, R2)
+    # new_tr = R1.dot(tr2)
+    new_tr = tr2
+    return np.concatenate((new_R, new_tr), axis=1)
 
 def inverseTransform(transform: np.ndarray) -> np.ndarray:
     R, tr = getRot(transform), getTr(transform)

@@ -459,7 +459,7 @@ class OCam_panorama(BaseDataset):
 
     def load_paths_n_poses(self):
         ocam_config_path = os.path.join(self.input_folder, 'config.yaml')
-        rig_poses_path = os.path.join(self.input_folder, 'trajectory_no_dynamic_lidar_small.txt')
+        rig_poses_path = os.path.join(self.input_folder, 'trajectory_no_dynamic_lidar_large.txt')
         
         self.ocams = loadCameraListFromYAML(ocam_config_path)
         fidxs, rig_poses, _ = self.splitTrajectoryResult(np.loadtxt(rig_poses_path).T)
