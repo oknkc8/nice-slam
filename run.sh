@@ -1,1 +1,1 @@
-python -W ignore run.py configs/Omni/panorama.yaml
+python -W ignore run.py configs/Omni/seerslab_panorama.yaml

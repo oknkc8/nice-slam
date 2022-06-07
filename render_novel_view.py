@@ -54,10 +54,10 @@ if __name__ == '__main__':
 
     slam = NICE_SLAM(cfg, args)
     slam.load_pretrain_full(cfg, ckpt_path)
-    slam.renderer.cam_method = 'perspective'
-    slam.renderer.N_importance = 64
-    slam.renderer.H = 264
-    slam.renderer.W = 416
+    # slam.renderer.cam_method = 'perspective'
+    slam.renderer.N_importance = 128
+    # slam.renderer.H = 264
+    # slam.renderer.W = 416
     slam.renderer.fx = 108.01766298948733
     slam.renderer.fy = 121.0972625615004
     slam.renderer.cx = 207.5
@@ -90,6 +90,6 @@ if __name__ == '__main__':
         
         prev_output = cv2.cvtColor(prev_output, cv2.COLOR_RGB2BGR)
         
-        cv2.imwrite(f'novel_view_results_2/{i:04d}.png', prev_output)
+        cv2.imwrite(f'novel_view_results_3/{i:04d}.png', prev_output)
         cv2.imshow('Novel View', prev_output)
         cv2.waitKey(1)

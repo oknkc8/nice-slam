@@ -334,12 +334,13 @@ class OCam_perspective(BaseDataset):
     def __init__(self, cfg, args, scale, device='cuda:0'
                  ):
         super(OCam_perspective, self).__init__(cfg, args, scale, device)
+        self.cfg = cfg
         self.load_paths_n_poses()
         self.n_img = len(self.color_paths)
 
     def load_paths_n_poses(self):
-        ocam_config_path = os.path.join(self.input_folder, 'config.yaml')
-        rig_poses_path = os.path.join(self.input_folder, 'trajectory_no_dynamic_lidar.txt')
+        ocam_config_path = os.path.join(self.input_folder, self.cfg['data']['config_file'])
+        rig_poses_path = os.path.join(self.input_folder, self.cfg['data']['poses_file'])
         
         self.ocams = loadCameraListFromYAML(ocam_config_path)
         fidxs, rig_poses, _ = self.splitTrajectoryResult(np.loadtxt(rig_poses_path).T)
@@ -454,12 +455,13 @@ class OCam_panorama(BaseDataset):
     def __init__(self, cfg, args, scale, device='cuda:0'
                  ):
         super(OCam_panorama, self).__init__(cfg, args, scale, device)
+        self.cfg = cfg
         self.load_paths_n_poses()
         self.n_img = len(self.color_paths)
 
     def load_paths_n_poses(self):
-        ocam_config_path = os.path.join(self.input_folder, 'config.yaml')
-        rig_poses_path = os.path.join(self.input_folder, 'trajectory_no_dynamic_lidar_large.txt')
+        ocam_config_path = os.path.join(self.input_folder, self.cfg['data']['config_file'])
+        rig_poses_path = os.path.join(self.input_folder, self.cfg['data']['poses_file'])
         
         self.ocams = loadCameraListFromYAML(ocam_config_path)
         fidxs, rig_poses, _ = self.splitTrajectoryResult(np.loadtxt(rig_poses_path).T)
