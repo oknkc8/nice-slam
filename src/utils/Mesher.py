@@ -329,12 +329,20 @@ class Mesher(object):
         bound = self.marching_cubes_bound
 
         padding = 0.05
-        x = np.linspace(bound[0][0] - padding, bound[0][1] + padding,
-                        resolution)
-        y = np.linspace(bound[1][0] - padding, bound[1][1] + padding,
-                        resolution)
-        z = np.linspace(bound[2][0] - padding, bound[2][1] + padding,
-                        resolution)
+        if resolution >= 1:
+            x = np.linspace(bound[0][0] - padding, bound[0][1] + padding,
+                            resolution)
+            y = np.linspace(bound[1][0] - padding, bound[1][1] + padding,
+                            resolution)
+            z = np.linspace(bound[2][0] - padding, bound[2][1] + padding,
+                            resolution)
+        else:
+            x = np.arange(bound[0][0] - padding, bound[0][1] + padding,
+                            resolution)
+            y = np.arange(bound[1][0] - padding, bound[1][1] + padding,
+                            resolution)
+            z = np.arange(bound[2][0] - padding, bound[2][1] + padding,
+                            resolution)
 
         xx, yy, zz = np.meshgrid(x, y, z)
         grid_points = np.vstack([xx.ravel(), yy.ravel(), zz.ravel()]).T

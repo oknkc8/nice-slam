@@ -1,19 +1,19 @@
 dataset: 'ocam_panorama'
 data:
   # input_folder: /data/chsung/201029_coex_s9
-  input_folder: /data/multipleye/211021_seerslab
-  output: output/Omni_panorama/211021_seerslab_small_1_dense
+  input_folder: /data/chsung/211021_seerslab
+  output: output/Omni_panorama/211021_seerslab_small_2_dense
   config_file: capture.yaml
   poses_file: trajectory_small.txt
 grid_len:
   coarse: 1
-  middle: 0.16
-  fine: 0.08
-  color: 0.08
-  bound_divisable: 0.16
+  middle: 0.25
+  fine: 0.10
+  color: 0.10
+  bound_divisable: 0.25
 meshing:
   level_set: 0
-  resolution: 512 # change to 512 for higher resolution geometry
+  resolution: 0.04 # change to 512 for higher resolution geometry
 tracking:
   vis_freq: 50
   vis_inside_freq: 25
@@ -27,21 +27,21 @@ tracking:
   pixels: 1000
   iters: 50
 mapping:
-  device: "cuda:0"
+  device: "cuda:1"
   BA: False
   middle_iter_ratio: 0.4
   fine_iter_ratio: 0.6
   every_frame: 1
   vis_freq: 1
   vis_inside_freq: 100
-  mesh_freq: 10
-  ckpt_freq: 10
+  mesh_freq: 2
+  ckpt_freq: 2
   keyframe_every: 1
   mapping_window_size: 10
   frustum_feature_selection: False
   pixels: 5000
-  iters_first: 500
-  iters: 500
+  iters_first: 1000
+  iters: 1000
   bound: [[-25.0, 20.0], [-2.0, 2.0], [-40.0, 20.0]]
   marching_cubes_bound: [[-25.0, 20.0], [-2.0, 2.0], [-40.0, 20.0]]
   no_vis_on_first_frame: False
