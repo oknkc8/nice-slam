@@ -1,7 +1,7 @@
 dataset: 'ocam_panorama'
 data:
-  # input_folder: /data/chsung/201029_coex_s9
-  input_folder: /data/chsung/211021_seerslab
+  input_folder: /data/multipleye/211021_seerslab
+  # input_folder: /data/chsung/211021_seerslab
   output: output/Omni_panorama/211021_seerslab_small_2_dense
   config_file: capture.yaml
   poses_file: trajectory_small.txt
@@ -27,7 +27,7 @@ tracking:
   pixels: 1000
   iters: 50
 mapping:
-  device: "cuda:1"
+  device: "cuda:0"
   BA: False
   middle_iter_ratio: 0.4
   fine_iter_ratio: 0.6

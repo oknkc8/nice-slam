@@ -14,6 +14,40 @@ from src.tools.viz import SLAMFrontend
 from src.utils.datasets import get_dataset
 from src.omni_utils.geometry import *
 from src.omni_utils.image import *
+from src.omni_utils.camera import *
+
+def load_poses(cfg):
+    ocam_config_path = os.path.join(cfg['data']['input_folder'], cfg['data']['config_file'])
+    rig_poses_path = os.path.join(cfg['data']['input_folder'], 'trajectory_small_all.txt')
+    
+    ocams = loadCameraListFromYAML(ocam_config_path)
+    fidxs, rig_poses, _ = splitTrajectoryResult(np.loadtxt(rig_poses_path).T)
+    cam_poses = rig_poses.T
+    
+    c2w_list = []
+    for i, fidx in tqdm(enumerate(fidxs)):
+        if i%3!=0:
+            continue
+        R, tr = getRot(cam_poses[i]), getTr(cam_poses[i])
+        c2w = np.eye(4)
+        c2w[:3, :] = np.concatenate((R, tr), axis=1)
+        c2w[:3, 1] *= -1
+        c2w[:3, 2] *= -1
+        c2w = torch.from_numpy(c2w).float().to('cuda:0')
+        c2w_list.append(c2w)
+    return c2w_list
+            
+def splitTrajectoryResult(trajectory: np.ndarray) \
+        -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    rows = trajectory.shape[0]
+    if rows != 8:
+        sys.exit(
+            'Trajectory must has 8 rows '
+            '(fidx, rx, ry, rz, tx ty, tz, timestamp)')
+    fidxs = trajectory[0, :].astype(np.int32)
+    poses = trajectory[1:7, :].astype(np.float32)
+    timestamps = trajectory[-1, :].astype(np.int64)
+    return fidxs, poses, timestamps
 
 if __name__ == '__main__':
 
@@ -65,17 +99,22 @@ if __name__ == '__main__':
     
     c2w = slam.estimate_c2w_list[0]
     sign = 1
-    for i in range(len(slam.estimate_c2w_list)):
+    
+    c2w_list = load_poses(cfg)
+    
+    # for i in range(len(slam.estimate_c2w_list)):
+    for i in tqdm(range(len(c2w_list))):
         import pdb
-        if i%5 == 0 and i != 0:
-            sign *= -1
+        # if i%5 == 0 and i != 0:
+        #     sign *= -1
         
-        # pdb.set_trace()
-        c2w[:, 3] = slam.estimate_c2w_list[i][:, 3]
-        c2w = c2w.detach().cpu().numpy()
-        rotated_c2w = np.eye(4)
-        rotated_c2w[:3, :] = rotateAxis(c2w, sign*2, -10, 0)
-        c2w = torch.tensor(rotated_c2w).to('cuda:0')
+        # # pdb.set_trace()
+        # c2w[:, 3] = slam.estimate_c2w_list[i][:, 3]
+        # c2w = c2w.detach().cpu().numpy()
+        # rotated_c2w = np.eye(4)
+        # rotated_c2w[:3, :] = rotateAxis(c2w, sign*2, -10, 0)
+        # c2w = torch.tensor(rotated_c2w).to('cuda:0')
+        c2w = c2w_list[i]
         depth, _, color = slam.renderer.render_img(slam.shared_c, slam.shared_decoders, c2w, device='cuda:0', stage='color')
         
         depth = depth.detach().cpu().numpy()
@@ -90,6 +129,9 @@ if __name__ == '__main__':
         
         prev_output = cv2.cvtColor(prev_output, cv2.COLOR_RGB2BGR)
         
-        cv2.imwrite(f'novel_view_results_3/{i:04d}.png', prev_output)
-        cv2.imshow('Novel View', prev_output)
-        cv2.waitKey(1)
+        cv2.imwrite(f'novel_view_results_seerslab_1/{i:04d}.png', prev_output)
+        # cv2.imshow('Novel View', prev_output)
+        # cv2.waitKey(1)
+        
+        
+    

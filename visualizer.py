@@ -82,7 +82,7 @@ if __name__ == '__main__':
         meshfile = f'{output}/mesh/{i:05d}_mesh.ply'
         if os.path.isfile(meshfile):
             frontend.update_mesh(meshfile)
-            time.sleep(10)
+            time.sleep(5)
         frontend.update_pose(1, estimate_c2w_list[i], gt=False)
         if not args.no_gt_traj:
             frontend.update_pose(1, gt_c2w_list[i], gt=False)
