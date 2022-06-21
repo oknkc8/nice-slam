@@ -1,0 +1,4708 @@
+Bound: tensor([[-25.0000,  20.2500],
+        [ -2.0000,   2.2500],
+        [-40.0000,  20.2500]], dtype=torch.float64)
+Coarse Grid: torch.Size([1, 32, 120, 8, 90])
+Middle Grid: torch.Size([1, 32, 241, 17, 181])
+Fine Grid: torch.Size([1, 32, 602, 42, 452])
+Color Grid: torch.Size([1, 32, 602, 42, 452])
+INFO: The output folder is output/debug/debug1
+INFO: The GT, generated and residual depth/color images can be found under output/debug/debug1/tracking_vis/ and output/debug/debug1/mapping_vis/
+INFO: The mesh can be found under output/debug/debug1/mesh/
+INFO: The checkpoint can be found under output/debug/debug1/ckpt/
+[32m
+Mapping Frame  0
+[0m
+========================================
+Rendering Net
+Stage: middle
+------------------------------
+MLP
+p: torch.Size([1, 191808, 3])
+c_grid: torch.Size([1, 32, 241, 17, 181])
+     sample_grid_feature
+     p: torch.Size([1, 191808, 3])
+     c: torch.Size([1, 32, 241, 17, 181])
+     p_nor: torch.Size([191808, 3])
+     p_nor(unsqueeze): torch.Size([1, 191808, 3])
+     vgrid: torch.Size([1, 191808, 1, 1, 3])
+     c: torch.Size([1, 32, 191808])
+c(before): torch.Size([1, 32, 191808])
+c(after): torch.Size([191808, 32])
+embedded_pts: torch.Size([191808, 93])
+----
+     i: 0
+     h torch.Size([191808, 93])
+     h(pts_linears) torch.Size([191808, 32])
+     c: torch.Size([191808, 32])
+     c(fc_c): torch.Size([191808, 32])
+     h: torch.Size([191808, 32])
+----
+     i: 1
+     h torch.Size([191808, 32])
+     h(pts_linears) torch.Size([191808, 32])
+     c: torch.Size([191808, 32])
+     c(fc_c): torch.Size([191808, 32])
+     h: torch.Size([191808, 32])
+----
+     i: 2
+     h torch.Size([191808, 32])
+     h(pts_linears) torch.Size([191808, 32])
+     c: torch.Size([191808, 32])
+     c(fc_c): torch.Size([191808, 32])
+     h(skip): torch.Size([191808, 125])
+     h: torch.Size([191808, 125])
+----
+     i: 3
+     h torch.Size([191808, 125])
+     h(pts_linears) torch.Size([191808, 32])
+     c: torch.Size([191808, 32])
+     c(fc_c): torch.Size([191808, 32])
+     h: torch.Size([191808, 32])
+----
+     i: 4
+     h torch.Size([191808, 32])
+     h(pts_linears) torch.Size([191808, 32])
+     c: torch.Size([191808, 32])
+     c(fc_c): torch.Size([191808, 32])
+     h: torch.Size([191808, 32])
+out: torch.Size([191808, 1])
+out(not color): torch.Size([191808])
+------------------------------
+points: torch.Size([1, 191808, 3])
+Feature Grid: torch.Size([1, 32, 241, 17, 181])
+Occ: torch.Size([191808])
+Raw: torch.Size([191808, 4])
+========================================
+Rendering Net
+Stage: middle
+------------------------------
+MLP
+p: torch.Size([1, 192000, 3])
+c_grid: torch.Size([1, 32, 241, 17, 181])
+     sample_grid_feature
+     p: torch.Size([1, 192000, 3])
+     c: torch.Size([1, 32, 241, 17, 181])
+     p_nor: torch.Size([192000, 3])
+     p_nor(unsqueeze): torch.Size([1, 192000, 3])
+     vgrid: torch.Size([1, 192000, 1, 1, 3])
+     c: torch.Size([1, 32, 192000])
+c(before): torch.Size([1, 32, 192000])
+c(after): torch.Size([192000, 32])
+embedded_pts: torch.Size([192000, 93])
+----
+     i: 0
+     h torch.Size([192000, 93])
+     h(pts_linears) torch.Size([192000, 32])
+     c: torch.Size([192000, 32])
+     c(fc_c): torch.Size([192000, 32])
+     h: torch.Size([192000, 32])
+----
+     i: 1
+     h torch.Size([192000, 32])
+     h(pts_linears) torch.Size([192000, 32])
+     c: torch.Size([192000, 32])
+     c(fc_c): torch.Size([192000, 32])
+     h: torch.Size([192000, 32])
+----
+     i: 2
+     h torch.Size([192000, 32])
+     h(pts_linears) torch.Size([192000, 32])
+     c: torch.Size([192000, 32])
+     c(fc_c): torch.Size([192000, 32])
+     h(skip): torch.Size([192000, 125])
+     h: torch.Size([192000, 125])
+----
+     i: 3
+     h torch.Size([192000, 125])
+     h(pts_linears) torch.Size([192000, 32])
+     c: torch.Size([192000, 32])
+     c(fc_c): torch.Size([192000, 32])
+     h: torch.Size([192000, 32])
+----
+     i: 4
+     h torch.Size([192000, 32])
+     h(pts_linears) torch.Size([192000, 32])
+     c: torch.Size([192000, 32])
+     c(fc_c): torch.Size([192000, 32])
+     h: torch.Size([192000, 32])
+out: torch.Size([192000, 1])
+out(not color): torch.Size([192000])
+------------------------------
+points: torch.Size([1, 192000, 3])
+Feature Grid: torch.Size([1, 32, 241, 17, 181])
+Occ: torch.Size([192000])
+Raw: torch.Size([192000, 4])
+========================================
+Rendering Net
+Stage: middle
+------------------------------
+MLP
+p: torch.Size([1, 192000, 3])
+c_grid: torch.Size([1, 32, 241, 17, 181])
+     sample_grid_feature
+     p: torch.Size([1, 192000, 3])
+     c: torch.Size([1, 32, 241, 17, 181])
+     p_nor: torch.Size([192000, 3])
+     p_nor(unsqueeze): torch.Size([1, 192000, 3])
+     vgrid: torch.Size([1, 192000, 1, 1, 3])
+     c: torch.Size([1, 32, 192000])
+c(before): torch.Size([1, 32, 192000])
+c(after): torch.Size([192000, 32])
+embedded_pts: torch.Size([192000, 93])
+----
+     i: 0
+     h torch.Size([192000, 93])
+     h(pts_linears) torch.Size([192000, 32])
+     c: torch.Size([192000, 32])
+     c(fc_c): torch.Size([192000, 32])
+     h: torch.Size([192000, 32])
+----
+     i: 1
+     h torch.Size([192000, 32])
+     h(pts_linears) torch.Size([192000, 32])
+     c: torch.Size([192000, 32])
+     c(fc_c): torch.Size([192000, 32])
+     h: torch.Size([192000, 32])
+----
+     i: 2
+     h torch.Size([192000, 32])
+     h(pts_linears) torch.Size([192000, 32])
+     c: torch.Size([192000, 32])
+     c(fc_c): torch.Size([192000, 32])
+     h(skip): torch.Size([192000, 125])
+     h: torch.Size([192000, 125])
+----
+     i: 3
+     h torch.Size([192000, 125])
+     h(pts_linears) torch.Size([192000, 32])
+     c: torch.Size([192000, 32])
+     c(fc_c): torch.Size([192000, 32])
+     h: torch.Size([192000, 32])
+----
+     i: 4
+     h torch.Size([192000, 32])
+     h(pts_linears) torch.Size([192000, 32])
+     c: torch.Size([192000, 32])
+     c(fc_c): torch.Size([192000, 32])
+     h: torch.Size([192000, 32])
+out: torch.Size([192000, 1])
+out(not color): torch.Size([192000])
+------------------------------
+points: torch.Size([1, 192000, 3])
+Feature Grid: torch.Size([1, 32, 241, 17, 181])
+Occ: torch.Size([192000])
+Raw: torch.Size([192000, 4])
+========================================
+Rendering Net
+Stage: middle
+------------------------------
+MLP
+p: torch.Size([1, 192000, 3])
+c_grid: torch.Size([1, 32, 241, 17, 181])
+     sample_grid_feature
+     p: torch.Size([1, 192000, 3])
+     c: torch.Size([1, 32, 241, 17, 181])
+     p_nor: torch.Size([192000, 3])
+     p_nor(unsqueeze): torch.Size([1, 192000, 3])
+     vgrid: torch.Size([1, 192000, 1, 1, 3])
+     c: torch.Size([1, 32, 192000])
+c(before): torch.Size([1, 32, 192000])
+c(after): torch.Size([192000, 32])
+embedded_pts: torch.Size([192000, 93])
+----
+     i: 0
+     h torch.Size([192000, 93])
+     h(pts_linears) torch.Size([192000, 32])
+     c: torch.Size([192000, 32])
+     c(fc_c): torch.Size([192000, 32])
+     h: torch.Size([192000, 32])
+----
+     i: 1
+     h torch.Size([192000, 32])
+     h(pts_linears) torch.Size([192000, 32])
+     c: torch.Size([192000, 32])
+     c(fc_c): torch.Size([192000, 32])
+     h: torch.Size([192000, 32])
+----
+     i: 2
+     h torch.Size([192000, 32])
+     h(pts_linears) torch.Size([192000, 32])
+     c: torch.Size([192000, 32])
+     c(fc_c): torch.Size([192000, 32])
+     h(skip): torch.Size([192000, 125])
+     h: torch.Size([192000, 125])
+----
+     i: 3
+     h torch.Size([192000, 125])
+     h(pts_linears) torch.Size([192000, 32])
+     c: torch.Size([192000, 32])
+     c(fc_c): torch.Size([192000, 32])
+     h: torch.Size([192000, 32])
+----
+     i: 4
+     h torch.Size([192000, 32])
+     h(pts_linears) torch.Size([192000, 32])
+     c: torch.Size([192000, 32])
+     c(fc_c): torch.Size([192000, 32])
+     h: torch.Size([192000, 32])
+out: torch.Size([192000, 1])
+out(not color): torch.Size([192000])
+------------------------------
+points: torch.Size([1, 192000, 3])
+Feature Grid: torch.Size([1, 32, 241, 17, 181])
+Occ: torch.Size([192000])
+Raw: torch.Size([192000, 4])
+========================================
+Rendering Net
+Stage: middle
+------------------------------
+MLP
+p: torch.Size([1, 192000, 3])
+c_grid: torch.Size([1, 32, 241, 17, 181])
+     sample_grid_feature
+     p: torch.Size([1, 192000, 3])
+     c: torch.Size([1, 32, 241, 17, 181])
+     p_nor: torch.Size([192000, 3])
+     p_nor(unsqueeze): torch.Size([1, 192000, 3])
+     vgrid: torch.Size([1, 192000, 1, 1, 3])
+     c: torch.Size([1, 32, 192000])
+c(before): torch.Size([1, 32, 192000])
+c(after): torch.Size([192000, 32])
+embedded_pts: torch.Size([192000, 93])
+----
+     i: 0
+     h torch.Size([192000, 93])
+     h(pts_linears) torch.Size([192000, 32])
+     c: torch.Size([192000, 32])
+     c(fc_c): torch.Size([192000, 32])
+     h: torch.Size([192000, 32])
+----
+     i: 1
+     h torch.Size([192000, 32])
+     h(pts_linears) torch.Size([192000, 32])
+     c: torch.Size([192000, 32])
+     c(fc_c): torch.Size([192000, 32])
+     h: torch.Size([192000, 32])
+----
+     i: 2
+     h torch.Size([192000, 32])
+     h(pts_linears) torch.Size([192000, 32])
+     c: torch.Size([192000, 32])
+     c(fc_c): torch.Size([192000, 32])
+     h(skip): torch.Size([192000, 125])
+     h: torch.Size([192000, 125])
+----
+     i: 3
+     h torch.Size([192000, 125])
+     h(pts_linears) torch.Size([192000, 32])
+     c: torch.Size([192000, 32])
+     c(fc_c): torch.Size([192000, 32])
+     h: torch.Size([192000, 32])
+----
+     i: 4
+     h torch.Size([192000, 32])
+     h(pts_linears) torch.Size([192000, 32])
+     c: torch.Size([192000, 32])
+     c(fc_c): torch.Size([192000, 32])
+     h: torch.Size([192000, 32])
+out: torch.Size([192000, 1])
+out(not color): torch.Size([192000])
+------------------------------
+points: torch.Size([1, 192000, 3])
+Feature Grid: torch.Size([1, 32, 241, 17, 181])
+Occ: torch.Size([192000])
+Raw: torch.Size([192000, 4])
+========================================
+Rendering Net
+Stage: fine
+------------------------------
+MLP
+p: torch.Size([1, 192000, 3])
+c_grid: torch.Size([1, 32, 602, 42, 452])
+     sample_grid_feature
+     p: torch.Size([1, 192000, 3])
+     c: torch.Size([1, 32, 602, 42, 452])
+     p_nor: torch.Size([192000, 3])
+     p_nor(unsqueeze): torch.Size([1, 192000, 3])
+     vgrid: torch.Size([1, 192000, 1, 1, 3])
+     c: torch.Size([1, 32, 192000])
+c(before): torch.Size([1, 32, 192000])
+c(after): torch.Size([192000, 32])
+     sample_grid_feature
+     p: torch.Size([1, 192000, 3])
+     c: torch.Size([1, 32, 241, 17, 181])
+     p_nor: torch.Size([192000, 3])
+     p_nor(unsqueeze): torch.Size([1, 192000, 3])
+     vgrid: torch.Size([1, 192000, 1, 1, 3])
+     c: torch.Size([1, 32, 192000])
+c(concat_feature): torch.Size([192000, 64])
+embedded_pts: torch.Size([192000, 93])
+----
+     i: 0
+     h torch.Size([192000, 93])
+     h(pts_linears) torch.Size([192000, 32])
+     c: torch.Size([192000, 64])
+     c(fc_c): torch.Size([192000, 32])
+     h: torch.Size([192000, 32])
+----
+     i: 1
+     h torch.Size([192000, 32])
+     h(pts_linears) torch.Size([192000, 32])
+     c: torch.Size([192000, 64])
+     c(fc_c): torch.Size([192000, 32])
+     h: torch.Size([192000, 32])
+----
+     i: 2
+     h torch.Size([192000, 32])
+     h(pts_linears) torch.Size([192000, 32])
+     c: torch.Size([192000, 64])
+     c(fc_c): torch.Size([192000, 32])
+     h(skip): torch.Size([192000, 125])
+     h: torch.Size([192000, 125])
+----
+     i: 3
+     h torch.Size([192000, 125])
+     h(pts_linears) torch.Size([192000, 32])
+     c: torch.Size([192000, 64])
+     c(fc_c): torch.Size([192000, 32])
+     h: torch.Size([192000, 32])
+----
+     i: 4
+     h torch.Size([192000, 32])
+     h(pts_linears) torch.Size([192000, 32])
+     c: torch.Size([192000, 64])
+     c(fc_c): torch.Size([192000, 32])
+     h: torch.Size([192000, 32])
+out: torch.Size([192000, 1])
+out(not color): torch.Size([192000])
+------------------------------
+------------------------------
+MLP
+p: torch.Size([1, 192000, 3])
+c_grid: torch.Size([1, 32, 241, 17, 181])
+     sample_grid_feature
+     p: torch.Size([1, 192000, 3])
+     c: torch.Size([1, 32, 241, 17, 181])
+     p_nor: torch.Size([192000, 3])
+     p_nor(unsqueeze): torch.Size([1, 192000, 3])
+     vgrid: torch.Size([1, 192000, 1, 1, 3])
+     c: torch.Size([1, 32, 192000])
+c(before): torch.Size([1, 32, 192000])
+c(after): torch.Size([192000, 32])
+embedded_pts: torch.Size([192000, 93])
+----
+     i: 0
+     h torch.Size([192000, 93])
+     h(pts_linears) torch.Size([192000, 32])
+     c: torch.Size([192000, 32])
+     c(fc_c): torch.Size([192000, 32])
+     h: torch.Size([192000, 32])
+----
+     i: 1
+     h torch.Size([192000, 32])
+     h(pts_linears) torch.Size([192000, 32])
+     c: torch.Size([192000, 32])
+     c(fc_c): torch.Size([192000, 32])
+     h: torch.Size([192000, 32])
+----
+     i: 2
+     h torch.Size([192000, 32])
+     h(pts_linears) torch.Size([192000, 32])
+     c: torch.Size([192000, 32])
+     c(fc_c): torch.Size([192000, 32])
+     h(skip): torch.Size([192000, 125])
+     h: torch.Size([192000, 125])
+----
+     i: 3
+     h torch.Size([192000, 125])
+     h(pts_linears) torch.Size([192000, 32])
+     c: torch.Size([192000, 32])
+     c(fc_c): torch.Size([192000, 32])
+     h: torch.Size([192000, 32])
+----
+     i: 4
+     h torch.Size([192000, 32])
+     h(pts_linears) torch.Size([192000, 32])
+     c: torch.Size([192000, 32])
+     c(fc_c): torch.Size([192000, 32])
+     h: torch.Size([192000, 32])
+out: torch.Size([192000, 1])
+out(not color): torch.Size([192000])
+------------------------------
+points: torch.Size([1, 192000, 3])
+Feature Grid: torch.Size([1, 32, 602, 42, 452])
+Fine Occ: torch.Size([192000])
+Middle Occ: torch.Size([192000])
+Raw: torch.Size([192000, 4])
+========================================
+Rendering Net
+Stage: fine
+------------------------------
+MLP
+p: torch.Size([1, 192000, 3])
+c_grid: torch.Size([1, 32, 602, 42, 452])
+     sample_grid_feature
+     p: torch.Size([1, 192000, 3])
+     c: torch.Size([1, 32, 602, 42, 452])
+     p_nor: torch.Size([192000, 3])
+     p_nor(unsqueeze): torch.Size([1, 192000, 3])
+     vgrid: torch.Size([1, 192000, 1, 1, 3])
+     c: torch.Size([1, 32, 192000])
+c(before): torch.Size([1, 32, 192000])
+c(after): torch.Size([192000, 32])
+     sample_grid_feature
+     p: torch.Size([1, 192000, 3])
+     c: torch.Size([1, 32, 241, 17, 181])
+     p_nor: torch.Size([192000, 3])
+     p_nor(unsqueeze): torch.Size([1, 192000, 3])
+     vgrid: torch.Size([1, 192000, 1, 1, 3])
+     c: torch.Size([1, 32, 192000])
+c(concat_feature): torch.Size([192000, 64])
+embedded_pts: torch.Size([192000, 93])
+----
+     i: 0
+     h torch.Size([192000, 93])
+     h(pts_linears) torch.Size([192000, 32])
+     c: torch.Size([192000, 64])
+     c(fc_c): torch.Size([192000, 32])
+     h: torch.Size([192000, 32])
+----
+     i: 1
+     h torch.Size([192000, 32])
+     h(pts_linears) torch.Size([192000, 32])
+     c: torch.Size([192000, 64])
+     c(fc_c): torch.Size([192000, 32])
+     h: torch.Size([192000, 32])
+----
+     i: 2
+     h torch.Size([192000, 32])
+     h(pts_linears) torch.Size([192000, 32])
+     c: torch.Size([192000, 64])
+     c(fc_c): torch.Size([192000, 32])
+     h(skip): torch.Size([192000, 125])
+     h: torch.Size([192000, 125])
+----
+     i: 3
+     h torch.Size([192000, 125])
+     h(pts_linears) torch.Size([192000, 32])
+     c: torch.Size([192000, 64])
+     c(fc_c): torch.Size([192000, 32])
+     h: torch.Size([192000, 32])
+----
+     i: 4
+     h torch.Size([192000, 32])
+     h(pts_linears) torch.Size([192000, 32])
+     c: torch.Size([192000, 64])
+     c(fc_c): torch.Size([192000, 32])
+     h: torch.Size([192000, 32])
+out: torch.Size([192000, 1])
+out(not color): torch.Size([192000])
+------------------------------
+------------------------------
+MLP
+p: torch.Size([1, 192000, 3])
+c_grid: torch.Size([1, 32, 241, 17, 181])
+     sample_grid_feature
+     p: torch.Size([1, 192000, 3])
+     c: torch.Size([1, 32, 241, 17, 181])
+     p_nor: torch.Size([192000, 3])
+     p_nor(unsqueeze): torch.Size([1, 192000, 3])
+     vgrid: torch.Size([1, 192000, 1, 1, 3])
+     c: torch.Size([1, 32, 192000])
+c(before): torch.Size([1, 32, 192000])
+c(after): torch.Size([192000, 32])
+embedded_pts: torch.Size([192000, 93])
+----
+     i: 0
+     h torch.Size([192000, 93])
+     h(pts_linears) torch.Size([192000, 32])
+     c: torch.Size([192000, 32])
+     c(fc_c): torch.Size([192000, 32])
+     h: torch.Size([192000, 32])
+----
+     i: 1
+     h torch.Size([192000, 32])
+     h(pts_linears) torch.Size([192000, 32])
+     c: torch.Size([192000, 32])
+     c(fc_c): torch.Size([192000, 32])
+     h: torch.Size([192000, 32])
+----
+     i: 2
+     h torch.Size([192000, 32])
+     h(pts_linears) torch.Size([192000, 32])
+     c: torch.Size([192000, 32])
+     c(fc_c): torch.Size([192000, 32])
+     h(skip): torch.Size([192000, 125])
+     h: torch.Size([192000, 125])
+----
+     i: 3
+     h torch.Size([192000, 125])
+     h(pts_linears) torch.Size([192000, 32])
+     c: torch.Size([192000, 32])
+     c(fc_c): torch.Size([192000, 32])
+     h: torch.Size([192000, 32])
+----
+     i: 4
+     h torch.Size([192000, 32])
+     h(pts_linears) torch.Size([192000, 32])
+     c: torch.Size([192000, 32])
+     c(fc_c): torch.Size([192000, 32])
+     h: torch.Size([192000, 32])
+out: torch.Size([192000, 1])
+out(not color): torch.Size([192000])
+------------------------------
+points: torch.Size([1, 192000, 3])
+Feature Grid: torch.Size([1, 32, 602, 42, 452])
+Fine Occ: torch.Size([192000])
+Middle Occ: torch.Size([192000])
+Raw: torch.Size([192000, 4])
+========================================
+Rendering Net
+Stage: color
+------------------------------
+MLP
+p: torch.Size([1, 192000, 3])
+c_grid: torch.Size([1, 32, 602, 42, 452])
+     sample_grid_feature
+     p: torch.Size([1, 192000, 3])
+     c: torch.Size([1, 32, 602, 42, 452])
+     p_nor: torch.Size([192000, 3])
+     p_nor(unsqueeze): torch.Size([1, 192000, 3])
+     vgrid: torch.Size([1, 192000, 1, 1, 3])
+     c: torch.Size([1, 32, 192000])
+c(before): torch.Size([1, 32, 192000])
+c(after): torch.Size([192000, 32])
+     sample_grid_feature
+     p: torch.Size([1, 192000, 3])
+     c: torch.Size([1, 32, 241, 17, 181])
+     p_nor: torch.Size([192000, 3])
+     p_nor(unsqueeze): torch.Size([1, 192000, 3])
+     vgrid: torch.Size([1, 192000, 1, 1, 3])
+     c: torch.Size([1, 32, 192000])
+c(concat_feature): torch.Size([192000, 64])
+embedded_pts: torch.Size([192000, 93])
+----
+     i: 0
+     h torch.Size([192000, 93])
+     h(pts_linears) torch.Size([192000, 32])
+     c: torch.Size([192000, 64])
+     c(fc_c): torch.Size([192000, 32])
+     h: torch.Size([192000, 32])
+----
+     i: 1
+     h torch.Size([192000, 32])
+     h(pts_linears) torch.Size([192000, 32])
+     c: torch.Size([192000, 64])
+     c(fc_c): torch.Size([192000, 32])
+     h: torch.Size([192000, 32])
+----
+     i: 2
+     h torch.Size([192000, 32])
+     h(pts_linears) torch.Size([192000, 32])
+     c: torch.Size([192000, 64])
+     c(fc_c): torch.Size([192000, 32])
+     h(skip): torch.Size([192000, 125])
+     h: torch.Size([192000, 125])
+----
+     i: 3
+     h torch.Size([192000, 125])
+     h(pts_linears) torch.Size([192000, 32])
+     c: torch.Size([192000, 64])
+     c(fc_c): torch.Size([192000, 32])
+     h: torch.Size([192000, 32])
+----
+     i: 4
+     h torch.Size([192000, 32])
+     h(pts_linears) torch.Size([192000, 32])
+     c: torch.Size([192000, 64])
+     c(fc_c): torch.Size([192000, 32])
+     h: torch.Size([192000, 32])
+out: torch.Size([192000, 1])
+out(not color): torch.Size([192000])
+------------------------------
+------------------------------
+MLP
+p: torch.Size([1, 192000, 3])
+c_grid: torch.Size([1, 32, 602, 42, 452])
+     sample_grid_feature
+     p: torch.Size([1, 192000, 3])
+     c: torch.Size([1, 32, 602, 42, 452])
+     p_nor: torch.Size([192000, 3])
+     p_nor(unsqueeze): torch.Size([1, 192000, 3])
+     vgrid: torch.Size([1, 192000, 1, 1, 3])
+     c: torch.Size([1, 32, 192000])
+c(before): torch.Size([1, 32, 192000])
+c(after): torch.Size([192000, 32])
+embedded_pts: torch.Size([192000, 93])
+----
+     i: 0
+     h torch.Size([192000, 93])
+     h(pts_linears) torch.Size([192000, 32])
+     c: torch.Size([192000, 32])
+     c(fc_c): torch.Size([192000, 32])
+     h: torch.Size([192000, 32])
+----
+     i: 1
+     h torch.Size([192000, 32])
+     h(pts_linears) torch.Size([192000, 32])
+     c: torch.Size([192000, 32])
+     c(fc_c): torch.Size([192000, 32])
+     h: torch.Size([192000, 32])
+----
+     i: 2
+     h torch.Size([192000, 32])
+     h(pts_linears) torch.Size([192000, 32])
+     c: torch.Size([192000, 32])
+     c(fc_c): torch.Size([192000, 32])
+     h(skip): torch.Size([192000, 125])
+     h: torch.Size([192000, 125])
+----
+     i: 3
+     h torch.Size([192000, 125])
+     h(pts_linears) torch.Size([192000, 32])
+     c: torch.Size([192000, 32])
+     c(fc_c): torch.Size([192000, 32])
+     h: torch.Size([192000, 32])
+----
+     i: 4
+     h torch.Size([192000, 32])
+     h(pts_linears) torch.Size([192000, 32])
+     c: torch.Size([192000, 32])
+     c(fc_c): torch.Size([192000, 32])
+     h: torch.Size([192000, 32])
+out: torch.Size([192000, 4])
+------------------------------
+------------------------------
+MLP
+p: torch.Size([1, 192000, 3])
+c_grid: torch.Size([1, 32, 241, 17, 181])
+     sample_grid_feature
+     p: torch.Size([1, 192000, 3])
+     c: torch.Size([1, 32, 241, 17, 181])
+     p_nor: torch.Size([192000, 3])
+     p_nor(unsqueeze): torch.Size([1, 192000, 3])
+     vgrid: torch.Size([1, 192000, 1, 1, 3])
+     c: torch.Size([1, 32, 192000])
+c(before): torch.Size([1, 32, 192000])
+c(after): torch.Size([192000, 32])
+embedded_pts: torch.Size([192000, 93])
+----
+     i: 0
+     h torch.Size([192000, 93])
+     h(pts_linears) torch.Size([192000, 32])
+     c: torch.Size([192000, 32])
+     c(fc_c): torch.Size([192000, 32])
+     h: torch.Size([192000, 32])
+----
+     i: 1
+     h torch.Size([192000, 32])
+     h(pts_linears) torch.Size([192000, 32])
+     c: torch.Size([192000, 32])
+     c(fc_c): torch.Size([192000, 32])
+     h: torch.Size([192000, 32])
+----
+     i: 2
+     h torch.Size([192000, 32])
+     h(pts_linears) torch.Size([192000, 32])
+     c: torch.Size([192000, 32])
+     c(fc_c): torch.Size([192000, 32])
+     h(skip): torch.Size([192000, 125])
+     h: torch.Size([192000, 125])
+----
+     i: 3
+     h torch.Size([192000, 125])
+     h(pts_linears) torch.Size([192000, 32])
+     c: torch.Size([192000, 32])
+     c(fc_c): torch.Size([192000, 32])
+     h: torch.Size([192000, 32])
+----
+     i: 4
+     h torch.Size([192000, 32])
+     h(pts_linears) torch.Size([192000, 32])
+     c: torch.Size([192000, 32])
+     c(fc_c): torch.Size([192000, 32])
+     h: torch.Size([192000, 32])
+out: torch.Size([192000, 1])
+out(not color): torch.Size([192000])
+------------------------------
+points: torch.Size([1, 192000, 3])
+Feature Grid: torch.Size([1, 32, 602, 42, 452])
+Fine Occ: torch.Size([192000])
+Middle Occ: torch.Size([192000])
+Raw: torch.Size([192000, 4])
+========================================
+Rendering Net
+Stage: color
+------------------------------
+MLP
+p: torch.Size([1, 192000, 3])
+c_grid: torch.Size([1, 32, 602, 42, 452])
+     sample_grid_feature
+     p: torch.Size([1, 192000, 3])
+     c: torch.Size([1, 32, 602, 42, 452])
+     p_nor: torch.Size([192000, 3])
+     p_nor(unsqueeze): torch.Size([1, 192000, 3])
+     vgrid: torch.Size([1, 192000, 1, 1, 3])
+     c: torch.Size([1, 32, 192000])
+c(before): torch.Size([1, 32, 192000])
+c(after): torch.Size([192000, 32])
+     sample_grid_feature
+     p: torch.Size([1, 192000, 3])
+     c: torch.Size([1, 32, 241, 17, 181])
+     p_nor: torch.Size([192000, 3])
+     p_nor(unsqueeze): torch.Size([1, 192000, 3])
+     vgrid: torch.Size([1, 192000, 1, 1, 3])
+     c: torch.Size([1, 32, 192000])
+c(concat_feature): torch.Size([192000, 64])
+embedded_pts: torch.Size([192000, 93])
+----
+     i: 0
+     h torch.Size([192000, 93])
+     h(pts_linears) torch.Size([192000, 32])
+     c: torch.Size([192000, 64])
+     c(fc_c): torch.Size([192000, 32])
+     h: torch.Size([192000, 32])
+----
+     i: 1
+     h torch.Size([192000, 32])
+     h(pts_linears) torch.Size([192000, 32])
+     c: torch.Size([192000, 64])
+     c(fc_c): torch.Size([192000, 32])
+     h: torch.Size([192000, 32])
+----
+     i: 2
+     h torch.Size([192000, 32])
+     h(pts_linears) torch.Size([192000, 32])
+     c: torch.Size([192000, 64])
+     c(fc_c): torch.Size([192000, 32])
+     h(skip): torch.Size([192000, 125])
+     h: torch.Size([192000, 125])
+----
+     i: 3
+     h torch.Size([192000, 125])
+     h(pts_linears) torch.Size([192000, 32])
+     c: torch.Size([192000, 64])
+     c(fc_c): torch.Size([192000, 32])
+     h: torch.Size([192000, 32])
+----
+     i: 4
+     h torch.Size([192000, 32])
+     h(pts_linears) torch.Size([192000, 32])
+     c: torch.Size([192000, 64])
+     c(fc_c): torch.Size([192000, 32])
+     h: torch.Size([192000, 32])
+out: torch.Size([192000, 1])
+out(not color): torch.Size([192000])
+------------------------------
+------------------------------
+MLP
+p: torch.Size([1, 192000, 3])
+c_grid: torch.Size([1, 32, 602, 42, 452])
+     sample_grid_feature
+     p: torch.Size([1, 192000, 3])
+     c: torch.Size([1, 32, 602, 42, 452])
+     p_nor: torch.Size([192000, 3])
+     p_nor(unsqueeze): torch.Size([1, 192000, 3])
+     vgrid: torch.Size([1, 192000, 1, 1, 3])
+     c: torch.Size([1, 32, 192000])
+c(before): torch.Size([1, 32, 192000])
+c(after): torch.Size([192000, 32])
+embedded_pts: torch.Size([192000, 93])
+----
+     i: 0
+     h torch.Size([192000, 93])
+     h(pts_linears) torch.Size([192000, 32])[32m
+Coarse Mapping Frame  0
+[0m
+========================================
+Rendering Net
+Stage: coarse
+------------------------------
+MLP_no_xyz
+p: torch.Size([1, 128000, 3])
+c_grid: torch.Size([1, 32, 120, 8, 90])
+     sample_grid_feature(MLP_no_xyz)
+     p: torch.Size([1, 128000, 3])
+     grid_feature: torch.Size([1, 32, 120, 8, 90])
+     p_nor: torch.Size([128000, 3])
+     p_nor(unsqueeze): torch.Size([1, 128000, 3])
+     vgrid: torch.Size([1, 128000, 1, 1, 3])
+     c: torch.Size([1, 32, 128000])
+c(before): torch.Size([1, 32, 128000])
+c(after): torch.Size([128000, 32])
+----
+     i: 0
+     h torch.Size([128000, 32])
+     h(pts_linears) torch.Size([128000, 32])
+     h: torch.Size([128000, 32])
+----
+     i: 1
+     h torch.Size([128000, 32])
+     h(pts_linears) torch.Size([128000, 32])
+     h: torch.Size([128000, 32])
+----
+     i: 2
+     h torch.Size([128000, 32])
+     h(pts_linears) torch.Size([128000, 32])
+     h(skip): torch.Size([128000, 64])
+     h: torch.Size([128000, 64])
+----
+     i: 3
+     h torch.Size([128000, 64])
+     h(pts_linears) torch.Size([128000, 32])
+     h: torch.Size([128000, 32])
+----
+     i: 4
+     h torch.Size([128000, 32])
+     h(pts_linears) torch.Size([128000, 32])
+     h: torch.Size([128000, 32])
+out: torch.Size([128000, 1])
+out(not color): torch.Size([128000])
+------------------------------
+points: torch.Size([1, 128000, 3])
+Feature Grid: torch.Size([1, 32, 120, 8, 90])
+Occ: torch.Size([128000])
+Raw: torch.Size([128000, 4])
+========================================
+Rendering Net
+Stage: coarse
+------------------------------
+MLP_no_xyz
+p: torch.Size([1, 128000, 3])
+c_grid: torch.Size([1, 32, 120, 8, 90])
+     sample_grid_feature(MLP_no_xyz)
+     p: torch.Size([1, 128000, 3])
+     grid_feature: torch.Size([1, 32, 120, 8, 90])
+     p_nor: torch.Size([128000, 3])
+     p_nor(unsqueeze): torch.Size([1, 128000, 3])
+     vgrid: torch.Size([1, 128000, 1, 1, 3])
+     c: torch.Size([1, 32, 128000])
+c(before): torch.Size([1, 32, 128000])
+c(after): torch.Size([128000, 32])
+----
+     i: 0
+     h torch.Size([128000, 32])
+     h(pts_linears) torch.Size([128000, 32])
+     h: torch.Size([128000, 32])
+----
+     i: 1
+     h torch.Size([128000, 32])
+     h(pts_linears) torch.Size([128000, 32])
+     h: torch.Size([128000, 32])
+----
+     i: 2
+     h torch.Size([128000, 32])
+     h(pts_linears) torch.Size([128000, 32])
+     h(skip): torch.Size([128000, 64])
+     h: torch.Size([128000, 64])
+----
+     i: 3
+     h torch.Size([128000, 64])
+     h(pts_linears) torch.Size([128000, 32])
+     h: torch.Size([128000, 32])
+----
+     i: 4
+     h torch.Size([128000, 32])
+     h(pts_linears) torch.Size([128000, 32])
+     h: torch.Size([128000, 32])
+out: torch.Size([128000, 1])
+out(not color): torch.Size([128000])
+------------------------------
+points: torch.Size([1, 128000, 3])
+Feature Grid: torch.Size([1, 32, 120, 8, 90])
+Occ: torch.Size([128000])
+Raw: torch.Size([128000, 4])
+========================================
+Rendering Net
+Stage: coarse
+------------------------------
+MLP_no_xyz
+p: torch.Size([1, 128000, 3])
+c_grid: torch.Size([1, 32, 120, 8, 90])
+     sample_grid_feature(MLP_no_xyz)
+     p: torch.Size([1, 128000, 3])
+     grid_feature: torch.Size([1, 32, 120, 8, 90])
+     p_nor: torch.Size([128000, 3])
+     p_nor(unsqueeze): torch.Size([1, 128000, 3])
+     vgrid: torch.Size([1, 128000, 1, 1, 3])
+     c: torch.Size([1, 32, 128000])
+c(before): torch.Size([1, 32, 128000])
+c(after): torch.Size([128000, 32])
+----
+     i: 0
+     h torch.Size([128000, 32])
+     h(pts_linears) torch.Size([128000, 32])
+     h: torch.Size([128000, 32])
+----
+     i: 1
+     h torch.Size([128000, 32])
+     h(pts_linears) torch.Size([128000, 32])
+     h: torch.Size([128000, 32])
+----
+     i: 2
+     h torch.Size([128000, 32])
+     h(pts_linears) torch.Size([128000, 32])
+     h(skip): torch.Size([128000, 64])
+     h: torch.Size([128000, 64])
+----
+     i: 3
+     h torch.Size([128000, 64])
+     h(pts_linears) torch.Size([128000, 32])
+     h: torch.Size([128000, 32])
+----
+     i: 4
+     h torch.Size([128000, 32])
+     h(pts_linears) torch.Size([128000, 32])
+     h: torch.Size([128000, 32])
+out: torch.Size([128000, 1])
+out(not color): torch.Size([128000])
+------------------------------
+points: torch.Size([1, 128000, 3])
+Feature Grid: torch.Size([1, 32, 120, 8, 90])
+Occ: torch.Size([128000])
+Raw: torch.Size([128000, 4])
+========================================
+Rendering Net
+Stage: coarse
+------------------------------
+MLP_no_xyz
+p: torch.Size([1, 127872, 3])
+c_grid: torch.Size([1, 32, 120, 8, 90])
+     sample_grid_feature(MLP_no_xyz)
+     p: torch.Size([1, 127872, 3])
+     grid_feature: torch.Size([1, 32, 120, 8, 90])
+     p_nor: torch.Size([127872, 3])
+     p_nor(unsqueeze): torch.Size([1, 127872, 3])
+     vgrid: torch.Size([1, 127872, 1, 1, 3])
+     c: torch.Size([1, 32, 127872])
+c(before): torch.Size([1, 32, 127872])
+c(after): torch.Size([127872, 32])
+----
+     i: 0
+     h torch.Size([127872, 32])
+     h(pts_linears) torch.Size([127872, 32])
+     h: torch.Size([127872, 32])
+----
+     i: 1
+     h torch.Size([127872, 32])
+     h(pts_linears) torch.Size([127872, 32])
+     h: torch.Size([127872, 32])
+----
+     i: 2
+     h torch.Size([127872, 32])
+     h(pts_linears) torch.Size([127872, 32])
+     h(skip): torch.Size([127872, 64])
+     h: torch.Size([127872, 64])
+----
+     i: 3
+     h torch.Size([127872, 64])
+     h(pts_linears) torch.Size([127872, 32])
+     h: torch.Size([127872, 32])
+----
+     i: 4
+     h torch.Size([127872, 32])
+     h(pts_linears) torch.Size([127872, 32])
+     h: torch.Size([127872, 32])
+out: torch.Size([127872, 1])
+out(not color): torch.Size([127872])
+------------------------------
+points: torch.Size([1, 127872, 3])
+Feature Grid: torch.Size([1, 32, 120, 8, 90])
+Occ: torch.Size([127872])
+Raw: torch.Size([127872, 4])
+========================================
+Rendering Net
+Stage: coarse
+------------------------------
+MLP_no_xyz
+p: torch.Size([1, 128000, 3])
+c_grid: torch.Size([1, 32, 120, 8, 90])
+     sample_grid_feature(MLP_no_xyz)
+     p: torch.Size([1, 128000, 3])
+     grid_feature: torch.Size([1, 32, 120, 8, 90])
+     p_nor: torch.Size([128000, 3])
+     p_nor(unsqueeze): torch.Size([1, 128000, 3])
+     vgrid: torch.Size([1, 128000, 1, 1, 3])
+     c: torch.Size([1, 32, 128000])
+c(before): torch.Size([1, 32, 128000])
+c(after): torch.Size([128000, 32])
+----
+     i: 0
+     h torch.Size([128000, 32])
+     h(pts_linears) torch.Size([128000, 32])
+     h: torch.Size([128000, 32])
+----
+     i: 1
+     h torch.Size([128000, 32])
+     h(pts_linears) torch.Size([128000, 32])
+     h: torch.Size([128000, 32])
+----
+     i: 2
+     h torch.Size([128000, 32])
+     h(pts_linears) torch.Size([128000, 32])
+     h(skip): torch.Size([128000, 64])
+     h: torch.Size([128000, 64])
+----
+     i: 3
+     h torch.Size([128000, 64])
+     h(pts_linears) torch.Size([128000, 32])
+     h: torch.Size([128000, 32])
+----
+     i: 4
+     h torch.Size([128000, 32])
+     h(pts_linears) torch.Size([128000, 32])
+     h: torch.Size([128000, 32])
+out: torch.Size([128000, 1])
+out(not color): torch.Size([128000])
+------------------------------
+points: torch.Size([1, 128000, 3])
+Feature Grid: torch.Size([1, 32, 120, 8, 90])
+Occ: torch.Size([128000])
+Raw: torch.Size([128000, 4])
+========================================
+Rendering Net
+Stage: coarse
+------------------------------
+MLP_no_xyz
+p: torch.Size([1, 128000, 3])
+c_grid: torch.Size([1, 32, 120, 8, 90])
+     sample_grid_feature(MLP_no_xyz)
+     p: torch.Size([1, 128000, 3])
+     grid_feature: torch.Size([1, 32, 120, 8, 90])
+     p_nor: torch.Size([128000, 3])
+     p_nor(unsqueeze): torch.Size([1, 128000, 3])
+     vgrid: torch.Size([1, 128000, 1, 1, 3])
+     c: torch.Size([1, 32, 128000])
+c(before): torch.Size([1, 32, 128000])
+c(after): torch.Size([128000, 32])
+----
+     i: 0
+     h torch.Size([128000, 32])
+     h(pts_linears) torch.Size([128000, 32])
+     h: torch.Size([128000, 32])
+----
+     i: 1
+     h torch.Size([128000, 32])
+     h(pts_linears) torch.Size([128000, 32])
+     h: torch.Size([128000, 32])
+----
+     i: 2
+     h torch.Size([128000, 32])
+     h(pts_linears) torch.Size([128000, 32])
+     h(skip): torch.Size([128000, 64])
+     h: torch.Size([128000, 64])
+----
+     i: 3
+     h torch.Size([128000, 64])
+     c: torch.Size([192000, 32])
+     c(fc_c): torch.Size([192000, 32])
+     h: torch.Size([192000, 32])
+----
+     i: 1
+     h torch.Size([192000, 32])
+     h(pts_linears) torch.Size([192000, 32])
+     c: torch.Size([192000, 32])
+     c(fc_c): torch.Size([192000, 32])
+     h: torch.Size([192000, 32])
+----
+     i: 2
+     h torch.Size([192000, 32])
+     h(pts_linears) torch.Size([192000, 32])
+     c: torch.Size([192000, 32])
+     c(fc_c): torch.Size([192000, 32])
+     h(skip): torch.Size([192000, 125])
+     h: torch.Size([192000, 125])
+----
+     i: 3
+     h torch.Size([192000, 125])
+     h(pts_linears) torch.Size([192000, 32])
+     c: torch.Size([192000, 32])
+     c(fc_c): torch.Size([192000, 32])
+     h: torch.Size([192000, 32])
+----
+     i: 4
+     h torch.Size([192000, 32])
+     h(pts_linears) torch.Size([192000, 32])
+     c: torch.Size([192000, 32])
+     c(fc_c): torch.Size([192000, 32])
+     h: torch.Size([192000, 32])
+out: torch.Size([192000, 4])
+------------------------------
+------------------------------
+MLP
+p: torch.Size([1, 192000, 3])
+c_grid: torch.Size([1, 32, 241, 17, 181])
+     sample_grid_feature
+     p: torch.Size([1, 192000, 3])
+     c: torch.Size([1, 32, 241, 17, 181])
+     p_nor: torch.Size([192000, 3])
+     p_nor(unsqueeze): torch.Size([1, 192000, 3])
+     vgrid: torch.Size([1, 192000, 1, 1, 3])
+     c: torch.Size([1, 32, 192000])
+c(before): torch.Size([1, 32, 192000])
+c(after): torch.Size([192000, 32])
+embedded_pts: torch.Size([192000, 93])
+----
+     i: 0
+     h torch.Size([192000, 93])
+     h(pts_linears) torch.Size([192000, 32])
+     c: torch.Size([192000, 32])
+     c(fc_c): torch.Size([192000, 32])
+     h: torch.Size([192000, 32])
+----
+     i: 1
+     h torch.Size([192000, 32])
+     h(pts_linears) torch.Size([192000, 32])
+     c: torch.Size([192000, 32])
+     c(fc_c): torch.Size([192000, 32])
+     h: torch.Size([192000, 32])
+----
+     i: 2
+     h torch.Size([192000, 32])
+     h(pts_linears) torch.Size([192000, 32])
+     c: torch.Size([192000, 32])
+     c(fc_c): torch.Size([192000, 32])
+     h(skip): torch.Size([192000, 125])
+     h: torch.Size([192000, 125])
+----
+     i: 3
+     h torch.Size([192000, 125])
+     h(pts_linears) torch.Size([192000, 32])
+     c: torch.Size([192000, 32])
+     c(fc_c): torch.Size([192000, 32])
+     h: torch.Size([192000, 32])
+----
+     i: 4
+     h torch.Size([192000, 32])
+     h(pts_linears) torch.Size([192000, 32])
+     c: torch.Size([192000, 32])
+     c(fc_c): torch.Size([192000, 32])
+     h: torch.Size([192000, 32])
+out: torch.Size([192000, 1])
+out(not color): torch.Size([192000])
+------------------------------
+points: torch.Size([1, 192000, 3])
+Feature Grid: torch.Size([1, 32, 602, 42, 452])
+Fine Occ: torch.Size([192000])
+Middle Occ: torch.Size([192000])
+Raw: torch.Size([192000, 4])
+========================================
+Rendering Net
+Stage: color
+------------------------------
+MLP
+p: torch.Size([1, 191808, 3])
+c_grid: torch.Size([1, 32, 602, 42, 452])
+     sample_grid_feature
+     p: torch.Size([1, 191808, 3])
+     c: torch.Size([1, 32, 602, 42, 452])
+     p_nor: torch.Size([191808, 3])
+     p_nor(unsqueeze): torch.Size([1, 191808, 3])
+     vgrid: torch.Size([1, 191808, 1, 1, 3])
+     c: torch.Size([1, 32, 191808])
+c(before): torch.Size([1, 32, 191808])
+c(after): torch.Size([191808, 32])
+     sample_grid_feature
+     p: torch.Size([1, 191808, 3])
+     c: torch.Size([1, 32, 241, 17, 181])
+     p_nor: torch.Size([191808, 3])
+     p_nor(unsqueeze): torch.Size([1, 191808, 3])
+     vgrid: torch.Size([1, 191808, 1, 1, 3])
+     c: torch.Size([1, 32, 191808])
+c(concat_feature): torch.Size([191808, 64])
+embedded_pts: torch.Size([191808, 93])
+----
+     i: 0
+     h torch.Size([191808, 93])
+     h(pts_linears) torch.Size([191808, 32])
+     c: torch.Size([191808, 64])
+     c(fc_c): torch.Size([191808, 32])
+     h: torch.Size([191808, 32])
+----
+     i: 1
+     h torch.Size([191808, 32])
+     h(pts_linears) torch.Size([191808, 32])
+     c: torch.Size([191808, 64])
+     c(fc_c): torch.Size([191808, 32])
+     h: torch.Size([191808, 32])
+----
+     i: 2
+     h torch.Size([191808, 32])
+     h(pts_linears) torch.Size([191808, 32])
+     c: torch.Size([191808, 64])
+     c(fc_c): torch.Size([191808, 32])
+     h(skip): torch.Size([191808, 125])
+     h: torch.Size([191808, 125])
+----
+     i: 3
+     h torch.Size([191808, 125])
+     h(pts_linears) torch.Size([191808, 32])
+     c: torch.Size([191808, 64])
+     c(fc_c): torch.Size([191808, 32])
+     h: torch.Size([191808, 32])
+----
+     i: 4
+     h torch.Size([191808, 32])
+     h(pts_linears) torch.Size([191808, 32])
+     c: torch.Size([191808, 64])
+     c(fc_c): torch.Size([191808, 32])
+     h: torch.Size([191808, 32])
+out: torch.Size([191808, 1])
+out(not color): torch.Size([191808])
+------------------------------
+------------------------------
+MLP
+p: torch.Size([1, 191808, 3])
+c_grid: torch.Size([1, 32, 602, 42, 452])
+     sample_grid_feature
+     p: torch.Size([1, 191808, 3])
+     c: torch.Size([1, 32, 602, 42, 452])
+     p_nor: torch.Size([191808, 3])
+     p_nor(unsqueeze): torch.Size([1, 191808, 3])
+     vgrid: torch.Size([1, 191808, 1, 1, 3])
+     c: torch.Size([1, 32, 191808])
+c(before): torch.Size([1, 32, 191808])
+c(after): torch.Size([191808, 32])
+embedded_pts: torch.Size([191808, 93])
+----
+     i: 0
+     h torch.Size([191808, 93])
+     h(pts_linears) torch.Size([191808, 32])
+     c: torch.Size([191808, 32])
+     c(fc_c): torch.Size([191808, 32])
+     h: torch.Size([191808, 32])
+----
+     i: 1
+     h torch.Size([191808, 32])
+     h(pts_linears) torch.Size([191808, 32])
+     c: torch.Size([191808, 32])
+     c(fc_c): torch.Size([191808, 32])
+     h: torch.Size([191808, 32])
+----
+     i: 2
+     h torch.Size([191808, 32])
+     h(pts_linears) torch.Size([191808, 32])
+     c: torch.Size([191808, 32])
+     c(fc_c): torch.Size([191808, 32])
+     h(skip): torch.Size([191808, 125])
+     h: torch.Size([191808, 125])
+----
+     i: 3
+     h torch.Size([191808, 125])
+     h(pts_linears) torch.Size([191808, 32])
+     c: torch.Size([191808, 32])
+     c(fc_c): torch.Size([191808, 32])
+     h: torch.Size([191808, 32])
+----
+     i: 4
+     h torch.Size([191808, 32])
+     h(pts_linears) torch.Size([191808, 32])
+     c: torch.Size([191808, 32])
+     c(fc_c): torch.Size([191808, 32])
+     h: torch.Size([191808, 32])
+out: torch.Size([191808, 4])
+------------------------------
+------------------------------
+MLP
+p: torch.Size([1, 191808, 3])
+c_grid: torch.Size([1, 32, 241, 17, 181])
+     sample_grid_feature
+     p: torch.Size([1, 191808, 3])
+     c: torch.Size([1, 32, 241, 17, 181])
+     p_nor: torch.Size([191808, 3])
+     p_nor(unsqueeze): torch.Size([1, 191808, 3])
+     vgrid: torch.Size([1, 191808, 1, 1, 3])
+     c: torch.Size([1, 32, 191808])
+c(before): torch.Size([1, 32, 191808])
+c(after): torch.Size([191808, 32])
+embedded_pts: torch.Size([191808, 93])
+----
+     i: 0
+     h torch.Size([191808, 93])
+     h(pts_linears) torch.Size([191808, 32])
+     c: torch.Size([191808, 32])
+     c(fc_c): torch.Size([191808, 32])
+     h: torch.Size([191808, 32])
+----
+     i: 1
+     h torch.Size([191808, 32])
+     h(pts_linears) torch.Size([191808, 32])
+     c: torch.Size([191808, 32])
+     c(fc_c): torch.Size([191808, 32])
+     h: torch.Size([191808, 32])
+----
+     i: 2
+     h torch.Size([191808, 32])
+     h(pts_linears) torch.Size([191808, 32])
+     c: torch.Size([191808, 32])
+     c(fc_c): torch.Size([191808, 32])
+     h(skip): torch.Size([191808, 125])
+     h: torch.Size([191808, 125])
+----
+     i: 3
+     h torch.Size([191808, 125])
+     h(pts_linears) torch.Size([191808, 32])
+     c: torch.Size([191808, 32])
+     c(fc_c): torch.Size([191808, 32])
+     h: torch.Size([191808, 32])
+----
+     i: 4
+     h torch.Size([191808, 32])
+     h(pts_linears) torch.Size([191808, 32])
+     c: torch.Size([191808, 32])
+     c(fc_c): torch.Size([191808, 32])
+     h: torch.Size([191808, 32])
+out: torch.Size([191808, 1])
+out(not color): torch.Size([191808])
+------------------------------
+points: torch.Size([1, 191808, 3])
+Feature Grid: torch.Size([1, 32, 602, 42, 452])
+Fine Occ: torch.Size([191808])
+Middle Occ: torch.Size([191808])
+Raw: torch.Size([191808, 4])
+[32m
+Mapping Frame  1
+[0m
+
+     h(pts_linears) torch.Size([128000, 32])
+     h: torch.Size([128000, 32])
+----
+     i: 4
+     h torch.Size([128000, 32])
+     h(pts_linears) torch.Size([128000, 32])
+     h: torch.Size([128000, 32])
+out: torch.Size([128000, 1])
+out(not color): torch.Size([128000])
+------------------------------
+points: torch.Size([1, 128000, 3])
+Feature Grid: torch.Size([1, 32, 120, 8, 90])
+Occ: torch.Size([128000])
+Raw: torch.Size([128000, 4])
+========================================
+Rendering Net
+Stage: coarse
+------------------------------
+MLP_no_xyz
+p: torch.Size([1, 128000, 3])
+c_grid: torch.Size([1, 32, 120, 8, 90])
+     sample_grid_feature(MLP_no_xyz)
+     p: torch.Size([1, 128000, 3])
+     grid_feature: torch.Size([1, 32, 120, 8, 90])
+     p_nor: torch.Size([128000, 3])
+     p_nor(unsqueeze): torch.Size([1, 128000, 3])
+     vgrid: torch.Size([1, 128000, 1, 1, 3])
+     c: torch.Size([1, 32, 128000])
+c(before): torch.Size([1, 32, 128000])
+c(after): torch.Size([128000, 32])
+----
+     i: 0
+     h torch.Size([128000, 32])
+     h(pts_linears) torch.Size([128000, 32])
+     h: torch.Size([128000, 32])
+----
+     i: 1
+     h torch.Size([128000, 32])
+     h(pts_linears) torch.Size([128000, 32])
+     h: torch.Size([128000, 32])
+----
+     i: 2
+     h torch.Size([128000, 32])
+     h(pts_linears) torch.Size([128000, 32])
+     h(skip): torch.Size([128000, 64])
+     h: torch.Size([128000, 64])
+----
+     i: 3
+     h torch.Size([128000, 64])
+     h(pts_linears) torch.Size([128000, 32])
+     h: torch.Size([128000, 32])
+----
+     i: 4
+     h torch.Size([128000, 32])
+     h(pts_linears) torch.Size([128000, 32])
+     h: torch.Size([128000, 32])
+out: torch.Size([128000, 1])
+out(not color): torch.Size([128000])
+------------------------------
+points: torch.Size([1, 128000, 3])
+Feature Grid: torch.Size([1, 32, 120, 8, 90])
+Occ: torch.Size([128000])
+Raw: torch.Size([128000, 4])
+========================================
+Rendering Net
+Stage: coarse
+------------------------------
+MLP_no_xyz
+p: torch.Size([1, 128000, 3])
+c_grid: torch.Size([1, 32, 120, 8, 90])
+     sample_grid_feature(MLP_no_xyz)
+     p: torch.Size([1, 128000, 3])
+     grid_feature: torch.Size([1, 32, 120, 8, 90])
+     p_nor: torch.Size([128000, 3])
+     p_nor(unsqueeze): torch.Size([1, 128000, 3])
+     vgrid: torch.Size([1, 128000, 1, 1, 3])
+     c: torch.Size([1, 32, 128000])
+c(before): torch.Size([1, 32, 128000])
+c(after): torch.Size([128000, 32])
+----
+     i: 0
+     h torch.Size([128000, 32])
+     h(pts_linears) torch.Size([128000, 32])
+     h: torch.Size([128000, 32])
+----
+     i: 1
+     h torch.Size([128000, 32])
+     h(pts_linears) torch.Size([128000, 32])
+     h: torch.Size([128000, 32])
+----
+     i: 2
+     h torch.Size([128000, 32])
+     h(pts_linears) torch.Size([128000, 32])
+     h(skip): torch.Size([128000, 64])
+     h: torch.Size([128000, 64])
+----
+     i: 3
+     h torch.Size([128000, 64])
+     h(pts_linears) torch.Size([128000, 32])
+     h: torch.Size([128000, 32])
+----
+     i: 4
+     h torch.Size([128000, 32])
+     h(pts_linears) torch.Size([128000, 32])
+     h: torch.Size([128000, 32])
+out: torch.Size([128000, 1])
+out(not color): torch.Size([128000])
+------------------------------
+points: torch.Size([1, 128000, 3])
+Feature Grid: torch.Size([1, 32, 120, 8, 90])
+Occ: torch.Size([128000])
+Raw: torch.Size([128000, 4])
+========================================
+Rendering Net
+Stage: coarse
+------------------------------
+MLP_no_xyz
+p: torch.Size([1, 128000, 3])
+c_grid: torch.Size([1, 32, 120, 8, 90])
+     sample_grid_feature(MLP_no_xyz)
+     p: torch.Size([1, 128000, 3])
+     grid_feature: torch.Size([1, 32, 120, 8, 90])
+     p_nor: torch.Size([128000, 3])
+     p_nor(unsqueeze): torch.Size([1, 128000, 3])
+     vgrid: torch.Size([1, 128000, 1, 1, 3])
+     c: torch.Size([1, 32, 128000])
+c(before): torch.Size([1, 32, 128000])
+c(after): torch.Size([128000, 32])
+----
+     i: 0
+     h torch.Size([128000, 32])
+     h(pts_linears) torch.Size([128000, 32])
+     h: torch.Size([128000, 32])
+----
+     i: 1
+     h torch.Size([128000, 32])
+     h(pts_linears) torch.Size([128000, 32])
+     h: torch.Size([128000, 32])
+----
+     i: 2
+     h torch.Size([128000, 32])
+     h(pts_linears) torch.Size([128000, 32])
+     h(skip): torch.Size([128000, 64])
+     h: torch.Size([128000, 64])
+----
+     i: 3
+     h torch.Size([128000, 64])
+     h(pts_linears) torch.Size([128000, 32])
+     h: torch.Size([128000, 32])
+----
+     i: 4
+     h torch.Size([128000, 32])
+     h(pts_linears) torch.Size([128000, 32])
+     h: torch.Size([128000, 32])
+out: torch.Size([128000, 1])
+out(not color): torch.Size([128000])
+------------------------------
+points: torch.Size([1, 128000, 3])
+Feature Grid: torch.Size([1, 32, 120, 8, 90])
+Occ: torch.Size([128000])
+Raw: torch.Size([128000, 4])
+========================================
+Rendering Net
+Stage: coarse
+------------------------------
+MLP_no_xyz
+p: torch.Size([1, 128000, 3])
+c_grid: torch.Size([1, 32, 120, 8, 90])
+     sample_grid_feature(MLP_no_xyz)
+     p: torch.Size([1, 128000, 3])
+     grid_feature: torch.Size([1, 32, 120, 8, 90])
+     p_nor: torch.Size([128000, 3])
+     p_nor(unsqueeze): torch.Size([1, 128000, 3])
+     vgrid: torch.Size([1, 128000, 1, 1, 3])
+     c: torch.Size([1, 32, 128000])
+c(before): torch.Size([1, 32, 128000])
+c(after): torch.Size([128000, 32])
+----
+     i: 0
+     h torch.Size([128000, 32])
+     h(pts_linears) torch.Size([128000, 32])
+     h: torch.Size([128000, 32])
+----
+     i: 1
+     h torch.Size([128000, 32])
+     h(pts_linears) torch.Size([128000, 32])
+     h: torch.Size([128000, 32])
+----
+     i: 2
+     h torch.Size([128000, 32])
+     h(pts_linears) torch.Size([128000, 32])
+     h(skip): torch.Size([128000, 64])
+     h: torch.Size([128000, 64])
+----
+     i: 3
+     h torch.Size([128000, 64])
+     h(pts_linears) torch.Size([128000, 32])
+     h: torch.Size([128000, 32])
+----
+     i: 4
+     h torch.Size([128000, 32])
+     h(pts_linears) torch.Size([128000, 32])
+     h: torch.Size([128000, 32])
+out: torch.Size([128000, 1])
+out(not color): torch.Size([128000])
+------------------------------
+points: torch.Size([1, 128000, 3])
+Feature Grid: torch.Size([1, 32, 120, 8, 90])
+Occ: torch.Size([128000])
+Raw: torch.Size([128000, 4])
+[32m
+Coarse Mapping Frame  1
+[0m
+========================================
+Rendering Net
+Stage: middle
+------------------------------
+MLP
+p: torch.Size([1, 192000, 3])
+c_grid: torch.Size([1, 32, 241, 17, 181])
+     sample_grid_feature
+     p: torch.Size([1, 192000, 3])
+     c: torch.Size([1, 32, 241, 17, 181])
+     p_nor: torch.Size([192000, 3])
+     p_nor(unsqueeze): torch.Size([1, 192000, 3])
+     vgrid: torch.Size([1, 192000, 1, 1, 3])
+     c: torch.Size([1, 32, 192000])
+c(before): torch.Size([1, 32, 192000])
+c(after): torch.Size([192000, 32])
+embedded_pts: torch.Size([192000, 93])
+----
+     i: 0
+     h torch.Size([192000, 93])
+     h(pts_linears) torch.Size([192000, 32])
+     c: torch.Size([192000, 32])
+     c(fc_c): torch.Size([192000, 32])
+     h: torch.Size([192000, 32])
+----
+     i: 1
+     h torch.Size([192000, 32])
+     h(pts_linears) torch.Size([192000, 32])
+     c: torch.Size([192000, 32])
+     c(fc_c): torch.Size([192000, 32])
+     h: torch.Size([192000, 32])
+----
+     i: 2
+     h torch.Size([192000, 32])
+     h(pts_linears) torch.Size([192000, 32])
+     c: torch.Size([192000, 32])
+     c(fc_c): torch.Size([192000, 32])
+     h(skip): torch.Size([192000, 125])
+     h: torch.Size([192000, 125])
+----
+     i: 3
+     h torch.Size([192000, 125])
+     h(pts_linears) torch.Size([192000, 32])
+     c: torch.Size([192000, 32])
+     c(fc_c): torch.Size([192000, 32])
+     h: torch.Size([192000, 32])
+----
+     i: 4
+     h torch.Size([192000, 32])
+     h(pts_linears) torch.Size([192000, 32])
+     c: torch.Size([192000, 32])
+     c(fc_c): torch.Size([192000, 32])
+     h: torch.Size([192000, 32])
+out: torch.Size([192000, 1])
+out(not color): torch.Size([192000])
+------------------------------
+points: torch.Size([1, 192000, 3])
+Feature Grid: torch.Size([1, 32, 241, 17, 181])
+Occ: torch.Size([192000])
+Raw: torch.Size([192000, 4])
+========================================
+Rendering Net
+Stage: middle
+------------------------------
+MLP
+p: torch.Size([1, 192000, 3])
+c_grid: torch.Size([1, 32, 241, 17, 181])
+     sample_grid_feature
+     p: torch.Size([1, 192000, 3])
+     c: torch.Size([1, 32, 241, 17, 181])
+     p_nor: torch.Size([192000, 3])
+     p_nor(unsqueeze): torch.Size([1, 192000, 3])
+     vgrid: torch.Size([1, 192000, 1, 1, 3])
+     c: torch.Size([1, 32, 192000])
+c(before): torch.Size([1, 32, 192000])
+c(after): torch.Size([192000, 32])
+embedded_pts: torch.Size([192000, 93])
+----
+     i: 0
+     h torch.Size([192000, 93])
+     h(pts_linears) torch.Size([192000, 32])
+     c: torch.Size([192000, 32])
+     c(fc_c): torch.Size([192000, 32])
+     h: torch.Size([192000, 32])
+----
+     i: 1
+     h torch.Size([192000, 32])
+     h(pts_linears) torch.Size([192000, 32])
+     c: torch.Size([192000, 32])
+     c(fc_c): torch.Size([192000, 32])
+     h: torch.Size([192000, 32])
+----
+     i: 2
+     h torch.Size([192000, 32])
+     h(pts_linears) torch.Size([192000, 32])
+     c: torch.Size([192000, 32])
+     c(fc_c): torch.Size([192000, 32])
+     h(skip): torch.Size([192000, 125])
+     h: torch.Size([192000, 125])
+----
+     i: 3
+     h torch.Size([192000, 125])
+     h(pts_linears) torch.Size([192000, 32])
+     c: torch.Size([192000, 32])
+     c(fc_c): torch.Size([192000, 32])
+     h: torch.Size([192000, 32])
+----
+     i: 4
+     h torch.Size([192000, 32])
+     h(pts_linears) torch.Size([192000, 32])
+     c: torch.Size([192000, 32])
+     c(fc_c): torch.Size([192000, 32])
+     h: torch.Size([192000, 32])
+out: torch.Size([192000, 1])
+out(not color): torch.Size([192000])
+------------------------------
+points: torch.Size([1, 192000, 3])
+Feature Grid: torch.Size([1, 32, 241, 17, 181])
+Occ: torch.Size([192000])
+Raw: torch.Size([192000, 4])
+========================================
+Rendering Net
+Stage: middle
+------------------------------
+MLP
+p: torch.Size([1, 192000, 3])
+c_grid: torch.Size([1, 32, 241, 17, 181])
+     sample_grid_feature
+     p: torch.Size([1, 192000, 3])
+     c: torch.Size([1, 32, 241, 17, 181])
+     p_nor: torch.Size([192000, 3])
+     p_nor(unsqueeze): torch.Size([1, 192000, 3])
+     vgrid: torch.Size([1, 192000, 1, 1, 3])
+     c: torch.Size([1, 32, 192000])
+c(before): torch.Size([1, 32, 192000])
+c(after): torch.Size([192000, 32])
+embedded_pts: torch.Size([192000, 93])
+----
+     i: 0
+     h torch.Size([192000, 93])
+     h(pts_linears) torch.Size([192000, 32])
+     c: torch.Size([192000, 32])
+     c(fc_c): torch.Size([192000, 32])
+     h: torch.Size([192000, 32])
+----
+     i: 1
+     h torch.Size([192000, 32])
+     h(pts_linears) torch.Size([192000, 32])
+     c: torch.Size([192000, 32])
+     c(fc_c): torch.Size([192000, 32])
+     h: torch.Size([192000, 32])
+----
+     i: 2
+     h torch.Size([192000, 32])
+     h(pts_linears) torch.Size([192000, 32])
+     c: torch.Size([192000, 32])
+     c(fc_c): torch.Size([192000, 32])
+     h(skip): torch.Size([192000, 125])
+     h: torch.Size([192000, 125])
+----
+     i: 3
+     h torch.Size([192000, 125])
+     h(pts_linears) torch.Size([192000, 32])
+     c: torch.Size([192000, 32])
+     c(fc_c): torch.Size([192000, 32])
+     h: torch.Size([192000, 32])
+----
+     i: 4
+     h torch.Size([192000, 32])
+     h(pts_linears) torch.Size([192000, 32])
+     c: torch.Size([192000, 32])
+     c(fc_c): torch.Size([192000, 32])
+     h: torch.Size([192000, 32])
+out: torch.Size([192000, 1])
+out(not color): torch.Size([192000])
+------------------------------
+points: torch.Size([1, 192000, 3])
+Feature Grid: torch.Size([1, 32, 241, 17, 181])
+Occ: torch.Size([192000])
+Raw: torch.Size([192000, 4])
+========================================
+Rendering Net
+Stage: middle
+------------------------------
+MLP
+p: torch.Size([1, 191808, 3])
+c_grid: torch.Size([1, 32, 241, 17, 181])
+     sample_grid_feature
+     p: torch.Size([1, 191808, 3])
+     c: torch.Size([1, 32, 241, 17, 181])
+     p_nor: torch.Size([191808, 3])
+     p_nor(unsqueeze): torch.Size([1, 191808, 3])
+     vgrid: torch.Size([1, 191808, 1, 1, 3])
+     c: torch.Size([1, 32, 191808])
+c(before): torch.Size([1, 32, 191808])
+c(after): torch.Size([191808, 32])
+embedded_pts: torch.Size([191808, 93])
+----
+     i: 0
+     h torch.Size([191808, 93])
+     h(pts_linears) torch.Size([191808, 32])
+     c: torch.Size([191808, 32])
+     c(fc_c): torch.Size([191808, 32])
+     h: torch.Size([191808, 32])
+----
+     i: 1
+     h torch.Size([191808, 32])
+     h(pts_linears) torch.Size([191808, 32])
+     c: torch.Size([191808, 32])
+     c(fc_c): torch.Size([191808, 32])
+     h: torch.Size([191808, 32])
+----
+     i: 2
+     h torch.Size([191808, 32])
+     h(pts_linears) torch.Size([191808, 32])
+     c: torch.Size([191808, 32])
+     c(fc_c): torch.Size([191808, 32])
+     h(skip): torch.Size([191808, 125])
+     h: torch.Size([191808, 125])
+----
+     i: 3
+     h torch.Size([191808, 125])
+     h(pts_linears) torch.Size([191808, 32])
+     c: torch.Size([191808, 32])
+     c(fc_c): torch.Size([191808, 32])
+     h: torch.Size([191808, 32])
+----
+     i: 4
+     h torch.Size([191808, 32])
+     h(pts_linears) torch.Size([191808, 32])
+     c: torch.Size([191808, 32])
+     c(fc_c): torch.Size([191808, 32])
+     h: torch.Size([191808, 32])
+out: torch.Size([191808, 1])
+out(not color): torch.Size([191808])
+------------------------------
+points: torch.Size([1, 191808, 3])
+Feature Grid: torch.Size([1, 32, 241, 17, 181])
+Occ: torch.Size([191808])
+Raw: torch.Size([191808, 4])
+========================================
+Rendering Net
+Stage: middle
+------------------------------
+MLP
+p: torch.Size([1, 192000, 3])
+c_grid: torch.Size([1, 32, 241, 17, 181])
+     sample_grid_feature
+     p: torch.Size([1, 192000, 3])
+     c: torch.Size([1, 32, 241, 17, 181])
+     p_nor: torch.Size([192000, 3])
+     p_nor(unsqueeze): torch.Size([1, 192000, 3])
+     vgrid: torch.Size([1, 192000, 1, 1, 3])
+     c: torch.Size([1, 32, 192000])
+c(before): torch.Size([1, 32, 192000])
+c(after): torch.Size([192000, 32])
+embedded_pts: torch.Size([192000, 93])
+----
+     i: 0
+     h torch.Size([192000, 93])
+     h(pts_linears) torch.Size([192000, 32])
+     c: torch.Size([192000, 32])
+     c(fc_c): torch.Size([192000, 32])
+     h: torch.Size([192000, 32])
+----
+     i: 1
+     h torch.Size([192000, 32])
+     h(pts_linears) torch.Size([192000, 32])
+     c: torch.Size([192000, 32])
+     c(fc_c): torch.Size([192000, 32])========================================
+Rendering Net
+Stage: coarse
+------------------------------
+MLP_no_xyz
+p: torch.Size([1, 128000, 3])
+c_grid: torch.Size([1, 32, 120, 8, 90])
+     sample_grid_feature(MLP_no_xyz)
+     p: torch.Size([1, 128000, 3])
+     grid_feature: torch.Size([1, 32, 120, 8, 90])
+     p_nor: torch.Size([128000, 3])
+     p_nor(unsqueeze): torch.Size([1, 128000, 3])
+     vgrid: torch.Size([1, 128000, 1, 1, 3])
+     c: torch.Size([1, 32, 128000])
+c(before): torch.Size([1, 32, 128000])
+c(after): torch.Size([128000, 32])
+----
+     i: 0
+     h torch.Size([128000, 32])
+     h(pts_linears) torch.Size([128000, 32])
+     h: torch.Size([128000, 32])
+----
+     i: 1
+     h torch.Size([128000, 32])
+     h(pts_linears) torch.Size([128000, 32])
+     h: torch.Size([128000, 32])
+----
+     i: 2
+     h torch.Size([128000, 32])
+     h(pts_linears) torch.Size([128000, 32])
+     h(skip): torch.Size([128000, 64])
+     h: torch.Size([128000, 64])
+----
+     i: 3
+     h torch.Size([128000, 64])
+     h(pts_linears) torch.Size([128000, 32])
+     h: torch.Size([128000, 32])
+----
+     i: 4
+     h torch.Size([128000, 32])
+     h(pts_linears) torch.Size([128000, 32])
+     h: torch.Size([128000, 32])
+out: torch.Size([128000, 1])
+out(not color): torch.Size([128000])
+------------------------------
+points: torch.Size([1, 128000, 3])
+Feature Grid: torch.Size([1, 32, 120, 8, 90])
+Occ: torch.Size([128000])
+Raw: torch.Size([128000, 4])
+========================================
+Rendering Net
+Stage: coarse
+------------------------------
+MLP_no_xyz
+p: torch.Size([1, 128000, 3])
+c_grid: torch.Size([1, 32, 120, 8, 90])
+     sample_grid_feature(MLP_no_xyz)
+     p: torch.Size([1, 128000, 3])
+     grid_feature: torch.Size([1, 32, 120, 8, 90])
+     p_nor: torch.Size([128000, 3])
+     p_nor(unsqueeze): torch.Size([1, 128000, 3])
+     vgrid: torch.Size([1, 128000, 1, 1, 3])
+     c: torch.Size([1, 32, 128000])
+c(before): torch.Size([1, 32, 128000])
+c(after): torch.Size([128000, 32])
+----
+     i: 0
+     h torch.Size([128000, 32])
+     h(pts_linears) torch.Size([128000, 32])
+     h: torch.Size([128000, 32])
+----
+     i: 1
+     h torch.Size([128000, 32])
+     h(pts_linears) torch.Size([128000, 32])
+     h: torch.Size([128000, 32])
+----
+     i: 2
+     h torch.Size([128000, 32])
+     h(pts_linears) torch.Size([128000, 32])
+     h(skip): torch.Size([128000, 64])
+     h: torch.Size([128000, 64])
+----
+     i: 3
+     h torch.Size([128000, 64])
+     h(pts_linears) torch.Size([128000, 32])
+     h: torch.Size([128000, 32])
+----
+     i: 4
+     h torch.Size([128000, 32])
+     h(pts_linears) torch.Size([128000, 32])
+     h: torch.Size([128000, 32])
+out: torch.Size([128000, 1])
+out(not color): torch.Size([128000])
+------------------------------
+points: torch.Size([1, 128000, 3])
+Feature Grid: torch.Size([1, 32, 120, 8, 90])
+Occ: torch.Size([128000])
+Raw: torch.Size([128000, 4])
+========================================
+Rendering Net
+Stage: coarse
+------------------------------
+MLP_no_xyz
+p: torch.Size([1, 128000, 3])
+c_grid: torch.Size([1, 32, 120, 8, 90])
+     sample_grid_feature(MLP_no_xyz)
+     p: torch.Size([1, 128000, 3])
+     grid_feature: torch.Size([1, 32, 120, 8, 90])
+     p_nor: torch.Size([128000, 3])
+     p_nor(unsqueeze): torch.Size([1, 128000, 3])
+     vgrid: torch.Size([1, 128000, 1, 1, 3])
+     c: torch.Size([1, 32, 128000])
+c(before): torch.Size([1, 32, 128000])
+c(after): torch.Size([128000, 32])
+----
+     i: 0
+     h torch.Size([128000, 32])
+     h(pts_linears) torch.Size([128000, 32])
+     h: torch.Size([128000, 32])
+----
+     i: 1
+     h torch.Size([128000, 32])
+     h(pts_linears) torch.Size([128000, 32])
+     h: torch.Size([128000, 32])
+----
+     i: 2
+     h torch.Size([128000, 32])
+     h(pts_linears) torch.Size([128000, 32])
+     h(skip): torch.Size([128000, 64])
+     h: torch.Size([128000, 64])
+----
+     i: 3
+     h torch.Size([128000, 64])
+     h(pts_linears) torch.Size([128000, 32])
+     h: torch.Size([128000, 32])
+----
+     i: 4
+     h torch.Size([128000, 32])
+     h(pts_linears) torch.Size([128000, 32])
+     h: torch.Size([128000, 32])
+out: torch.Size([128000, 1])
+out(not color): torch.Size([128000])
+------------------------------
+points: torch.Size([1, 128000, 3])
+Feature Grid: torch.Size([1, 32, 120, 8, 90])
+Occ: torch.Size([128000])
+Raw: torch.Size([128000, 4])
+========================================
+Rendering Net
+Stage: coarse
+------------------------------
+MLP_no_xyz
+p: torch.Size([1, 127872, 3])
+c_grid: torch.Size([1, 32, 120, 8, 90])
+     sample_grid_feature(MLP_no_xyz)
+     p: torch.Size([1, 127872, 3])
+     grid_feature: torch.Size([1, 32, 120, 8, 90])
+     p_nor: torch.Size([127872, 3])
+     p_nor(unsqueeze): torch.Size([1, 127872, 3])
+     vgrid: torch.Size([1, 127872, 1, 1, 3])
+     c: torch.Size([1, 32, 127872])
+c(before): torch.Size([1, 32, 127872])
+c(after): torch.Size([127872, 32])
+----
+     i: 0
+     h torch.Size([127872, 32])
+     h(pts_linears) torch.Size([127872, 32])
+     h: torch.Size([127872, 32])
+----
+     i: 1
+     h torch.Size([127872, 32])
+     h(pts_linears) torch.Size([127872, 32])
+     h: torch.Size([127872, 32])
+----
+     i: 2
+     h torch.Size([127872, 32])
+     h(pts_linears) torch.Size([127872, 32])
+     h(skip): torch.Size([127872, 64])
+     h: torch.Size([127872, 64])
+----
+     i: 3
+     h torch.Size([127872, 64])
+     h(pts_linears) torch.Size([127872, 32])
+     h: torch.Size([127872, 32])
+----
+     i: 4
+     h torch.Size([127872, 32])
+     h(pts_linears) torch.Size([127872, 32])
+     h: torch.Size([127872, 32])
+out: torch.Size([127872, 1])
+out(not color): torch.Size([127872])
+------------------------------
+points: torch.Size([1, 127872, 3])
+Feature Grid: torch.Size([1, 32, 120, 8, 90])
+Occ: torch.Size([127872])
+Raw: torch.Size([127872, 4])
+========================================
+Rendering Net
+Stage: coarse
+------------------------------
+MLP_no_xyz
+p: torch.Size([1, 128000, 3])
+c_grid: torch.Size([1, 32, 120, 8, 90])
+     sample_grid_feature(MLP_no_xyz)
+     p: torch.Size([1, 128000, 3])
+     grid_feature: torch.Size([1, 32, 120, 8, 90])
+     p_nor: torch.Size([128000, 3])
+     p_nor(unsqueeze): torch.Size([1, 128000, 3])
+     vgrid: torch.Size([1, 128000, 1, 1, 3])
+     c: torch.Size([1, 32, 128000])
+c(before): torch.Size([1, 32, 128000])
+c(after): torch.Size([128000, 32])
+----
+     i: 0
+     h torch.Size([128000, 32])
+     h(pts_linears) torch.Size([128000, 32])
+     h: torch.Size([128000, 32])
+----
+     i: 1
+     h torch.Size([128000, 32])
+     h(pts_linears) torch.Size([128000, 32])
+     h: torch.Size([128000, 32])
+----
+     i: 2
+     h torch.Size([128000, 32])
+     h(pts_linears) torch.Size([128000, 32])
+     h(skip): torch.Size([128000, 64])
+     h: torch.Size([128000, 64])
+----
+     i: 3
+     h torch.Size([128000, 64])
+     h(pts_linears) torch.Size([128000, 32])
+     h: torch.Size([128000, 32])
+----
+     i: 4
+     h torch.Size([128000, 32])
+     h(pts_linears) torch.Size([128000, 32])
+     h: torch.Size([128000, 32])
+out: torch.Size([128000, 1])
+out(not color): torch.Size([128000])
+------------------------------
+points: torch.Size([1, 128000, 3])
+Feature Grid: torch.Size([1, 32, 120, 8, 90])
+Occ: torch.Size([128000])
+Raw: torch.Size([128000, 4])
+========================================
+Rendering Net
+Stage: coarse
+------------------------------
+MLP_no_xyz
+p: torch.Size([1, 128000, 3])
+c_grid: torch.Size([1, 32, 120, 8, 90])
+     sample_grid_feature(MLP_no_xyz)
+     p: torch.Size([1, 128000, 3])
+     grid_feature: torch.Size([1, 32, 120, 8, 90])
+     p_nor: torch.Size([128000, 3])
+     p_nor(unsqueeze): torch.Size([1, 128000, 3])
+     vgrid: torch.Size([1, 128000, 1, 1, 3])
+     c: torch.Size([1, 32, 128000])
+c(before): torch.Size([1, 32, 128000])
+c(after): torch.Size([128000, 32])
+----
+     i: 0
+     h torch.Size([128000, 32])
+     h(pts_linears) torch.Size([128000, 32])
+     h: torch.Size([128000, 32])
+----
+     i: 1
+     h torch.Size([128000, 32])
+     h(pts_linears) torch.Size([128000, 32])
+     h: torch.Size([128000, 32])
+----
+     i: 2
+     h torch.Size([128000, 32])
+     h(pts_linears) torch.Size([128000, 32])
+     h(skip): torch.Size([128000, 64])
+     h: torch.Size([128000, 64])
+----
+     i: 3
+     h torch.Size([128000, 64])
+     h: torch.Size([192000, 32])
+----
+     i: 2
+     h torch.Size([192000, 32])
+     h(pts_linears) torch.Size([192000, 32])
+     c: torch.Size([192000, 32])
+     c(fc_c): torch.Size([192000, 32])
+     h(skip): torch.Size([192000, 125])
+     h: torch.Size([192000, 125])
+----
+     i: 3
+     h torch.Size([192000, 125])
+     h(pts_linears) torch.Size([192000, 32])
+     c: torch.Size([192000, 32])
+     c(fc_c): torch.Size([192000, 32])
+     h: torch.Size([192000, 32])
+----
+     i: 4
+     h torch.Size([192000, 32])
+     h(pts_linears) torch.Size([192000, 32])
+     c: torch.Size([192000, 32])
+     c(fc_c): torch.Size([192000, 32])
+     h: torch.Size([192000, 32])
+out: torch.Size([192000, 1])
+out(not color): torch.Size([192000])
+------------------------------
+points: torch.Size([1, 192000, 3])
+Feature Grid: torch.Size([1, 32, 241, 17, 181])
+Occ: torch.Size([192000])
+Raw: torch.Size([192000, 4])
+========================================
+Rendering Net
+Stage: fine
+------------------------------
+MLP
+p: torch.Size([1, 191808, 3])
+c_grid: torch.Size([1, 32, 602, 42, 452])
+     sample_grid_feature
+     p: torch.Size([1, 191808, 3])
+     c: torch.Size([1, 32, 602, 42, 452])
+     p_nor: torch.Size([191808, 3])
+     p_nor(unsqueeze): torch.Size([1, 191808, 3])
+     vgrid: torch.Size([1, 191808, 1, 1, 3])
+     c: torch.Size([1, 32, 191808])
+c(before): torch.Size([1, 32, 191808])
+c(after): torch.Size([191808, 32])
+     sample_grid_feature
+     p: torch.Size([1, 191808, 3])
+     c: torch.Size([1, 32, 241, 17, 181])
+     p_nor: torch.Size([191808, 3])
+     p_nor(unsqueeze): torch.Size([1, 191808, 3])
+     vgrid: torch.Size([1, 191808, 1, 1, 3])
+     c: torch.Size([1, 32, 191808])
+c(concat_feature): torch.Size([191808, 64])
+embedded_pts: torch.Size([191808, 93])
+----
+     i: 0
+     h torch.Size([191808, 93])
+     h(pts_linears) torch.Size([191808, 32])
+     c: torch.Size([191808, 64])
+     c(fc_c): torch.Size([191808, 32])
+     h: torch.Size([191808, 32])
+----
+     i: 1
+     h torch.Size([191808, 32])
+     h(pts_linears) torch.Size([191808, 32])
+     c: torch.Size([191808, 64])
+     c(fc_c): torch.Size([191808, 32])
+     h: torch.Size([191808, 32])
+----
+     i: 2
+     h torch.Size([191808, 32])
+     h(pts_linears) torch.Size([191808, 32])
+     c: torch.Size([191808, 64])
+     c(fc_c): torch.Size([191808, 32])
+     h(skip): torch.Size([191808, 125])
+     h: torch.Size([191808, 125])
+----
+     i: 3
+     h torch.Size([191808, 125])
+     h(pts_linears) torch.Size([191808, 32])
+     c: torch.Size([191808, 64])
+     c(fc_c): torch.Size([191808, 32])
+     h: torch.Size([191808, 32])
+----
+     i: 4
+     h torch.Size([191808, 32])
+     h(pts_linears) torch.Size([191808, 32])
+     c: torch.Size([191808, 64])
+     c(fc_c): torch.Size([191808, 32])
+     h: torch.Size([191808, 32])
+out: torch.Size([191808, 1])
+out(not color): torch.Size([191808])
+------------------------------
+------------------------------
+MLP
+p: torch.Size([1, 191808, 3])
+c_grid: torch.Size([1, 32, 241, 17, 181])
+     sample_grid_feature
+     p: torch.Size([1, 191808, 3])
+     c: torch.Size([1, 32, 241, 17, 181])
+     p_nor: torch.Size([191808, 3])
+     p_nor(unsqueeze): torch.Size([1, 191808, 3])
+     vgrid: torch.Size([1, 191808, 1, 1, 3])
+     c: torch.Size([1, 32, 191808])
+c(before): torch.Size([1, 32, 191808])
+c(after): torch.Size([191808, 32])
+embedded_pts: torch.Size([191808, 93])
+----
+     i: 0
+     h torch.Size([191808, 93])
+     h(pts_linears) torch.Size([191808, 32])
+     c: torch.Size([191808, 32])
+     c(fc_c): torch.Size([191808, 32])
+     h: torch.Size([191808, 32])
+----
+     i: 1
+     h torch.Size([191808, 32])
+     h(pts_linears) torch.Size([191808, 32])
+     c: torch.Size([191808, 32])
+     c(fc_c): torch.Size([191808, 32])
+     h: torch.Size([191808, 32])
+----
+     i: 2
+     h torch.Size([191808, 32])
+     h(pts_linears) torch.Size([191808, 32])
+     c: torch.Size([191808, 32])
+     c(fc_c): torch.Size([191808, 32])
+     h(skip): torch.Size([191808, 125])
+     h: torch.Size([191808, 125])
+----
+     i: 3
+     h torch.Size([191808, 125])
+     h(pts_linears) torch.Size([191808, 32])
+     c: torch.Size([191808, 32])
+     c(fc_c): torch.Size([191808, 32])
+     h: torch.Size([191808, 32])
+----
+     i: 4
+     h torch.Size([191808, 32])
+     h(pts_linears) torch.Size([191808, 32])
+     c: torch.Size([191808, 32])
+     c(fc_c): torch.Size([191808, 32])
+     h: torch.Size([191808, 32])
+out: torch.Size([191808, 1])
+out(not color): torch.Size([191808])
+------------------------------
+points: torch.Size([1, 191808, 3])
+Feature Grid: torch.Size([1, 32, 602, 42, 452])
+Fine Occ: torch.Size([191808])
+Middle Occ: torch.Size([191808])
+Raw: torch.Size([191808, 4])
+========================================
+Rendering Net
+Stage: fine
+------------------------------
+MLP
+p: torch.Size([1, 191808, 3])
+c_grid: torch.Size([1, 32, 602, 42, 452])
+     sample_grid_feature
+     p: torch.Size([1, 191808, 3])
+     c: torch.Size([1, 32, 602, 42, 452])
+     p_nor: torch.Size([191808, 3])
+     p_nor(unsqueeze): torch.Size([1, 191808, 3])
+     vgrid: torch.Size([1, 191808, 1, 1, 3])
+     c: torch.Size([1, 32, 191808])
+c(before): torch.Size([1, 32, 191808])
+c(after): torch.Size([191808, 32])
+     sample_grid_feature
+     p: torch.Size([1, 191808, 3])
+     c: torch.Size([1, 32, 241, 17, 181])
+     p_nor: torch.Size([191808, 3])
+     p_nor(unsqueeze): torch.Size([1, 191808, 3])
+     vgrid: torch.Size([1, 191808, 1, 1, 3])
+     c: torch.Size([1, 32, 191808])
+c(concat_feature): torch.Size([191808, 64])
+embedded_pts: torch.Size([191808, 93])
+----
+     i: 0
+     h torch.Size([191808, 93])
+     h(pts_linears) torch.Size([191808, 32])
+     c: torch.Size([191808, 64])
+     c(fc_c): torch.Size([191808, 32])
+     h: torch.Size([191808, 32])
+----
+     i: 1
+     h torch.Size([191808, 32])
+     h(pts_linears) torch.Size([191808, 32])
+     c: torch.Size([191808, 64])
+     c(fc_c): torch.Size([191808, 32])
+     h: torch.Size([191808, 32])
+----
+     i: 2
+     h torch.Size([191808, 32])
+     h(pts_linears) torch.Size([191808, 32])
+     c: torch.Size([191808, 64])
+     c(fc_c): torch.Size([191808, 32])
+     h(skip): torch.Size([191808, 125])
+     h: torch.Size([191808, 125])
+----
+     i: 3
+     h torch.Size([191808, 125])
+     h(pts_linears) torch.Size([191808, 32])
+     c: torch.Size([191808, 64])
+     c(fc_c): torch.Size([191808, 32])
+     h: torch.Size([191808, 32])
+----
+     i: 4
+     h torch.Size([191808, 32])
+     h(pts_linears) torch.Size([191808, 32])
+     c: torch.Size([191808, 64])
+     c(fc_c): torch.Size([191808, 32])
+     h: torch.Size([191808, 32])
+out: torch.Size([191808, 1])
+out(not color): torch.Size([191808])
+------------------------------
+------------------------------
+MLP
+p: torch.Size([1, 191808, 3])
+c_grid: torch.Size([1, 32, 241, 17, 181])
+     sample_grid_feature
+     p: torch.Size([1, 191808, 3])
+     c: torch.Size([1, 32, 241, 17, 181])
+     p_nor: torch.Size([191808, 3])
+     p_nor(unsqueeze): torch.Size([1, 191808, 3])
+     vgrid: torch.Size([1, 191808, 1, 1, 3])
+     c: torch.Size([1, 32, 191808])
+c(before): torch.Size([1, 32, 191808])
+c(after): torch.Size([191808, 32])
+embedded_pts: torch.Size([191808, 93])
+----
+     i: 0
+     h torch.Size([191808, 93])
+     h(pts_linears) torch.Size([191808, 32])
+     c: torch.Size([191808, 32])
+     c(fc_c): torch.Size([191808, 32])
+     h: torch.Size([191808, 32])
+----
+     i: 1
+     h torch.Size([191808, 32])
+     h(pts_linears) torch.Size([191808, 32])
+     c: torch.Size([191808, 32])
+     c(fc_c): torch.Size([191808, 32])
+     h: torch.Size([191808, 32])
+----
+     i: 2
+     h torch.Size([191808, 32])
+     h(pts_linears) torch.Size([191808, 32])
+     c: torch.Size([191808, 32])
+     c(fc_c): torch.Size([191808, 32])
+     h(skip): torch.Size([191808, 125])
+     h: torch.Size([191808, 125])
+----
+     i: 3
+     h torch.Size([191808, 125])
+     h(pts_linears) torch.Size([191808, 32])
+     c: torch.Size([191808, 32])
+     c(fc_c): torch.Size([191808, 32])
+     h: torch.Size([191808, 32])
+----
+     i: 4
+     h torch.Size([191808, 32])
+     h(pts_linears) torch.Size([191808, 32])
+     c: torch.Size([191808, 32])
+     c(fc_c): torch.Size([191808, 32])
+     h: torch.Size([191808, 32])
+out: torch.Size([191808, 1])
+out(not color): torch.Size([191808])
+------------------------------
+points: torch.Size([1, 191808, 3])
+Feature Grid: torch.Size([1, 32, 602, 42, 452])
+Fine Occ: torch.Size([191808])
+Middle Occ: torch.Size([191808])
+Raw: torch.Size([191808, 4])
+========================================
+Rendering Net
+Stage: color
+------------------------------
+MLP
+p: torch.Size([1, 192000, 3])
+c_grid: torch.Size([1, 32, 602, 42, 452])
+     sample_grid_feature
+     p: torch.Size([1, 192000, 3])
+     c: torch.Size([1, 32, 602, 42, 452])
+     p_nor: torch.Size([192000, 3])
+     p_nor(unsqueeze): torch.Size([1, 192000, 3])
+     vgrid: torch.Size([1, 192000, 1, 1, 3])
+     c: torch.Size([1, 32, 192000])
+c(before): torch.Size([1, 32, 192000])
+c(after): torch.Size([192000, 32])
+     sample_grid_feature
+     p: torch.Size([1, 192000, 3])
+     c: torch.Size([1, 32, 241, 17, 181])
+     p_nor: torch.Size([192000, 3])
+     p_nor(unsqueeze): torch.Size([1, 192000, 3])
+     vgrid: torch.Size([1, 192000, 1, 1, 3])
+     c: torch.Size([1, 32, 192000])
+c(concat_feature): torch.Size([192000, 64])
+embedded_pts: torch.Size([192000, 93])
+----
+     i: 0
+     h torch.Size([192000, 93])
+     h(pts_linears) torch.Size([192000, 32])
+     c: torch.Size([192000, 64])
+     c(fc_c): torch.Size([192000, 32])
+     h: torch.Size([192000, 32])
+----
+     i: 1
+     h torch.Size([192000, 32])
+     h(pts_linears) torch.Size([192000, 32])
+     c: torch.Size([192000, 64])
+     c(fc_c): torch.Size([192000, 32])
+     h: torch.Size([192000, 32])
+----
+     i: 2
+     h torch.Size([192000, 32])
+     h(pts_linears) torch.Size([192000, 32])
+     c: torch.Size([192000, 64])
+     c(fc_c): torch.Size([192000, 32])
+     h(skip): torch.Size([192000, 125])
+     h: torch.Size([192000, 125])
+----
+     i: 3
+     h torch.Size([192000, 125])
+     h(pts_linears) torch.Size([192000, 32])
+     c: torch.Size([192000, 64])
+     c(fc_c): torch.Size([192000, 32])
+     h: torch.Size([192000, 32])
+----
+     i: 4
+     h torch.Size([192000, 32])
+     h(pts_linears) torch.Size([192000, 32])
+     c: torch.Size([192000, 64])
+     c(fc_c): torch.Size([192000, 32])
+     h: torch.Size([192000, 32])
+out: torch.Size([192000, 1])
+out(not color): torch.Size([192000])
+------------------------------
+------------------------------
+MLP
+p: torch.Size([1, 192000, 3])
+c_grid: torch.Size([1, 32, 602, 42, 452])
+     sample_grid_feature
+     p: torch.Size([1, 192000, 3])
+     c: torch.Size([1, 32, 602, 42, 452])
+     p_nor: torch.Size([192000, 3])
+     p_nor(unsqueeze): torch.Size([1, 192000, 3])
+     vgrid: torch.Size([1, 192000, 1, 1, 3])
+     c: torch.Size([1, 32, 192000])
+c(before): torch.Size([1, 32, 192000])
+c(after): torch.Size([192000, 32])
+embedded_pts: torch.Size([192000, 93])
+----
+     i: 0
+     h torch.Size([192000, 93])
+     h(pts_linears) torch.Size([192000, 32])
+     c: torch.Size([192000, 32])
+     c(fc_c): torch.Size([192000, 32])
+     h: torch.Size([192000, 32])
+----
+     i: 1
+     h torch.Size([192000, 32])
+     h(pts_linears) torch.Size([192000, 32])
+     c: torch.Size([192000, 32])
+     c(fc_c): torch.Size([192000, 32])
+     h: torch.Size([192000, 32])
+----
+     i: 2
+     h torch.Size([192000, 32])
+     h(pts_linears) torch.Size([192000, 32])
+     c: torch.Size([192000, 32])
+     c(fc_c): torch.Size([192000, 32])
+     h(skip): torch.Size([192000, 125])
+     h: torch.Size([192000, 125])
+----
+     i: 3
+     h torch.Size([192000, 125])
+     h(pts_linears) torch.Size([192000, 32])
+     c: torch.Size([192000, 32])
+     c(fc_c): torch.Size([192000, 32])
+     h: torch.Size([192000, 32])
+----
+     i: 4
+     h torch.Size([192000, 32])
+     h(pts_linears) torch.Size([192000, 32])
+     c: torch.Size([192000, 32])
+     c(fc_c): torch.Size([192000, 32])
+     h: torch.Size([192000, 32])
+out: torch.Size([192000, 4])
+------------------------------
+------------------------------
+MLP
+p: torch.Size([1, 192000, 3])
+c_grid: torch.Size([1, 32, 241, 17, 181])
+     sample_grid_feature
+     p: torch.Size([1, 192000, 3])
+     c: torch.Size([1, 32, 241, 17, 181])
+     p_nor: torch.Size([192000, 3])
+     p_nor(unsqueeze): torch.Size([1, 192000, 3])
+     vgrid: torch.Size([1, 192000, 1, 1, 3])
+     c: torch.Size([1, 32, 192000])
+c(before): torch.Size([1, 32, 192000])
+c(after): torch.Size([192000, 32])
+embedded_pts: torch.Size([192000, 93])
+----
+     i: 0
+     h torch.Size([192000, 93])
+     h(pts_linears) torch.Size([192000, 32])
+     c: torch.Size([192000, 32])
+     c(fc_c): torch.Size([192000, 32])
+     h: torch.Size([192000, 32])
+----
+     i: 1
+     h torch.Size([192000, 32])
+     h(pts_linears) torch.Size([192000, 32])
+     c: torch.Size([192000, 32])
+     c(fc_c): torch.Size([192000, 32])
+     h: torch.Size([192000, 32])
+----
+     i: 2
+     h torch.Size([192000, 32])
+     h(pts_linears) torch.Size([192000, 32])
+     c: torch.Size([192000, 32])
+     c(fc_c): torch.Size([192000, 32])
+     h(skip): torch.Size([192000, 125])
+     h: torch.Size([192000, 125])
+----
+     i: 3
+     h torch.Size([192000, 125])
+     h(pts_linears) torch.Size([192000, 32])
+     c: torch.Size([192000, 32])
+     c(fc_c): torch.Size([192000, 32])
+     h: torch.Size([192000, 32])
+----
+     i: 4
+     h torch.Size([192000, 32])
+     h(pts_linears) torch.Size([192000, 32])
+     c: torch.Size([192000, 32])
+     c(fc_c): torch.Size([192000, 32])
+     h: torch.Size([192000, 32])
+out: torch.Size([192000, 1])
+out(not color): torch.Size([192000])
+------------------------------
+points: torch.Size([1, 192000, 3])
+Feature Grid: torch.Size([1, 32, 602, 42, 452])
+Fine Occ: torch.Size([192000])
+Middle Occ: torch.Size([192000])
+Raw: torch.Size([192000, 4])
+========================================
+Rendering Net
+Stage: color
+------------------------------
+MLP
+p: torch.Size([1, 192000, 3])
+c_grid: torch.Size([1, 32, 602, 42, 452])
+     sample_grid_feature
+     p: torch.Size([1, 192000, 3])
+     c: torch.Size([1, 32, 602, 42, 452])
+     p_nor: torch.Size([192000, 3])
+     p_nor(unsqueeze): torch.Size([1, 192000, 3])
+     vgrid: torch.Size([1, 192000, 1, 1, 3])
+     c: torch.Size([1, 32, 192000])
+c(before): torch.Size([1, 32, 192000])
+c(after): torch.Size([192000, 32])
+     sample_grid_feature
+     p: torch.Size([1, 192000, 3])
+     c: torch.Size([1, 32, 241, 17, 181])
+     p_nor: torch.Size([192000, 3])
+     p_nor(unsqueeze): torch.Size([1, 192000, 3])
+     vgrid: torch.Size([1, 192000, 1, 1, 3])
+     c: torch.Size([1, 32, 192000])
+c(concat_feature): torch.Size([192000, 64])
+embedded_pts: torch.Size([192000, 93])
+----
+     i: 0
+     h torch.Size([192000, 93])
+     h(pts_linears) torch.Size([192000, 32])
+     c: torch.Size([192000, 64])
+     c(fc_c): torch.Size([192000, 32])
+     h: torch.Size([192000, 32])
+----
+     i: 1
+     h torch.Size([192000, 32])
+     h(pts_linears) torch.Size([192000, 32])
+     c: torch.Size([192000, 64])
+     c(fc_c): torch.Size([192000, 32])
+     h: torch.Size([192000, 32])
+----
+     i: 2
+     h torch.Size([192000, 32])
+     h(pts_linears) torch.Size([192000, 32])
+     c: torch.Size([192000, 64])
+     c(fc_c): torch.Size([192000, 32])
+     h(skip): torch.Size([192000, 125])
+     h: torch.Size([192000, 125])
+----
+     i: 3
+     h torch.Size([192000, 125])
+     h(pts_linears) torch.Size([192000, 32])
+     c: torch.Size([192000, 64])
+     c(fc_c): torch.Size([192000, 32])
+     h: torch.Size([192000, 32])
+----
+     i: 4
+     h torch.Size([192000, 32])
+     h(pts_linears) torch.Size([192000, 32])
+     c: torch.Size([192000, 64])
+     c(fc_c): torch.Size([192000, 32])
+     h: torch.Size([192000, 32])
+out: torch.Size([192000, 1])
+out(not color): torch.Size([192000])
+------------------------------
+------------------------------
+MLP
+p: torch.Size([1, 192000, 3])
+c_grid: torch.Size([1, 32, 602, 42, 452])
+     sample_grid_feature
+     p: torch.Size([1, 192000, 3])
+     c: torch.Size([1, 32, 602, 42, 452])
+     p_nor: torch.Size([192000, 3])
+     p_nor(unsqueeze): torch.Size([1, 192000, 3])
+     vgrid: torch.Size([1, 192000, 1, 1, 3])
+     c: torch.Size([1, 32, 192000])
+c(before): torch.Size([1, 32, 192000])
+c(after): torch.Size([192000, 32])
+embedded_pts: torch.Size([192000, 93])
+----
+     i: 0
+     h torch.Size([192000, 93])
+     h(pts_linears) torch.Size([192000, 32])
+     c: torch.Size([192000, 32])
+     c(fc_c): torch.Size([192000, 32])
+     h: torch.Size([192000, 32])
+----
+     i: 1
+     h torch.Size([192000, 32])
+     h(pts_linears) torch.Size([192000, 32])
+     c: torch.Size([192000, 32])
+     c(fc_c): torch.Size([192000, 32])
+     h: torch.Size([192000, 32])
+----
+     i: 2
+     h torch.Size([192000, 32])
+     h(pts_linears) torch.Size([192000, 32])
+     c: torch.Size([192000, 32])
+     c(fc_c): torch.Size([192000, 32])
+     h(skip): torch.Size([192000, 125])
+     h: torch.Size([192000, 125])
+----
+     i: 3
+     h torch.Size([192000, 125])
+     h(pts_linears) torch.Size([192000, 32])
+     c: torch.Size([192000, 32])
+     c(fc_c): torch.Size([192000, 32])
+     h: torch.Size([192000, 32])
+----
+     i: 4
+     h torch.Size([192000, 32])
+     h(pts_linears) torch.Size([192000, 32])
+     c: torch.Size([192000, 32])
+     c(fc_c): torch.Size([192000, 32])
+     h: torch.Size([192000, 32])
+out: torch.Size([192000, 4])
+------------------------------
+------------------------------
+MLP
+p: torch.Size([1, 192000, 3])
+c_grid: torch.Size([1, 32, 241, 17, 181])
+     sample_grid_feature
+     p: torch.Size([1, 192000, 3])
+     c: torch.Size([1, 32, 241, 17, 181])
+     p_nor: torch.Size([192000, 3])
+     p_nor(unsqueeze): torch.Size([1, 192000, 3])
+     vgrid: torch.Size([1, 192000, 1, 1, 3])
+     c: torch.Size([1, 32, 192000])
+c(before): torch.Size([1, 32, 192000])
+c(after): torch.Size([192000, 32])
+embedded_pts: torch.Size([192000, 93])
+----
+     i: 0
+     h torch.Size([192000, 93])
+     h(pts_linears) torch.Size([192000, 32])
+     c: torch.Size([192000, 32])
+     c(fc_c): torch.Size([192000, 32])
+     h: torch.Size([192000, 32])
+----
+     i: 1
+     h torch.Size([192000, 32])
+     h(pts_linears) torch.Size([192000, 32])
+     c: torch.Size([192000, 32])
+     c(fc_c): torch.Size([192000, 32])
+     h: torch.Size([192000, 32])
+----
+     i: 2
+     h torch.Size([192000, 32])
+     h(pts_linears) torch.Size([192000, 32])
+     c: torch.Size([192000, 32])
+     c(fc_c): torch.Size([192000, 32])
+     h(skip): torch.Size([192000, 125])
+     h: torch.Size([192000, 125])
+----
+     i: 3
+     h torch.Size([192000, 125])
+     h(pts_linears) torch.Size([192000, 32])
+     c: torch.Size([192000, 32])
+     c(fc_c): torch.Size([192000, 32])
+     h: torch.Size([192000, 32])
+----
+     i: 4
+     h torch.Size([192000, 32])
+     h(pts_linears) torch.Size([192000, 32])
+     c: torch.Size([192000, 32])
+     c(fc_c): torch.Size([192000, 32])
+     h: torch.Size([192000, 32])
+out: torch.Size([192000, 1])
+out(not color): torch.Size([192000])
+------------------------------
+points: torch.Size([1, 192000, 3])
+Feature Grid: torch.Size([1, 32, 602, 42, 452])
+Fine Occ: torch.Size([192000])
+Middle Occ: torch.Size([192000])
+Raw: torch.Size([192000, 4])
+========================================
+Rendering Net
+Stage: color
+------------------------------
+MLP
+p: torch.Size([1, 192000, 3])
+c_grid: torch.Size([1, 32, 602, 42, 452])
+     sample_grid_feature
+     p: torch.Size([1, 192000, 3])
+     c: torch.Size([1, 32, 602, 42, 452])
+     p_nor: torch.Size([192000, 3])
+     p_nor(unsqueeze): torch.Size([1, 192000, 3])
+     vgrid: torch.Size([1, 192000, 1, 1, 3])
+     c: torch.Size([1, 32, 192000])
+c(before): torch.Size([1, 32, 192000])
+c(after): torch.Size([192000, 32])
+     sample_grid_feature
+     p: torch.Size([1, 192000, 3])
+     c: torch.Size([1, 32, 241, 17, 181])
+     p_nor: torch.Size([192000, 3])
+     p_nor(unsqueeze): torch.Size([1, 192000, 3])
+     vgrid: torch.Size([1, 192000, 1, 1, 3])
+     c: torch.Size([1, 32, 192000])
+c(concat_feature): torch.Size([192000, 64])
+embedded_pts: torch.Size([192000, 93])
+----
+     i: 0
+     h torch.Size([192000, 93])
+     h(pts_linears) torch.Size([192000, 32])
+     c: torch.Size([192000, 64])
+     c(fc_c): torch.Size([192000, 32])
+     h: torch.Size([192000, 32])
+----
+     i: 1
+     h torch.Size([192000, 32])
+     h(pts_linears) torch.Size([192000, 32])
+     c: torch.Size([192000, 64])
+     c(fc_c): torch.Size([192000, 32])
+     h: torch.Size([192000, 32])
+----
+     i: 2
+     h torch.Size([192000, 32])
+     h(pts_linears) torch.Size([192000, 32])
+     c: torch.Size([192000, 64])
+     c(fc_c): torch.Size([192000, 32])
+     h(skip): torch.Size([192000, 125])
+     h: torch.Size([192000, 125])
+----
+     i: 3
+     h torch.Size([192000, 125])
+     h(pts_linears) torch.Size([192000, 32])
+     c: torch.Size([192000, 64])
+     c(fc_c): torch.Size([192000, 32])
+     h: torch.Size([192000, 32])
+----
+     i: 4
+     h torch.Size([192000, 32])
+     h(pts_linears) torch.Size([192000, 32])
+     c: torch.Size([192000, 64])
+     c(fc_c): torch.Size([192000, 32])
+     h: torch.Size([192000, 32])
+out: torch.Size([192000, 1])
+out(not color): torch.Size([192000])
+------------------------------
+------------------------------
+MLP
+p: torch.Size([1, 192000, 3])
+c_grid: torch.Size([1, 32, 602, 42, 452])
+     sample_grid_feature
+     p: torch.Size([1, 192000, 3])
+     c: torch.Size([1, 32, 602, 42, 452])
+     p_nor: torch.Size([192000, 3])
+     p_nor(unsqueeze): torch.Size([1, 192000, 3])
+     vgrid: torch.Size([1, 192000, 1, 1, 3])
+     c: torch.Size([1, 32, 192000])
+c(before): torch.Size([1, 32, 192000])
+c(after): torch.Size([192000, 32])
+embedded_pts: torch.Size([192000, 93])
+----
+     i: 0
+     h torch.Size([192000, 93])
+     h(pts_linears) torch.Size([192000, 32])
+     c: torch.Size([192000, 32])
+     c(fc_c): torch.Size([192000, 32])
+     h: torch.Size([192000, 32])
+----
+     i: 1
+     h torch.Size([192000, 32])
+     h(pts_linears) torch.Size([192000, 32])
+     c: torch.Size([192000, 32])
+     c(fc_c): torch.Size([192000, 32])
+     h: torch.Size([192000, 32])
+----
+     i: 2
+     h torch.Size([192000, 32])
+     h(pts_linears) torch.Size([192000, 32])
+     c: torch.Size([192000, 32])
+     c(fc_c): torch.Size([192000, 32])
+     h(skip): torch.Size([192000, 125])
+     h: torch.Size([192000, 125])
+----
+     i: 3
+     h torch.Size([192000, 125])
+     h(pts_linears) torch.Size([192000, 32])
+     c: torch.Size([192000, 32])
+     c(fc_c): torch.Size([192000, 32])
+     h: torch.Size([192000, 32])
+----
+     i: 4
+     h torch.Size([192000, 32])
+     h(pts_linears) torch.Size([192000, 32])
+     c: torch.Size([192000, 32])
+     c(fc_c): torch.Size([192000, 32])
+     h: torch.Size([192000, 32])
+out: torch.Size([192000, 4])
+------------------------------
+------------------------------
+MLP
+p: torch.Size([1, 192000, 3])
+c_grid: torch.Size([1, 32, 241, 17, 181])
+     sample_grid_feature
+     p: torch.Size([1, 192000, 3])
+     c: torch.Size([1, 32, 241, 17, 181])
+     p_nor: torch.Size([192000, 3])
+     p_nor(unsqueeze): torch.Size([1, 192000, 3])
+     vgrid: torch.Size([1, 192000, 1, 1, 3])
+     c: torch.Size([1, 32, 192000])
+c(before): torch.Size([1, 32, 192000])
+c(after): torch.Size([192000, 32])
+embedded_pts: torch.Size([192000, 93])
+----
+     i: 0
+     h torch.Size([192000, 93])
+     h(pts_linears) torch.Size([192000, 32])
+     c: torch.Size([192000, 32])
+     c(fc_c): torch.Size([192000, 32])
+     h: torch.Size([192000, 32])
+----
+     i: 1
+     h torch.Size([192000, 32])
+     h(pts_linears) torch.Size([192000, 32])
+     c: torch.Size([192000, 32])
+     c(fc_c): torch.Size([192000, 32])
+     h: torch.Size([192000, 32])
+----
+     i: 2
+     h torch.Size([192000, 32])
+     h(pts_linears) torch.Size([192000, 32])
+     c: torch.Size([192000, 32])
+     c(fc_c): torch.Size([192000, 32])
+     h(skip): torch.Size([192000, 125])
+     h: torch.Size([192000, 125])
+----
+     i: 3
+     h torch.Size([192000, 125])
+     h(pts_linears) torch.Size([192000, 32])
+     c: torch.Size([192000, 32])
+     c(fc_c): torch.Size([192000, 32])
+     h: torch.Size([192000, 32])
+----
+     i: 4
+     h torch.Size([192000, 32])
+     h(pts_linears) torch.Size([192000, 32])
+     c: torch.Size([192000, 32])
+     c(fc_c): torch.Size([192000, 32])
+     h: torch.Size([192000, 32])
+out: torch.Size([192000, 1])
+out(not color): torch.Size([192000])
+------------------------------
+points: torch.Size([1, 192000, 3])
+Feature Grid: torch.Size([1, 32, 602, 42, 452])
+Fine Occ: torch.Size([192000])
+Middle Occ: torch.Size([192000])
+Raw: torch.Size([192000, 4])
+[32m
+Mapping Frame  2
+[0m
+
+     h(pts_linears) torch.Size([128000, 32])
+     h: torch.Size([128000, 32])
+----
+     i: 4
+     h torch.Size([128000, 32])
+     h(pts_linears) torch.Size([128000, 32])
+     h: torch.Size([128000, 32])
+out: torch.Size([128000, 1])
+out(not color): torch.Size([128000])
+------------------------------
+points: torch.Size([1, 128000, 3])
+Feature Grid: torch.Size([1, 32, 120, 8, 90])
+Occ: torch.Size([128000])
+Raw: torch.Size([128000, 4])
+========================================
+Rendering Net
+Stage: coarse
+------------------------------
+MLP_no_xyz
+p: torch.Size([1, 128000, 3])
+c_grid: torch.Size([1, 32, 120, 8, 90])
+     sample_grid_feature(MLP_no_xyz)
+     p: torch.Size([1, 128000, 3])
+     grid_feature: torch.Size([1, 32, 120, 8, 90])
+     p_nor: torch.Size([128000, 3])
+     p_nor(unsqueeze): torch.Size([1, 128000, 3])
+     vgrid: torch.Size([1, 128000, 1, 1, 3])
+     c: torch.Size([1, 32, 128000])
+c(before): torch.Size([1, 32, 128000])
+c(after): torch.Size([128000, 32])
+----
+     i: 0
+     h torch.Size([128000, 32])
+     h(pts_linears) torch.Size([128000, 32])
+     h: torch.Size([128000, 32])
+----
+     i: 1
+     h torch.Size([128000, 32])
+     h(pts_linears) torch.Size([128000, 32])
+     h: torch.Size([128000, 32])
+----
+     i: 2
+     h torch.Size([128000, 32])
+     h(pts_linears) torch.Size([128000, 32])
+     h(skip): torch.Size([128000, 64])
+     h: torch.Size([128000, 64])
+----
+     i: 3
+     h torch.Size([128000, 64])
+     h(pts_linears) torch.Size([128000, 32])
+     h: torch.Size([128000, 32])
+----
+     i: 4
+     h torch.Size([128000, 32])
+     h(pts_linears) torch.Size([128000, 32])
+     h: torch.Size([128000, 32])
+out: torch.Size([128000, 1])
+out(not color): torch.Size([128000])
+------------------------------
+points: torch.Size([1, 128000, 3])
+Feature Grid: torch.Size([1, 32, 120, 8, 90])
+Occ: torch.Size([128000])
+Raw: torch.Size([128000, 4])
+========================================
+Rendering Net
+Stage: coarse
+------------------------------
+MLP_no_xyz
+p: torch.Size([1, 128000, 3])
+c_grid: torch.Size([1, 32, 120, 8, 90])
+     sample_grid_feature(MLP_no_xyz)
+     p: torch.Size([1, 128000, 3])
+     grid_feature: torch.Size([1, 32, 120, 8, 90])
+     p_nor: torch.Size([128000, 3])
+     p_nor(unsqueeze): torch.Size([1, 128000, 3])
+     vgrid: torch.Size([1, 128000, 1, 1, 3])
+     c: torch.Size([1, 32, 128000])
+c(before): torch.Size([1, 32, 128000])
+c(after): torch.Size([128000, 32])
+----
+     i: 0
+     h torch.Size([128000, 32])
+     h(pts_linears) torch.Size([128000, 32])
+     h: torch.Size([128000, 32])
+----
+     i: 1
+     h torch.Size([128000, 32])
+     h(pts_linears) torch.Size([128000, 32])
+     h: torch.Size([128000, 32])
+----
+     i: 2
+     h torch.Size([128000, 32])
+     h(pts_linears) torch.Size([128000, 32])
+     h(skip): torch.Size([128000, 64])
+     h: torch.Size([128000, 64])
+----
+     i: 3
+     h torch.Size([128000, 64])
+     h(pts_linears) torch.Size([128000, 32])
+     h: torch.Size([128000, 32])
+----
+     i: 4
+     h torch.Size([128000, 32])
+     h(pts_linears) torch.Size([128000, 32])
+     h: torch.Size([128000, 32])
+out: torch.Size([128000, 1])
+out(not color): torch.Size([128000])
+------------------------------
+points: torch.Size([1, 128000, 3])
+Feature Grid: torch.Size([1, 32, 120, 8, 90])
+Occ: torch.Size([128000])
+Raw: torch.Size([128000, 4])
+========================================
+Rendering Net
+Stage: coarse
+------------------------------
+MLP_no_xyz
+p: torch.Size([1, 128000, 3])
+c_grid: torch.Size([1, 32, 120, 8, 90])
+     sample_grid_feature(MLP_no_xyz)
+     p: torch.Size([1, 128000, 3])
+     grid_feature: torch.Size([1, 32, 120, 8, 90])
+     p_nor: torch.Size([128000, 3])
+     p_nor(unsqueeze): torch.Size([1, 128000, 3])
+     vgrid: torch.Size([1, 128000, 1, 1, 3])
+     c: torch.Size([1, 32, 128000])
+c(before): torch.Size([1, 32, 128000])
+c(after): torch.Size([128000, 32])
+----
+     i: 0
+     h torch.Size([128000, 32])
+     h(pts_linears) torch.Size([128000, 32])
+     h: torch.Size([128000, 32])
+----
+     i: 1
+     h torch.Size([128000, 32])
+     h(pts_linears) torch.Size([128000, 32])
+     h: torch.Size([128000, 32])
+----
+     i: 2
+     h torch.Size([128000, 32])
+     h(pts_linears) torch.Size([128000, 32])
+     h(skip): torch.Size([128000, 64])
+     h: torch.Size([128000, 64])
+----
+     i: 3
+     h torch.Size([128000, 64])
+     h(pts_linears) torch.Size([128000, 32])
+     h: torch.Size([128000, 32])
+----
+     i: 4
+     h torch.Size([128000, 32])
+     h(pts_linears) torch.Size([128000, 32])
+     h: torch.Size([128000, 32])
+out: torch.Size([128000, 1])
+out(not color): torch.Size([128000])
+------------------------------
+points: torch.Size([1, 128000, 3])
+Feature Grid: torch.Size([1, 32, 120, 8, 90])
+Occ: torch.Size([128000])
+Raw: torch.Size([128000, 4])
+========================================
+Rendering Net
+Stage: coarse
+------------------------------
+MLP_no_xyz
+p: torch.Size([1, 128000, 3])
+c_grid: torch.Size([1, 32, 120, 8, 90])
+     sample_grid_feature(MLP_no_xyz)
+     p: torch.Size([1, 128000, 3])
+     grid_feature: torch.Size([1, 32, 120, 8, 90])
+     p_nor: torch.Size([128000, 3])
+     p_nor(unsqueeze): torch.Size([1, 128000, 3])
+     vgrid: torch.Size([1, 128000, 1, 1, 3])
+     c: torch.Size([1, 32, 128000])
+c(before): torch.Size([1, 32, 128000])
+c(after): torch.Size([128000, 32])
+----
+     i: 0
+     h torch.Size([128000, 32])
+     h(pts_linears) torch.Size([128000, 32])
+     h: torch.Size([128000, 32])
+----
+     i: 1
+     h torch.Size([128000, 32])
+     h(pts_linears) torch.Size([128000, 32])
+     h: torch.Size([128000, 32])
+----
+     i: 2
+     h torch.Size([128000, 32])
+     h(pts_linears) torch.Size([128000, 32])
+     h(skip): torch.Size([128000, 64])
+     h: torch.Size([128000, 64])
+----
+     i: 3
+     h torch.Size([128000, 64])
+     h(pts_linears) torch.Size([128000, 32])
+     h: torch.Size([128000, 32])
+----
+     i: 4
+     h torch.Size([128000, 32])
+     h(pts_linears) torch.Size([128000, 32])
+     h: torch.Size([128000, 32])
+out: torch.Size([128000, 1])
+out(not color): torch.Size([128000])
+------------------------------
+points: torch.Size([1, 128000, 3])
+Feature Grid: torch.Size([1, 32, 120, 8, 90])
+Occ: torch.Size([128000])
+Raw: torch.Size([128000, 4])
+[32m
+Coarse Mapping Frame  2
+[0m
+========================================
+Rendering Net
+Stage: coarse
+------------------------------
+MLP_no_xyz
+p: torch.Size([1, 127872, 3])
+c_grid: torch.Size([1, 32, 120, 8, 90])
+     sample_grid_feature(MLP_no_xyz)
+     p: torch.Size([1, 127872, 3])
+     grid_feature: torch.Size([1, 32, 120, 8, 90])
+     p_nor: torch.Size([127872, 3])
+     p_nor(unsqueeze): torch.Size([1, 127872, 3])
+     vgrid: torch.Size([1, 127872, 1, 1, 3])
+     c: torch.Size([1, 32, 127872])
+c(before): torch.Size([1, 32, 127872])
+c(after): torch.Size([127872, 32])
+----
+     i: 0
+     h torch.Size([127872, 32])
+     h(pts_linears) torch.Size([127872, 32])
+     h: torch.Size([127872, 32])
+----
+     i: 1
+     h torch.Size([127872, 32])
+     h(pts_linears) torch.Size([127872, 32])
+     h: torch.Size([127872, 32])
+----
+     i: 2
+     h torch.Size([127872, 32])
+     h(pts_linears) torch.Size([127872, 32])
+     h(skip): torch.Size([127872, 64])
+     h: torch.Size([127872, 64])
+----
+     i: 3
+     h torch.Size([127872, 64])
+     h(pts_linears) torch.Size([127872, 32])
+     h: torch.Size([127872, 32])
+----
+     i: 4
+     h torch.Size([127872, 32])
+     h(pts_linears) torch.Size([127872, 32])
+     h: torch.Size([127872, 32])
+out: torch.Size([127872, 1])
+out(not color): torch.Size([127872])
+------------------------------
+points: torch.Size([1, 127872, 3])
+Feature Grid: torch.Size([1, 32, 120, 8, 90])
+Occ: torch.Size([127872])
+Raw: torch.Size([127872, 4])
+========================================
+Rendering Net
+Stage: coarse
+------------------------------
+MLP_no_xyz
+p: torch.Size([1, 127744, 3])
+c_grid: torch.Size([1, 32, 120, 8, 90])
+     sample_grid_feature(MLP_no_xyz)
+     p: torch.Size([1, 127744, 3])
+     grid_feature: torch.Size([1, 32, 120, 8, 90])
+     p_nor: torch.Size([127744, 3])
+     p_nor(unsqueeze): torch.Size([1, 127744, 3])
+     vgrid: torch.Size([1, 127744, 1, 1, 3])
+     c: torch.Size([1, 32, 127744])
+c(before): torch.Size([1, 32, 127744])
+c(after): torch.Size([127744, 32])
+----
+     i: 0
+     h torch.Size([127744, 32])
+     h(pts_linears) torch.Size([127744, 32])
+     h: torch.Size([127744, 32])
+----
+     i: 1
+     h torch.Size([127744, 32])
+     h(pts_linears) torch.Size([127744, 32])
+     h: torch.Size([127744, 32])
+----
+     i: 2
+     h torch.Size([127744, 32])
+     h(pts_linears) torch.Size([127744, 32])
+     h(skip): torch.Size([127744, 64])
+     h: torch.Size([127744, 64])
+----
+     i: 3
+     h torch.Size([127744, 64])
+     h(pts_linears) torch.Size([127744, 32])
+     h: torch.Size([127744, 32])
+----
+     i: 4
+     h torch.Size([127744, 32])
+     h(pts_linears) torch.Size([127744, 32])
+     h: torch.Size([127744, 32])
+out: torch.Size([127744, 1])
+out(not color): torch.Size([127744])
+------------------------------
+points: torch.Size([1, 127744, 3])
+Feature Grid: torch.Size([1, 32, 120, 8, 90])
+Occ: torch.Size([127744])
+Raw: torch.Size([127744, 4])
+========================================
+Rendering Net
+Stage: coarse
+------------------------------
+MLP_no_xyz
+p: torch.Size([1, 127872, 3])
+c_grid: torch.Size([1, 32, 120, 8, 90])
+     sample_grid_feature(MLP_no_xyz)
+     p: torch.Size([1, 127872, 3])
+     grid_feature: torch.Size([1, 32, 120, 8, 90])
+     p_nor: torch.Size([127872, 3])
+     p_nor(unsqueeze): torch.Size([1, 127872, 3])
+     vgrid: torch.Size([1, 127872, 1, 1, 3])
+     c: torch.Size([1, 32, 127872])
+c(before): torch.Size([1, 32, 127872])
+c(after): torch.Size([127872, 32])
+----
+     i: 0
+     h torch.Size([127872, 32])
+     h(pts_linears) torch.Size([127872, 32])
+     h: torch.Size([127872, 32])
+----
+     i: 1
+     h torch.Size([127872, 32])
+     h(pts_linears) torch.Size([127872, 32])
+     h: torch.Size([127872, 32])
+----
+     i: 2
+     h torch.Size([127872, 32])
+     h(pts_linears) torch.Size([127872, 32])
+     h(skip): torch.Size([127872, 64])
+     h: torch.Size([127872, 64])
+----
+     i: 3
+     h torch.Size([127872, 64])
+     h(pts_linears) torch.Size([127872, 32])
+     h: torch.Size([127872, 32])
+----
+     i: 4
+     h torch.Size([127872, 32])
+     h(pts_linears) torch.Size([127872, 32])
+     h: torch.Size([127872, 32])
+out: torch.Size([127872, 1])
+out(not color): torch.Size([127872])
+------------------------------
+points: torch.Size([1, 127872, 3])
+Feature Grid: torch.Size([1, 32, 120, 8, 90])
+Occ: torch.Size([127872])
+Raw: torch.Size([127872, 4])
+========================================
+Rendering Net
+Stage: coarse
+------------------------------
+MLP_no_xyz
+p: torch.Size([1, 127872, 3])
+c_grid: torch.Size([1, 32, 120, 8, 90])
+     sample_grid_feature(MLP_no_xyz)
+     p: torch.Size([1, 127872, 3])
+     grid_feature: torch.Size([1, 32, 120, 8, 90])
+     p_nor: torch.Size([127872, 3])
+     p_nor(unsqueeze): torch.Size([1, 127872, 3])
+     vgrid: torch.Size([1, 127872, 1, 1, 3])
+     c: torch.Size([1, 32, 127872])
+c(before): torch.Size([1, 32, 127872])
+c(after): torch.Size([127872, 32])
+----
+     i: 0
+     h torch.Size([127872, 32])
+     h(pts_linears) torch.Size([127872, 32])
+     h: torch.Size([127872, 32])
+----
+     i: 1
+     h torch.Size([127872, 32])
+     h(pts_linears) torch.Size([127872, 32])
+     h: torch.Size([127872, 32])
+----
+     i: 2
+     h torch.Size([127872, 32])
+     h(pts_linears) torch.Size([127872, 32])
+     h(skip): torch.Size([127872, 64])
+     h: torch.Size([127872, 64])
+----
+     i: 3
+     h torch.Size([127872, 64])
+     h(pts_linears) torch.Size([127872, 32])
+     h: torch.Size([127872, 32])
+----
+     i: 4
+     h torch.Size([127872, 32])
+     h(pts_linears) torch.Size([127872, 32])
+     h: torch.Size([127872, 32])
+out: torch.Size([127872, 1])
+out(not color): torch.Size([127872])
+------------------------------
+points: torch.Size([1, 127872, 3])
+Feature Grid: torch.Size([1, 32, 120, 8, 90])
+Occ: torch.Size([127872])
+Raw: torch.Size([127872, 4])
+========================================
+Rendering Net
+Stage: coarse
+------------------------------
+MLP_no_xyz
+p: torch.Size([1, 127872, 3])
+c_grid: torch.Size([1, 32, 120, 8, 90])
+     sample_grid_feature(MLP_no_xyz)
+     p: torch.Size([1, 127872, 3])
+     grid_feature: torch.Size([1, 32, 120, 8, 90])
+     p_nor: torch.Size([127872, 3])
+     p_nor(unsqueeze): torch.Size([1, 127872, 3])
+     vgrid: torch.Size([1, 127872, 1, 1, 3])
+     c: torch.Size([1, 32, 127872])
+c(before): torch.Size([1, 32, 127872])
+c(after): torch.Size([127872, 32])
+----
+     i: 0
+     h torch.Size([127872, 32])
+     h(pts_linears) torch.Size([127872, 32])
+     h: torch.Size([127872, 32])
+----
+     i: 1
+     h torch.Size([127872, 32])
+     h(pts_linears) torch.Size([127872, 32])
+     h: torch.Size([127872, 32])
+----
+     i: 2
+     h torch.Size([127872, 32])
+     h(pts_linears) torch.Size([127872, 32])
+     h(skip): torch.Size([127872, 64])
+     h: torch.Size([127872, 64])
+----
+     i: 3
+     h torch.Size([127872, 64])
+     h(pts_linears) torch.Size([127872, 32])
+     h: torch.Size([127872, 32])
+----
+     i: 4
+     h torch.Size([127872, 32])
+     h(pts_linears) torch.Size([127872, 32])
+     h: torch.Size([127872, 32])
+out: torch.Size([127872, 1])
+out(not color): torch.Size([127872])
+------------------------------
+points: torch.Size([1, 127872, 3])
+Feature Grid: torch.Size([1, 32, 120, 8, 90])
+Occ: torch.Size([127872])
+Raw: torch.Size([127872, 4])
+========================================
+Rendering Net
+Stage: coarse
+------------------------------
+MLP_no_xyz
+p: torch.Size([1, 127872, 3])
+c_grid: torch.Size([1, 32, 120, 8, 90])
+     sample_grid_feature(MLP_no_xyz)
+     p: torch.Size([1, 127872, 3])
+     grid_feature: torch.Size([1, 32, 120, 8, 90])
+     p_nor: torch.Size([127872, 3])
+     p_nor(unsqueeze): torch.Size([1, 127872, 3])
+     vgrid: torch.Size([1, 127872, 1, 1, 3])
+     c: torch.Size([1, 32, 127872])
+c(before): torch.Size([1, 32, 127872])
+c(after): torch.Size([127872, 32])
+----
+     i: 0
+     h torch.Size([127872, 32])
+     h(pts_linears) torch.Size([127872, 32])
+     h: torch.Size([127872, 32])
+----
+     i: 1
+     h torch.Size([127872, 32])
+     h(pts_linears) torch.Size([127872, 32])
+     h: torch.Size([127872, 32])
+----
+     i: 2
+     h torch.Size([127872, 32])
+     h(pts_linears) torch.Size([127872, 32])
+     h(skip): torch.Size([127872, 64])
+     h: torch.Size([127872, 64])
+----
+     i: 3
+     h torch.Size([127872, 64])========================================
+Rendering Net
+Stage: middle
+------------------------------
+MLP
+p: torch.Size([1, 191808, 3])
+c_grid: torch.Size([1, 32, 241, 17, 181])
+     sample_grid_feature
+     p: torch.Size([1, 191808, 3])
+     c: torch.Size([1, 32, 241, 17, 181])
+     p_nor: torch.Size([191808, 3])
+     p_nor(unsqueeze): torch.Size([1, 191808, 3])
+     vgrid: torch.Size([1, 191808, 1, 1, 3])
+     c: torch.Size([1, 32, 191808])
+c(before): torch.Size([1, 32, 191808])
+c(after): torch.Size([191808, 32])
+embedded_pts: torch.Size([191808, 93])
+----
+     i: 0
+     h torch.Size([191808, 93])
+     h(pts_linears) torch.Size([191808, 32])
+     c: torch.Size([191808, 32])
+     c(fc_c): torch.Size([191808, 32])
+     h: torch.Size([191808, 32])
+----
+     i: 1
+     h torch.Size([191808, 32])
+     h(pts_linears) torch.Size([191808, 32])
+     c: torch.Size([191808, 32])
+     c(fc_c): torch.Size([191808, 32])
+     h: torch.Size([191808, 32])
+----
+     i: 2
+     h torch.Size([191808, 32])
+     h(pts_linears) torch.Size([191808, 32])
+     c: torch.Size([191808, 32])
+     c(fc_c): torch.Size([191808, 32])
+     h(skip): torch.Size([191808, 125])
+     h: torch.Size([191808, 125])
+----
+     i: 3
+     h torch.Size([191808, 125])
+     h(pts_linears) torch.Size([191808, 32])
+     c: torch.Size([191808, 32])
+     c(fc_c): torch.Size([191808, 32])
+     h: torch.Size([191808, 32])
+----
+     i: 4
+     h torch.Size([191808, 32])
+     h(pts_linears) torch.Size([191808, 32])
+     c: torch.Size([191808, 32])
+     c(fc_c): torch.Size([191808, 32])
+     h: torch.Size([191808, 32])
+out: torch.Size([191808, 1])
+out(not color): torch.Size([191808])
+------------------------------
+points: torch.Size([1, 191808, 3])
+Feature Grid: torch.Size([1, 32, 241, 17, 181])
+Occ: torch.Size([191808])
+Raw: torch.Size([191808, 4])
+========================================
+Rendering Net
+Stage: middle
+------------------------------
+MLP
+p: torch.Size([1, 191808, 3])
+c_grid: torch.Size([1, 32, 241, 17, 181])
+     sample_grid_feature
+     p: torch.Size([1, 191808, 3])
+     c: torch.Size([1, 32, 241, 17, 181])
+     p_nor: torch.Size([191808, 3])
+     p_nor(unsqueeze): torch.Size([1, 191808, 3])
+     vgrid: torch.Size([1, 191808, 1, 1, 3])
+     c: torch.Size([1, 32, 191808])
+c(before): torch.Size([1, 32, 191808])
+c(after): torch.Size([191808, 32])
+embedded_pts: torch.Size([191808, 93])
+----
+     i: 0
+     h torch.Size([191808, 93])
+     h(pts_linears) torch.Size([191808, 32])
+     c: torch.Size([191808, 32])
+     c(fc_c): torch.Size([191808, 32])
+     h: torch.Size([191808, 32])
+----
+     i: 1
+     h torch.Size([191808, 32])
+     h(pts_linears) torch.Size([191808, 32])
+     c: torch.Size([191808, 32])
+     c(fc_c): torch.Size([191808, 32])
+     h: torch.Size([191808, 32])
+----
+     i: 2
+     h torch.Size([191808, 32])
+     h(pts_linears) torch.Size([191808, 32])
+     c: torch.Size([191808, 32])
+     c(fc_c): torch.Size([191808, 32])
+     h(skip): torch.Size([191808, 125])
+     h: torch.Size([191808, 125])
+----
+     i: 3
+     h torch.Size([191808, 125])
+     h(pts_linears) torch.Size([191808, 32])
+     c: torch.Size([191808, 32])
+     c(fc_c): torch.Size([191808, 32])
+     h: torch.Size([191808, 32])
+----
+     i: 4
+     h torch.Size([191808, 32])
+     h(pts_linears) torch.Size([191808, 32])
+     c: torch.Size([191808, 32])
+     c(fc_c): torch.Size([191808, 32])
+     h: torch.Size([191808, 32])
+out: torch.Size([191808, 1])
+out(not color): torch.Size([191808])
+------------------------------
+points: torch.Size([1, 191808, 3])
+Feature Grid: torch.Size([1, 32, 241, 17, 181])
+Occ: torch.Size([191808])
+Raw: torch.Size([191808, 4])
+========================================
+Rendering Net
+Stage: middle
+------------------------------
+MLP
+p: torch.Size([1, 191808, 3])
+c_grid: torch.Size([1, 32, 241, 17, 181])
+     sample_grid_feature
+     p: torch.Size([1, 191808, 3])
+     c: torch.Size([1, 32, 241, 17, 181])
+     p_nor: torch.Size([191808, 3])
+     p_nor(unsqueeze): torch.Size([1, 191808, 3])
+     vgrid: torch.Size([1, 191808, 1, 1, 3])
+     c: torch.Size([1, 32, 191808])
+c(before): torch.Size([1, 32, 191808])
+c(after): torch.Size([191808, 32])
+embedded_pts: torch.Size([191808, 93])
+----
+     i: 0
+     h torch.Size([191808, 93])
+     h(pts_linears) torch.Size([191808, 32])
+     c: torch.Size([191808, 32])
+     c(fc_c): torch.Size([191808, 32])
+     h: torch.Size([191808, 32])
+----
+     i: 1
+     h torch.Size([191808, 32])
+     h(pts_linears) torch.Size([191808, 32])
+     c: torch.Size([191808, 32])
+     c(fc_c): torch.Size([191808, 32])
+     h: torch.Size([191808, 32])
+----
+     i: 2
+     h torch.Size([191808, 32])
+     h(pts_linears) torch.Size([191808, 32])
+     c: torch.Size([191808, 32])
+     c(fc_c): torch.Size([191808, 32])
+     h(skip): torch.Size([191808, 125])
+     h: torch.Size([191808, 125])
+----
+     i: 3
+     h torch.Size([191808, 125])
+     h(pts_linears) torch.Size([191808, 32])
+     c: torch.Size([191808, 32])
+     c(fc_c): torch.Size([191808, 32])
+     h: torch.Size([191808, 32])
+----
+     i: 4
+     h torch.Size([191808, 32])
+     h(pts_linears) torch.Size([191808, 32])
+     c: torch.Size([191808, 32])
+     c(fc_c): torch.Size([191808, 32])
+     h: torch.Size([191808, 32])
+out: torch.Size([191808, 1])
+out(not color): torch.Size([191808])
+------------------------------
+points: torch.Size([1, 191808, 3])
+Feature Grid: torch.Size([1, 32, 241, 17, 181])
+Occ: torch.Size([191808])
+Raw: torch.Size([191808, 4])
+========================================
+Rendering Net
+Stage: middle
+------------------------------
+MLP
+p: torch.Size([1, 191808, 3])
+c_grid: torch.Size([1, 32, 241, 17, 181])
+     sample_grid_feature
+     p: torch.Size([1, 191808, 3])
+     c: torch.Size([1, 32, 241, 17, 181])
+     p_nor: torch.Size([191808, 3])
+     p_nor(unsqueeze): torch.Size([1, 191808, 3])
+     vgrid: torch.Size([1, 191808, 1, 1, 3])
+     c: torch.Size([1, 32, 191808])
+c(before): torch.Size([1, 32, 191808])
+c(after): torch.Size([191808, 32])
+embedded_pts: torch.Size([191808, 93])
+----
+     i: 0
+     h torch.Size([191808, 93])
+     h(pts_linears) torch.Size([191808, 32])
+     c: torch.Size([191808, 32])
+     c(fc_c): torch.Size([191808, 32])
+     h: torch.Size([191808, 32])
+----
+     i: 1
+     h torch.Size([191808, 32])
+     h(pts_linears) torch.Size([191808, 32])
+     c: torch.Size([191808, 32])
+     c(fc_c): torch.Size([191808, 32])
+     h: torch.Size([191808, 32])
+----
+     i: 2
+     h torch.Size([191808, 32])
+     h(pts_linears) torch.Size([191808, 32])
+     c: torch.Size([191808, 32])
+     c(fc_c): torch.Size([191808, 32])
+     h(skip): torch.Size([191808, 125])
+     h: torch.Size([191808, 125])
+----
+     i: 3
+     h torch.Size([191808, 125])
+     h(pts_linears) torch.Size([191808, 32])
+     c: torch.Size([191808, 32])
+     c(fc_c): torch.Size([191808, 32])
+     h: torch.Size([191808, 32])
+----
+     i: 4
+     h torch.Size([191808, 32])
+     h(pts_linears) torch.Size([191808, 32])
+     c: torch.Size([191808, 32])
+     c(fc_c): torch.Size([191808, 32])
+     h: torch.Size([191808, 32])
+out: torch.Size([191808, 1])
+out(not color): torch.Size([191808])
+------------------------------
+points: torch.Size([1, 191808, 3])
+Feature Grid: torch.Size([1, 32, 241, 17, 181])
+Occ: torch.Size([191808])
+Raw: torch.Size([191808, 4])
+========================================
+Rendering Net
+Stage: middle
+------------------------------
+MLP
+p: torch.Size([1, 191808, 3])
+c_grid: torch.Size([1, 32, 241, 17, 181])
+     sample_grid_feature
+     p: torch.Size([1, 191808, 3])
+     c: torch.Size([1, 32, 241, 17, 181])
+     p_nor: torch.Size([191808, 3])
+     p_nor(unsqueeze): torch.Size([1, 191808, 3])
+     vgrid: torch.Size([1, 191808, 1, 1, 3])
+     c: torch.Size([1, 32, 191808])
+c(before): torch.Size([1, 32, 191808])
+c(after): torch.Size([191808, 32])
+embedded_pts: torch.Size([191808, 93])
+----
+     i: 0
+     h torch.Size([191808, 93])
+     h(pts_linears) torch.Size([191808, 32])
+     c: torch.Size([191808, 32])
+     c(fc_c): torch.Size([191808, 32])
+     h: torch.Size([191808, 32])
+----
+     i: 1
+     h torch.Size([191808, 32])
+     h(pts_linears) torch.Size([191808, 32])
+     c: torch.Size([191808, 32])
+     c(fc_c): torch.Size([191808, 32])
+     h: torch.Size([191808, 32])
+----
+     i: 2
+     h torch.Size([191808, 32])
+     h(pts_linears) torch.Size([191808, 32])
+     c: torch.Size([191808, 32])
+     c(fc_c): torch.Size([191808, 32])
+     h(skip): torch.Size([191808, 125])
+     h: torch.Size([191808, 125])
+----
+     i: 3
+     h torch.Size([191808, 125])
+     h(pts_linears) torch.Size([191808, 32])
+     c: torch.Size([191808, 32])
+     c(fc_c): torch.Size([191808, 32])
+     h: torch.Size([191808, 32])
+----
+     i: 4
+     h torch.Size([191808, 32])
+     h(pts_linears) torch.Size([191808, 32])
+     c: torch.Size([191808, 32])
+     c(fc_c): torch.Size([191808, 32])
+     h: torch.Size([191808, 32])
+out: torch.Size([191808, 1])
+out(not color): torch.Size([191808])
+------------------------------
+points: torch.Size([1, 191808, 3])
+Feature Grid: torch.Size([1, 32, 241, 17, 181])
+Occ: torch.Size([191808])
+Raw: torch.Size([191808, 4])
+========================================
+Rendering Net
+Stage: fine
+------------------------------
+MLP
+p: torch.Size([1, 191616, 3])
+c_grid: torch.Size([1, 32, 602, 42, 452])
+     sample_grid_feature
+     p: torch.Size([1, 191616, 3])
+     c: torch.Size([1, 32, 602, 42, 452])
+     p_nor: torch.Size([191616, 3])
+     p_nor(unsqueeze): torch.Size([1, 191616, 3])
+     vgrid: torch.Size([1, 191616, 1, 1, 3])
+     c: torch.Size([1, 32, 191616])
+c(before): torch.Size([1, 32, 191616])
+c(after): torch.Size([191616, 32])
+     sample_grid_feature
+     p: torch.Size([1, 191616, 3])
+     c: torch.Size([1, 32, 241, 17, 181])
+     p_nor: torch.Size([191616, 3])
+     p_nor(unsqueeze): torch.Size([1, 191616, 3])
+     vgrid: torch.Size([1, 191616, 1, 1, 3])
+     c: torch.Size([1, 32, 191616])
+c(concat_feature): torch.Size([191616, 64])
+embedded_pts: torch.Size([191616, 93])
+----
+     i: 0
+     h torch.Size([191616, 93])
+     h(pts_linears) torch.Size([191616, 32])
+     c: torch.Size([191616, 64])
+     c(fc_c): torch.Size([191616, 32])
+     h: torch.Size([191616, 32])
+----
+     i: 1
+     h torch.Size([191616, 32])
+     h(pts_linears) torch.Size([191616, 32])
+     c: torch.Size([191616, 64])
+     c(fc_c): torch.Size([191616, 32])
+     h: torch.Size([191616, 32])
+----
+     i: 2
+     h torch.Size([191616, 32])
+     h(pts_linears) torch.Size([191616, 32])
+     c: torch.Size([191616, 64])
+     c(fc_c): torch.Size([191616, 32])
+     h(skip): torch.Size([191616, 125])
+     h: torch.Size([191616, 125])
+----
+     i: 3
+     h torch.Size([191616, 125])
+     h(pts_linears) torch.Size([191616, 32])
+     c: torch.Size([191616, 64])
+     c(fc_c): torch.Size([191616, 32])
+     h: torch.Size([191616, 32])
+----
+     i: 4
+     h torch.Size([191616, 32])
+     h(pts_linears) torch.Size([191616, 32])
+     c: torch.Size([191616, 64])
+     c(fc_c): torch.Size([191616, 32])
+     h: torch.Size([191616, 32])
+out: torch.Size([191616, 1])
+out(not color): torch.Size([191616])
+------------------------------
+------------------------------
+MLP
+p: torch.Size([1, 191616, 3])
+c_grid: torch.Size([1, 32, 241, 17, 181])
+     sample_grid_feature
+     p: torch.Size([1, 191616, 3])
+     c: torch.Size([1, 32, 241, 17, 181])
+     p_nor: torch.Size([191616, 3])
+     p_nor(unsqueeze): torch.Size([1, 191616, 3])
+     vgrid: torch.Size([1, 191616, 1, 1, 3])
+     c: torch.Size([1, 32, 191616])
+c(before): torch.Size([1, 32, 191616])
+c(after): torch.Size([191616, 32])
+embedded_pts: torch.Size([191616, 93])
+----
+     i: 0
+     h torch.Size([191616, 93])
+     h(pts_linears) torch.Size([191616, 32])
+     c: torch.Size([191616, 32])
+     c(fc_c): torch.Size([191616, 32])
+     h: torch.Size([191616, 32])
+----
+     i: 1
+     h torch.Size([191616, 32])
+     h(pts_linears) torch.Size([191616, 32])
+     c: torch.Size([191616, 32])
+     c(fc_c): torch.Size([191616, 32])
+     h: torch.Size([191616, 32])
+----
+     i: 2
+     h torch.Size([191616, 32])
+     h(pts_linears) torch.Size([191616, 32])
+     c: torch.Size([191616, 32])
+     c(fc_c): torch.Size([191616, 32])
+     h(skip): torch.Size([191616, 125])
+     h: torch.Size([191616, 125])
+----
+     i: 3
+     h torch.Size([191616, 125])
+     h(pts_linears) torch.Size([191616, 32])
+     c: torch.Size([191616, 32])
+     c(fc_c): torch.Size([191616, 32])
+     h: torch.Size([191616, 32])
+----
+     i: 4
+     h torch.Size([191616, 32])
+     h(pts_linears) torch.Size([191616, 32])
+     c: torch.Size([191616, 32])
+     c(fc_c): torch.Size([191616, 32])
+     h: torch.Size([191616, 32])
+out: torch.Size([191616, 1])
+out(not color): torch.Size([191616])
+------------------------------
+points: torch.Size([1, 191616, 3])
+Feature Grid: torch.Size([1, 32, 602, 42, 452])
+Fine Occ: torch.Size([191616])
+Middle Occ: torch.Size([191616])
+Raw: torch.Size([191616, 4])
+========================================
+Rendering Net
+Stage: fine
+------------------------------
+MLP
+p: torch.Size([1, 191808, 3])
+c_grid: torch.Size([1, 32, 602, 42, 452])
+     sample_grid_feature
+     p: torch.Size([1, 191808, 3])
+     c: torch.Size([1, 32, 602, 42, 452])
+     p_nor: torch.Size([191808, 3])
+     p_nor(unsqueeze): torch.Size([1, 191808, 3])
+     vgrid: torch.Size([1, 191808, 1, 1, 3])
+     c: torch.Size([1, 32, 191808])
+c(before): torch.Size([1, 32, 191808])
+c(after): torch.Size([191808, 32])
+     sample_grid_feature
+     p: torch.Size([1, 191808, 3])
+     c: torch.Size([1, 32, 241, 17, 181])
+     p_nor: torch.Size([191808, 3])
+     p_nor(unsqueeze): torch.Size([1, 191808, 3])
+     vgrid: torch.Size([1, 191808, 1, 1, 3])
+     c: torch.Size([1, 32, 191808])
+c(concat_feature): torch.Size([191808, 64])
+embedded_pts: torch.Size([191808, 93])
+----
+     i: 0
+     h torch.Size([191808, 93])
+     h(pts_linears) torch.Size([191808, 32])
+     c: torch.Size([191808, 64])
+     c(fc_c): torch.Size([191808, 32])
+     h: torch.Size([191808, 32])
+----
+     i: 1
+     h torch.Size([191808, 32])
+     h(pts_linears) torch.Size([191808, 32])
+     c: torch.Size([191808, 64])
+     c(fc_c): torch.Size([191808, 32])
+     h: torch.Size([191808, 32])
+----
+     i: 2
+     h torch.Size([191808, 32])
+     h(pts_linears) torch.Size([191808, 32])
+     c: torch.Size([191808, 64])
+     c(fc_c): torch.Size([191808, 32])
+     h(skip): torch.Size([191808, 125])
+     h: torch.Size([191808, 125])
+----
+     i: 3
+     h torch.Size([191808, 125])
+     h(pts_linears) torch.Size([191808, 32])
+     c: torch.Size([191808, 64])
+     c(fc_c): torch.Size([191808, 32])
+     h: torch.Size([191808, 32])
+----
+     i: 4
+     h torch.Size([191808, 32])
+     h(pts_linears) torch.Size([191808, 32])
+     c: torch.Size([191808, 64])
+     c(fc_c): torch.Size([191808, 32])
+     h: torch.Size([191808, 32])
+out: torch.Size([191808, 1])
+out(not color): torch.Size([191808])
+------------------------------
+------------------------------
+MLP
+p: torch.Size([1, 191808, 3])
+c_grid: torch.Size([1, 32, 241, 17, 181])
+     sample_grid_feature
+     p: torch.Size([1, 191808, 3])
+     c: torch.Size([1, 32, 241, 17, 181])
+     p_nor: torch.Size([191808, 3])
+     p_nor(unsqueeze): torch.Size([1, 191808, 3])
+     vgrid: torch.Size([1, 191808, 1, 1, 3])
+     c: torch.Size([1, 32, 191808])
+c(before): torch.Size([1, 32, 191808])
+c(after): torch.Size([191808, 32])
+embedded_pts: torch.Size([191808, 93])
+----
+     i: 0
+     h torch.Size([191808, 93])
+     h(pts_linears) torch.Size([191808, 32])
+     c: torch.Size([191808, 32])
+     c(fc_c): torch.Size([191808, 32])
+     h: torch.Size([191808, 32])
+----
+     i: 1
+     h torch.Size([191808, 32])
+     h(pts_linears) torch.Size([191808, 32])
+     c: torch.Size([191808, 32])
+     c(fc_c): torch.Size([191808, 32])
+     h: torch.Size([191808, 32])
+----
+     i: 2
+     h torch.Size([191808, 32])
+     h(pts_linears) torch.Size([191808, 32])
+     c: torch.Size([191808, 32])
+     c(fc_c): torch.Size([191808, 32])
+     h(skip): torch.Size([191808, 125])
+     h: torch.Size([191808, 125])
+----
+     i: 3
+     h torch.Size([191808, 125])
+     h(pts_linears) torch.Size([191808, 32])
+     c: torch.Size([191808, 32])
+     c(fc_c): torch.Size([191808, 32])
+     h: torch.Size([191808, 32])
+----
+     i: 4
+     h torch.Size([191808, 32])
+     h(pts_linears) torch.Size([191808, 32])
+     c: torch.Size([191808, 32])
+     c(fc_c): torch.Size([191808, 32])
+     h: torch.Size([191808, 32])
+out: torch.Size([191808, 1])
+out(not color): torch.Size([191808])
+------------------------------
+points: torch.Size([1, 191808, 3])
+Feature Grid: torch.Size([1, 32, 602, 42, 452])
+Fine Occ: torch.Size([191808])
+Middle Occ: torch.Size([191808])
+Raw: torch.Size([191808, 4])
+========================================
+Rendering Net
+Stage: color
+------------------------------
+MLP
+p: torch.Size([1, 191808, 3])
+c_grid: torch.Size([1, 32, 602, 42, 452])
+     sample_grid_feature
+     p: torch.Size([1, 191808, 3])
+     c: torch.Size([1, 32, 602, 42, 452])
+     p_nor: torch.Size([191808, 3])
+     p_nor(unsqueeze): torch.Size([1, 191808, 3])
+     vgrid: torch.Size([1, 191808, 1, 1, 3])
+     c: torch.Size([1, 32, 191808])
+c(before): torch.Size([1, 32, 191808])
+c(after): torch.Size([191808, 32])
+     sample_grid_feature
+     p: torch.Size([1, 191808, 3])
+     c: torch.Size([1, 32, 241, 17, 181])
+     p_nor: torch.Size([191808, 3])
+     p_nor(unsqueeze): torch.Size([1, 191808, 3])
+     vgrid: torch.Size([1, 191808, 1, 1, 3])
+     c: torch.Size([1, 32, 191808])
+c(concat_feature): torch.Size([191808, 64])
+embedded_pts: torch.Size([191808, 93])
+----
+     i: 0
+     h torch.Size([191808, 93])
+     h(pts_linears) torch.Size([191808, 32])
+     c: torch.Size([191808, 64])
+     c(fc_c): torch.Size([191808, 32])
+     h: torch.Size([191808, 32])
+----
+     i: 1
+     h torch.Size([191808, 32])
+     h(pts_linears) torch.Size([191808, 32])
+     c: torch.Size([191808, 64])
+     c(fc_c): torch.Size([191808, 32])
+     h: torch.Size([191808, 32])
+----
+     i: 2
+     h torch.Size([191808, 32])
+     h(pts_linears) torch.Size([191808, 32])
+     c: torch.Size([191808, 64])
+     c(fc_c): torch.Size([191808, 32])
+     h(skip): torch.Size([191808, 125])
+     h: torch.Size([191808, 125])
+----
+     i: 3
+     h torch.Size([191808, 125])
+     h(pts_linears) torch.Size([191808, 32])
+     c: torch.Size([191808, 64])
+     c(fc_c): torch.Size([191808, 32])
+     h: torch.Size([191808, 32])
+----
+     i: 4
+     h torch.Size([191808, 32])
+     h(pts_linears) torch.Size([191808, 32])
+     c: torch.Size([191808, 64])
+     c(fc_c): torch.Size([191808, 32])
+     h: torch.Size([191808, 32])
+out: torch.Size([191808, 1])
+out(not color): torch.Size([191808])
+------------------------------
+------------------------------
+MLP
+p: torch.Size([1, 191808, 3])
+c_grid: torch.Size([1, 32, 602, 42, 452])
+     sample_grid_feature
+     p: torch.Size([1, 191808, 3])
+     c: torch.Size([1, 32, 602, 42, 452])
+     p_nor: torch.Size([191808, 3])
+     p_nor(unsqueeze): torch.Size([1, 191808, 3])
+     vgrid: torch.Size([1, 191808, 1, 1, 3])
+     c: torch.Size([1, 32, 191808])
+c(before): torch.Size([1, 32, 191808])
+c(after): torch.Size([191808, 32])
+embedded_pts: torch.Size([191808, 93])
+----
+     i: 0
+     h torch.Size([191808, 93])
+     h(pts_linears) torch.Size([191808, 32])
+     c: torch.Size([191808, 32])
+     c(fc_c): torch.Size([191808, 32])
+     h: torch.Size([191808, 32])
+----
+     i: 1
+     h torch.Size([191808, 32])
+     h(pts_linears) torch.Size([191808, 32])
+     c: torch.Size([191808, 32])
+     c(fc_c): torch.Size([191808, 32])
+     h: torch.Size([191808, 32])
+----
+     i: 2
+     h torch.Size([191808, 32])
+     h(pts_linears) torch.Size([191808, 32])
+     c: torch.Size([191808, 32])
+     c(fc_c): torch.Size([191808, 32])
+     h(skip): torch.Size([191808, 125])
+     h: torch.Size([191808, 125])
+----
+     i: 3
+     h torch.Size([191808, 125])
+     h(pts_linears) torch.Size([191808, 32])
+     c: torch.Size([191808, 32])
+     c(fc_c): torch.Size([191808, 32])
+     h: torch.Size([191808, 32])
+----
+     i: 4
+     h torch.Size([191808, 32])
+     h(pts_linears) torch.Size([191808, 32])
+     c: torch.Size([191808, 32])
+     c(fc_c): torch.Size([191808, 32])
+     h: torch.Size([191808, 32])
+out: torch.Size([191808, 4])
+------------------------------
+------------------------------
+MLP
+p: torch.Size([1, 191808, 3])
+c_grid: torch.Size([1, 32, 241, 17, 181])
+     sample_grid_feature
+     p: torch.Size([1, 191808, 3])
+     c: torch.Size([1, 32, 241, 17, 181])
+     p_nor: torch.Size([191808, 3])
+     p_nor(unsqueeze): torch.Size([1, 191808, 3])
+     vgrid: torch.Size([1, 191808, 1, 1, 3])
+     c: torch.Size([1, 32, 191808])
+c(before): torch.Size([1, 32, 191808])
+c(after): torch.Size([191808, 32])
+embedded_pts: torch.Size([191808, 93])
+----
+     i: 0
+     h torch.Size([191808, 93])
+     h(pts_linears) torch.Size([191808, 32])
+     c: torch.Size([191808, 32])
+     c(fc_c): torch.Size([191808, 32])
+     h: torch.Size([191808, 32])
+----
+     i: 1
+     h torch.Size([191808, 32])
+     h(pts_linears) torch.Size([191808, 32])
+     c: torch.Size([191808, 32])
+     c(fc_c): torch.Size([191808, 32])
+     h: torch.Size([191808, 32])
+----
+     i: 2
+     h torch.Size([191808, 32])
+     h(pts_linears) torch.Size([191808, 32])
+     c: torch.Size([191808, 32])
+     c(fc_c): torch.Size([191808, 32])
+     h(skip): torch.Size([191808, 125])
+     h: torch.Size([191808, 125])
+----
+     i: 3
+     h torch.Size([191808, 125])
+     h(pts_linears) torch.Size([191808, 32])
+     c: torch.Size([191808, 32])
+     c(fc_c): torch.Size([191808, 32])
+     h: torch.Size([191808, 32])
+----
+     i: 4
+     h torch.Size([191808, 32])
+     h(pts_linears) torch.Size([191808, 32])
+     c: torch.Size([191808, 32])
+     c(fc_c): torch.Size([191808, 32])
+     h: torch.Size([191808, 32])
+out: torch.Size([191808, 1])
+out(not color): torch.Size([191808])
+------------------------------
+points: torch.Size([1, 191808, 3])
+Feature Grid: torch.Size([1, 32, 602, 42, 452])
+Fine Occ: torch.Size([191808])
+Middle Occ: torch.Size([191808])
+Raw: torch.Size([191808, 4])
+========================================
+Rendering Net
+Stage: color
+------------------------------
+MLP
+p: torch.Size([1, 191808, 3])
+c_grid: torch.Size([1, 32, 602, 42, 452])
+     sample_grid_feature
+     p: torch.Size([1, 191808, 3])
+     c: torch.Size([1, 32, 602, 42, 452])
+     p_nor: torch.Size([191808, 3])
+     p_nor(unsqueeze): torch.Size([1, 191808, 3])
+     vgrid: torch.Size([1, 191808, 1, 1, 3])
+     c: torch.Size([1, 32, 191808])
+c(before): torch.Size([1, 32, 191808])
+c(after): torch.Size([191808, 32])
+     sample_grid_feature
+     p: torch.Size([1, 191808, 3])
+     c: torch.Size([1, 32, 241, 17, 181])
+     p_nor: torch.Size([191808, 3])
+     p_nor(unsqueeze): torch.Size([1, 191808, 3])
+     vgrid: torch.Size([1, 191808, 1, 1, 3])
+     c: torch.Size([1, 32, 191808])
+c(concat_feature): torch.Size([191808, 64])
+embedded_pts: torch.Size([191808, 93])
+----
+     i: 0
+     h torch.Size([191808, 93])
+     h(pts_linears) torch.Size([191808, 32])
+     c: torch.Size([191808, 64])
+     c(fc_c): torch.Size([191808, 32])
+     h: torch.Size([191808, 32])
+----
+     i: 1
+     h torch.Size([191808, 32])
+     h(pts_linears) torch.Size([191808, 32])
+     c: torch.Size([191808, 64])
+     c(fc_c): torch.Size([191808, 32])
+     h: torch.Size([191808, 32])
+----
+     i: 2
+     h torch.Size([191808, 32])
+     h(pts_linears) torch.Size([191808, 32])
+     c: torch.Size([191808, 64])
+     c(fc_c): torch.Size([191808, 32])
+     h(skip): torch.Size([191808, 125])
+     h: torch.Size([191808, 125])
+----
+     i: 3
+     h torch.Size([191808, 125])
+     h(pts_linears) torch.Size([191808, 32])
+     c: torch.Size([191808, 64])
+     c(fc_c): torch.Size([191808, 32])
+     h: torch.Size([191808, 32])
+----
+     i: 4
+     h torch.Size([191808, 32])
+     h(pts_linears) torch.Size([191808, 32])
+     c: torch.Size([191808, 64])
+     c(fc_c): torch.Size([191808, 32])
+     h: torch.Size([191808, 32])
+out: torch.Size([191808, 1])
+out(not color): torch.Size([191808])
+------------------------------
+------------------------------
+MLP
+p: torch.Size([1, 191808, 3])
+c_grid: torch.Size([1, 32, 602, 42, 452])
+     sample_grid_feature
+     p: torch.Size([1, 191808, 3])
+     c: torch.Size([1, 32, 602, 42, 452])
+     p_nor: torch.Size([191808, 3])
+     p_nor(unsqueeze): torch.Size([1, 191808, 3])
+     vgrid: torch.Size([1, 191808, 1, 1, 3])
+     c: torch.Size([1, 32, 191808])
+c(before): torch.Size([1, 32, 191808])
+c(after): torch.Size([191808, 32])
+embedded_pts: torch.Size([191808, 93])
+----
+     i: 0
+     h torch.Size([191808, 93])
+     h(pts_linears) torch.Size([191808, 32])
+     h(pts_linears) torch.Size([127872, 32])
+     h: torch.Size([127872, 32])
+----
+     i: 4
+     h torch.Size([127872, 32])
+     h(pts_linears) torch.Size([127872, 32])
+     h: torch.Size([127872, 32])
+out: torch.Size([127872, 1])
+out(not color): torch.Size([127872])
+------------------------------
+points: torch.Size([1, 127872, 3])
+Feature Grid: torch.Size([1, 32, 120, 8, 90])
+Occ: torch.Size([127872])
+Raw: torch.Size([127872, 4])
+========================================
+Rendering Net
+Stage: coarse
+------------------------------
+MLP_no_xyz
+p: torch.Size([1, 127872, 3])
+c_grid: torch.Size([1, 32, 120, 8, 90])
+     sample_grid_feature(MLP_no_xyz)
+     p: torch.Size([1, 127872, 3])
+     grid_feature: torch.Size([1, 32, 120, 8, 90])
+     p_nor: torch.Size([127872, 3])
+     p_nor(unsqueeze): torch.Size([1, 127872, 3])
+     vgrid: torch.Size([1, 127872, 1, 1, 3])
+     c: torch.Size([1, 32, 127872])
+c(before): torch.Size([1, 32, 127872])
+c(after): torch.Size([127872, 32])
+----
+     i: 0
+     h torch.Size([127872, 32])
+     h(pts_linears) torch.Size([127872, 32])
+     h: torch.Size([127872, 32])
+----
+     i: 1
+     h torch.Size([127872, 32])
+     h(pts_linears) torch.Size([127872, 32])
+     h: torch.Size([127872, 32])
+----
+     i: 2
+     h torch.Size([127872, 32])
+     h(pts_linears) torch.Size([127872, 32])
+     h(skip): torch.Size([127872, 64])
+     h: torch.Size([127872, 64])
+----
+     i: 3
+     h torch.Size([127872, 64])
+     h(pts_linears) torch.Size([127872, 32])
+     h: torch.Size([127872, 32])
+----
+     i: 4
+     h torch.Size([127872, 32])
+     h(pts_linears) torch.Size([127872, 32])
+     h: torch.Size([127872, 32])
+out: torch.Size([127872, 1])
+out(not color): torch.Size([127872])
+------------------------------
+points: torch.Size([1, 127872, 3])
+Feature Grid: torch.Size([1, 32, 120, 8, 90])
+Occ: torch.Size([127872])
+Raw: torch.Size([127872, 4])
+========================================
+Rendering Net
+Stage: coarse
+------------------------------
+MLP_no_xyz
+p: torch.Size([1, 127744, 3])
+c_grid: torch.Size([1, 32, 120, 8, 90])
+     sample_grid_feature(MLP_no_xyz)
+     p: torch.Size([1, 127744, 3])
+     grid_feature: torch.Size([1, 32, 120, 8, 90])
+     p_nor: torch.Size([127744, 3])
+     p_nor(unsqueeze): torch.Size([1, 127744, 3])
+     vgrid: torch.Size([1, 127744, 1, 1, 3])
+     c: torch.Size([1, 32, 127744])
+c(before): torch.Size([1, 32, 127744])
+c(after): torch.Size([127744, 32])
+----
+     i: 0
+     h torch.Size([127744, 32])
+     h(pts_linears) torch.Size([127744, 32])
+     h: torch.Size([127744, 32])
+----
+     i: 1
+     h torch.Size([127744, 32])
+     h(pts_linears) torch.Size([127744, 32])
+     h: torch.Size([127744, 32])
+----
+     i: 2
+     h torch.Size([127744, 32])
+     h(pts_linears) torch.Size([127744, 32])
+     h(skip): torch.Size([127744, 64])
+     h: torch.Size([127744, 64])
+----
+     i: 3
+     h torch.Size([127744, 64])
+     h(pts_linears) torch.Size([127744, 32])
+     h: torch.Size([127744, 32])
+----
+     i: 4
+     h torch.Size([127744, 32])
+     h(pts_linears) torch.Size([127744, 32])
+     h: torch.Size([127744, 32])
+out: torch.Size([127744, 1])
+out(not color): torch.Size([127744])
+------------------------------
+points: torch.Size([1, 127744, 3])
+Feature Grid: torch.Size([1, 32, 120, 8, 90])
+Occ: torch.Size([127744])
+Raw: torch.Size([127744, 4])
+========================================
+Rendering Net
+Stage: coarse
+------------------------------
+MLP_no_xyz
+p: torch.Size([1, 127872, 3])
+c_grid: torch.Size([1, 32, 120, 8, 90])
+     sample_grid_feature(MLP_no_xyz)
+     p: torch.Size([1, 127872, 3])
+     grid_feature: torch.Size([1, 32, 120, 8, 90])
+     p_nor: torch.Size([127872, 3])
+     p_nor(unsqueeze): torch.Size([1, 127872, 3])
+     vgrid: torch.Size([1, 127872, 1, 1, 3])
+     c: torch.Size([1, 32, 127872])
+c(before): torch.Size([1, 32, 127872])
+c(after): torch.Size([127872, 32])
+----
+     i: 0
+     h torch.Size([127872, 32])
+     h(pts_linears) torch.Size([127872, 32])
+     h: torch.Size([127872, 32])
+----
+     i: 1
+     h torch.Size([127872, 32])
+     h(pts_linears) torch.Size([127872, 32])
+     h: torch.Size([127872, 32])
+----
+     i: 2
+     h torch.Size([127872, 32])
+     h(pts_linears) torch.Size([127872, 32])
+     h(skip): torch.Size([127872, 64])
+     h: torch.Size([127872, 64])
+----
+     i: 3
+     h torch.Size([127872, 64])
+     h(pts_linears) torch.Size([127872, 32])
+     h: torch.Size([127872, 32])
+----
+     i: 4
+     h torch.Size([127872, 32])
+     h(pts_linears) torch.Size([127872, 32])
+     h: torch.Size([127872, 32])
+out: torch.Size([127872, 1])
+out(not color): torch.Size([127872])
+------------------------------
+points: torch.Size([1, 127872, 3])
+Feature Grid: torch.Size([1, 32, 120, 8, 90])
+Occ: torch.Size([127872])
+Raw: torch.Size([127872, 4])
+========================================
+Rendering Net
+Stage: coarse
+------------------------------
+MLP_no_xyz
+p: torch.Size([1, 127744, 3])
+c_grid: torch.Size([1, 32, 120, 8, 90])
+     sample_grid_feature(MLP_no_xyz)
+     p: torch.Size([1, 127744, 3])
+     grid_feature: torch.Size([1, 32, 120, 8, 90])
+     p_nor: torch.Size([127744, 3])
+     p_nor(unsqueeze): torch.Size([1, 127744, 3])
+     vgrid: torch.Size([1, 127744, 1, 1, 3])
+     c: torch.Size([1, 32, 127744])
+c(before): torch.Size([1, 32, 127744])
+c(after): torch.Size([127744, 32])
+----
+     i: 0
+     h torch.Size([127744, 32])
+     h(pts_linears) torch.Size([127744, 32])
+     h: torch.Size([127744, 32])
+----
+     i: 1
+     h torch.Size([127744, 32])
+     h(pts_linears) torch.Size([127744, 32])
+     h: torch.Size([127744, 32])
+----
+     i: 2
+     h torch.Size([127744, 32])
+     h(pts_linears) torch.Size([127744, 32])
+     h(skip): torch.Size([127744, 64])
+     h: torch.Size([127744, 64])
+----
+     i: 3
+     h torch.Size([127744, 64])
+     h(pts_linears) torch.Size([127744, 32])
+     h: torch.Size([127744, 32])
+----
+     i: 4
+     h torch.Size([127744, 32])
+     h(pts_linears) torch.Size([127744, 32])
+     h: torch.Size([127744, 32])
+out: torch.Size([127744, 1])
+out(not color): torch.Size([127744])
+------------------------------
+points: torch.Size([1, 127744, 3])
+Feature Grid: torch.Size([1, 32, 120, 8, 90])
+Occ: torch.Size([127744])
+Raw: torch.Size([127744, 4])
+Tracking: update the parameters from mapping
+[35m
+Tracking Frame  0
+[0m
+[35m
+Tracking Frame  1
+[0m
+Tracking: update the parameters from mapping
+[35m
+Tracking Frame  2
+[0m
+
+     c: torch.Size([191808, 32])
+     c(fc_c): torch.Size([191808, 32])
+     h: torch.Size([191808, 32])
+----
+     i: 1
+     h torch.Size([191808, 32])
+     h(pts_linears) torch.Size([191808, 32])
+     c: torch.Size([191808, 32])
+     c(fc_c): torch.Size([191808, 32])
+     h: torch.Size([191808, 32])
+----
+     i: 2
+     h torch.Size([191808, 32])
+     h(pts_linears) torch.Size([191808, 32])
+     c: torch.Size([191808, 32])
+     c(fc_c): torch.Size([191808, 32])
+     h(skip): torch.Size([191808, 125])
+     h: torch.Size([191808, 125])
+----
+     i: 3
+     h torch.Size([191808, 125])
+     h(pts_linears) torch.Size([191808, 32])
+     c: torch.Size([191808, 32])
+     c(fc_c): torch.Size([191808, 32])
+     h: torch.Size([191808, 32])
+----
+     i: 4
+     h torch.Size([191808, 32])
+     h(pts_linears) torch.Size([191808, 32])
+     c: torch.Size([191808, 32])
+     c(fc_c): torch.Size([191808, 32])
+     h: torch.Size([191808, 32])
+out: torch.Size([191808, 4])
+------------------------------
+------------------------------
+MLP
+p: torch.Size([1, 191808, 3])
+c_grid: torch.Size([1, 32, 241, 17, 181])
+     sample_grid_feature
+     p: torch.Size([1, 191808, 3])
+     c: torch.Size([1, 32, 241, 17, 181])
+     p_nor: torch.Size([191808, 3])
+     p_nor(unsqueeze): torch.Size([1, 191808, 3])
+     vgrid: torch.Size([1, 191808, 1, 1, 3])
+     c: torch.Size([1, 32, 191808])
+c(before): torch.Size([1, 32, 191808])
+c(after): torch.Size([191808, 32])
+embedded_pts: torch.Size([191808, 93])
+----
+     i: 0
+     h torch.Size([191808, 93])
+     h(pts_linears) torch.Size([191808, 32])
+     c: torch.Size([191808, 32])
+     c(fc_c): torch.Size([191808, 32])
+     h: torch.Size([191808, 32])
+----
+     i: 1
+     h torch.Size([191808, 32])
+     h(pts_linears) torch.Size([191808, 32])
+     c: torch.Size([191808, 32])
+     c(fc_c): torch.Size([191808, 32])
+     h: torch.Size([191808, 32])
+----
+     i: 2
+     h torch.Size([191808, 32])
+     h(pts_linears) torch.Size([191808, 32])
+     c: torch.Size([191808, 32])
+     c(fc_c): torch.Size([191808, 32])
+     h(skip): torch.Size([191808, 125])
+     h: torch.Size([191808, 125])
+----
+     i: 3
+     h torch.Size([191808, 125])
+     h(pts_linears) torch.Size([191808, 32])
+     c: torch.Size([191808, 32])
+     c(fc_c): torch.Size([191808, 32])
+     h: torch.Size([191808, 32])
+----
+     i: 4
+     h torch.Size([191808, 32])
+     h(pts_linears) torch.Size([191808, 32])
+     c: torch.Size([191808, 32])
+     c(fc_c): torch.Size([191808, 32])
+     h: torch.Size([191808, 32])
+out: torch.Size([191808, 1])
+out(not color): torch.Size([191808])
+------------------------------
+points: torch.Size([1, 191808, 3])
+Feature Grid: torch.Size([1, 32, 602, 42, 452])
+Fine Occ: torch.Size([191808])
+Middle Occ: torch.Size([191808])
+Raw: torch.Size([191808, 4])
+========================================
+Rendering Net
+Stage: color
+------------------------------
+MLP
+p: torch.Size([1, 191808, 3])
+c_grid: torch.Size([1, 32, 602, 42, 452])
+     sample_grid_feature
+     p: torch.Size([1, 191808, 3])
+     c: torch.Size([1, 32, 602, 42, 452])
+     p_nor: torch.Size([191808, 3])
+     p_nor(unsqueeze): torch.Size([1, 191808, 3])
+     vgrid: torch.Size([1, 191808, 1, 1, 3])
+     c: torch.Size([1, 32, 191808])
+c(before): torch.Size([1, 32, 191808])
+c(after): torch.Size([191808, 32])
+     sample_grid_feature
+     p: torch.Size([1, 191808, 3])
+     c: torch.Size([1, 32, 241, 17, 181])
+     p_nor: torch.Size([191808, 3])
+     p_nor(unsqueeze): torch.Size([1, 191808, 3])
+     vgrid: torch.Size([1, 191808, 1, 1, 3])
+     c: torch.Size([1, 32, 191808])
+c(concat_feature): torch.Size([191808, 64])
+embedded_pts: torch.Size([191808, 93])
+----
+     i: 0
+     h torch.Size([191808, 93])
+     h(pts_linears) torch.Size([191808, 32])
+     c: torch.Size([191808, 64])
+     c(fc_c): torch.Size([191808, 32])
+     h: torch.Size([191808, 32])
+----
+     i: 1
+     h torch.Size([191808, 32])
+     h(pts_linears) torch.Size([191808, 32])
+     c: torch.Size([191808, 64])
+     c(fc_c): torch.Size([191808, 32])
+     h: torch.Size([191808, 32])
+----
+     i: 2
+     h torch.Size([191808, 32])
+     h(pts_linears) torch.Size([191808, 32])
+     c: torch.Size([191808, 64])
+     c(fc_c): torch.Size([191808, 32])
+     h(skip): torch.Size([191808, 125])
+     h: torch.Size([191808, 125])
+----
+     i: 3
+     h torch.Size([191808, 125])
+     h(pts_linears) torch.Size([191808, 32])
+     c: torch.Size([191808, 64])
+     c(fc_c): torch.Size([191808, 32])
+     h: torch.Size([191808, 32])
+----
+     i: 4
+     h torch.Size([191808, 32])
+     h(pts_linears) torch.Size([191808, 32])
+     c: torch.Size([191808, 64])
+     c(fc_c): torch.Size([191808, 32])
+     h: torch.Size([191808, 32])
+out: torch.Size([191808, 1])
+out(not color): torch.Size([191808])
+------------------------------
+------------------------------
+MLP
+p: torch.Size([1, 191808, 3])
+c_grid: torch.Size([1, 32, 602, 42, 452])
+     sample_grid_feature
+     p: torch.Size([1, 191808, 3])
+     c: torch.Size([1, 32, 602, 42, 452])
+     p_nor: torch.Size([191808, 3])
+     p_nor(unsqueeze): torch.Size([1, 191808, 3])
+     vgrid: torch.Size([1, 191808, 1, 1, 3])
+     c: torch.Size([1, 32, 191808])
+c(before): torch.Size([1, 32, 191808])
+c(after): torch.Size([191808, 32])
+embedded_pts: torch.Size([191808, 93])
+----
+     i: 0
+     h torch.Size([191808, 93])
+     h(pts_linears) torch.Size([191808, 32])
+     c: torch.Size([191808, 32])
+     c(fc_c): torch.Size([191808, 32])
+     h: torch.Size([191808, 32])
+----
+     i: 1
+     h torch.Size([191808, 32])
+     h(pts_linears) torch.Size([191808, 32])
+     c: torch.Size([191808, 32])
+     c(fc_c): torch.Size([191808, 32])
+     h: torch.Size([191808, 32])
+----
+     i: 2
+     h torch.Size([191808, 32])
+     h(pts_linears) torch.Size([191808, 32])
+     c: torch.Size([191808, 32])
+     c(fc_c): torch.Size([191808, 32])
+     h(skip): torch.Size([191808, 125])
+     h: torch.Size([191808, 125])
+----
+     i: 3
+     h torch.Size([191808, 125])
+     h(pts_linears) torch.Size([191808, 32])
+     c: torch.Size([191808, 32])
+     c(fc_c): torch.Size([191808, 32])
+     h: torch.Size([191808, 32])
+----
+     i: 4
+     h torch.Size([191808, 32])
+     h(pts_linears) torch.Size([191808, 32])
+     c: torch.Size([191808, 32])
+     c(fc_c): torch.Size([191808, 32])
+     h: torch.Size([191808, 32])
+out: torch.Size([191808, 4])
+------------------------------
+------------------------------
+MLP
+p: torch.Size([1, 191808, 3])
+c_grid: torch.Size([1, 32, 241, 17, 181])
+     sample_grid_feature
+     p: torch.Size([1, 191808, 3])
+     c: torch.Size([1, 32, 241, 17, 181])
+     p_nor: torch.Size([191808, 3])
+     p_nor(unsqueeze): torch.Size([1, 191808, 3])
+     vgrid: torch.Size([1, 191808, 1, 1, 3])
+     c: torch.Size([1, 32, 191808])
+c(before): torch.Size([1, 32, 191808])
+c(after): torch.Size([191808, 32])
+embedded_pts: torch.Size([191808, 93])
+----
+     i: 0
+     h torch.Size([191808, 93])
+     h(pts_linears) torch.Size([191808, 32])
+     c: torch.Size([191808, 32])
+     c(fc_c): torch.Size([191808, 32])
+     h: torch.Size([191808, 32])
+----
+     i: 1
+     h torch.Size([191808, 32])
+     h(pts_linears) torch.Size([191808, 32])
+     c: torch.Size([191808, 32])
+     c(fc_c): torch.Size([191808, 32])
+     h: torch.Size([191808, 32])
+----
+     i: 2
+     h torch.Size([191808, 32])
+     h(pts_linears) torch.Size([191808, 32])
+     c: torch.Size([191808, 32])
+     c(fc_c): torch.Size([191808, 32])
+     h(skip): torch.Size([191808, 125])
+     h: torch.Size([191808, 125])
+----
+     i: 3
+     h torch.Size([191808, 125])
+     h(pts_linears) torch.Size([191808, 32])
+     c: torch.Size([191808, 32])
+     c(fc_c): torch.Size([191808, 32])
+     h: torch.Size([191808, 32])
+----
+     i: 4
+     h torch.Size([191808, 32])
+     h(pts_linears) torch.Size([191808, 32])
+     c: torch.Size([191808, 32])
+     c(fc_c): torch.Size([191808, 32])
+     h: torch.Size([191808, 32])
+out: torch.Size([191808, 1])
+out(not color): torch.Size([191808])
+------------------------------
+points: torch.Size([1, 191808, 3])
+Feature Grid: torch.Size([1, 32, 602, 42, 452])
+Fine Occ: torch.Size([191808])
+Middle Occ: torch.Size([191808])
+Raw: torch.Size([191808, 4])

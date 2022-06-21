@@ -7,6 +7,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 from __future__ import annotations
+from turtle import pos
 from typing import *
 import os.path as osp
 import cv2
@@ -26,6 +27,8 @@ from src.omni_utils.camera import *
 from src.omni_utils.image import *
 from src.omni_utils.sensor_data import SensorDataReader, SensorDataType
 import src.omni_utils.dbhelper
+
+import pdb
 
 def getEquirectCoordinate(
         pts: np.ndarray, equirect_size: Tuple[int, int],
@@ -512,14 +515,12 @@ class OmniMVS(torch.utils.data.Dataset):
         self.build_lt = build_lt
         self.train = train
         self.device_id = device_id
-        self.seg_path = '/data/multipleye'
 
         # define default arguments
         _opts = Edict()
         #_opts.img_fmt = 'cam%d/%05d.png' # [cam_idx, fidx]
         _opts.img_fmt = 'cam%d_square_832/%05d.png' # [cam_idx, fidx]
         _opts.gt_depth_fmt = 'omnidepth_gt_%d/%05d.tiff' # [equi_w, fidx]
-        _opts.gt_seg_fmt = 'pano_wo_occ/seg_result/%05d.png' # added 
         _opts.read_input_image = True # for evaluation, False if read only GT
         _opts.start, _opts.step, _opts.end = 0, 1, 4061 # frame read indices
         _opts.use_frame_idxs_for_test = False
@@ -539,7 +540,7 @@ class OmniMVS(torch.utils.data.Dataset):
         _opts.use_rgb = True
         _opts.lt_equirect_sample_ratio = 1
         _opts.lt_depth_sample_ratio = 2
-        _opts.out_cost = False
+        # _opts.out_cost = False
 
         _opts.use_rounded_cuboid_sweep = False
         _opts.use_mid_depth_sweep = False
@@ -550,7 +551,7 @@ class OmniMVS(torch.utils.data.Dataset):
 
         # first update opts using pre-defined config
         # also load ocam parameters
-        _opts, self.ocams = utils.dbhelper.loadDBConfigs(
+        _opts, self.ocams = src.omni_utils.dbhelper.loadDBConfigs(
             self.dbname, self.db_path, _opts)
 
         self.baseline = np.mean(
@@ -571,7 +572,6 @@ class OmniMVS(torch.utils.data.Dataset):
         # these arguments must follow DB's config
         img_fmt = _opts.img_fmt
         gt_depth_fmt = _opts.gt_depth_fmt
-        gt_seg_fmt = _opts.gt_seg_fmt
         gt_phi = _opts.gt_phi
         dtype = _opts.dtype
         train_idx = _opts.train_idx
@@ -587,7 +587,6 @@ class OmniMVS(torch.utils.data.Dataset):
         # these arguments must follow config files
         opts.img_fmt = img_fmt
         opts.gt_depth_fmt = gt_depth_fmt
-        opts.gt_seg_fmt = gt_seg_fmt
         opts.gt_phi = gt_phi
         opts.dtype = dtype
         opts.train_idx = train_idx
@@ -651,6 +650,13 @@ class OmniMVS(torch.utils.data.Dataset):
             opts.img_fmt = 'cam%d/%06d.png' # [cam_idx, fidx]
         """else:
             raise KeyError(f'Dataset name error {dbname}')"""
+   
+        fidxs, poses = self.splitTrajectoryResult(np.loadtxt(osp.join(self.db_path, self.opts.poses_file)).T)
+        self.poses = dict.fromkeys(fidxs, poses)
+        
+        opts.start, opts.end = fidxs[0], fidxs[-1]
+        opts.train_idx = list(range(opts.start, opts.end))
+        opts.test_idx = list(range(opts.start, opts.end))
         
         self.frame_idx = list(range(
             opts.start, opts.end + opts.step, opts.step))
@@ -704,7 +710,7 @@ class OmniMVS(torch.utils.data.Dataset):
                 self.phi_max_deg, True)
 
         self.cuboid_size = opts.cuboid_size
-        self.out_cost = opts.out_cost
+        # self.out_cost = opts.out_cost
 
         if build_lt:
             lt_equirect_w = self.equirect_size[1] // \
@@ -869,10 +875,11 @@ class OmniMVS(torch.utils.data.Dataset):
                 grids = self.grids
         ##modified
         #index, prob, _ = net(imgs, grids, self.invdepth_indices, off_indices)
-        if self.out_cost:
-            index, prob, resp = net(imgs, grids, self.invdepth_indices, off_indices)
-        else:
-            index, prob, _, seg_prob = net(imgs, grids, self.invdepth_indices, off_indices)
+        # if self.out_cost:
+        index, prob, resp, raw_feat, geo_feat = net(imgs, grids, self.invdepth_indices, off_indices)
+        feats = []
+        feats.append(raw_feat)
+        feats.append(geo_feat)
 
         entropy = torch.sum(-torch.log(prob + EPS) * prob, 1)
         if output_numpy:
@@ -880,10 +887,10 @@ class OmniMVS(torch.utils.data.Dataset):
             entropy = scipy.ndimage.gaussian_filter(
                 toNumpy(exp(entropy).detach()), sigma=1) #toNumpy(exp(entropy)), sigma=1) 
         
-        if self.out_cost:
-            return index, entropy, resp
-        else:
-            return index, entropy, seg_prob
+        return index, entropy, prob, resp, feats
+        
+        # if self.out_cost:
+        #     return index, entropy, resp
 
     def __len__(self) -> int:
         if self.train:
@@ -910,6 +917,18 @@ class OmniMVS(torch.utils.data.Dataset):
             else:
                 return self.loadTestSample(i,
                     read_input_image=self.opts.read_input_image, args=opts)
+
+    def splitTrajectoryResult(self, trajectory: np.ndarray) \
+          -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+        rows = trajectory.shape[0]
+        if rows != 8:
+            sys.exit(
+                'Trajectory must has 8 rows '
+                '(fidx, rx, ry, rz, tx ty, tz, timestamp)')
+        fidxs = trajectory[0, :].astype(np.int32).T.tolist()
+        poses = trajectory[1:7, :].astype(np.float32).T
+        poses = np.split(poses, len(fidxs))
+        return fidxs, poses
 
     def indexToInvdepth(self,
             idx: float | np.ndarray | torch.Tensor,
@@ -1049,62 +1068,45 @@ class OmniMVS(torch.utils.data.Dataset):
         pano_sum[valid] = np.round(pano_sum[valid] / valid_count[valid])
         return pano_sum.astype(np.uint8)
 
-    def getRGBViewPanorama(self, imgs, invdepth: np.ndarray, fidx=int,
-                     entropy=None, gt=None, valid=None, transform=None,
-                     vis_depthmap=False, max_depth=100.0, pano=None,
-                     vis_errormap=True, depth_colormap='oliver',
-                     black_invalid=True) -> \
-                         np.ndarray:
-
-        equirect_size = (160, 640)
-        invdepth = toNumpy(invdepth)
+    def getRGBViewPanorama(self, imgs: List[np.ndarray], invdepth: torch.Tensor | np.ndarray, 
+                           valid=None, transform=None) -> List[torch.Tensor] | List[np.ndarray]:
+        equirect_size = self.equirect_size
         depth = 1 / invdepth.reshape((1, -1))
 
-        P = depth * self.equi_rays
+        P = depth * torch.Tensor(self.equi_rays).to(self.device_id) if isTorchArray(depth) else self.equi_rays
         if transform is not None:
             P = applyTransform(transform, P)
-        pano_sum = np.zeros((equirect_size[0], equirect_size[1], 3))
-        valid_count = np.zeros((equirect_size[0], equirect_size[1], 3))
 
         equi_ims = []
         for i in range(4):
             img = imgs[i]
-            img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
+            if not isTorchArray(depth):
+              img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
             P2 = applyTransform(self.ocams[i].rig2cam, P)
             p = self.ocams[i].rayToPixel(P2)
 
             grid = pixelToGrid(p, equirect_size,
                 (self.ocams[i].height,self.ocams[i].width))
-            equi_im = toNumpy(interp2D(img, grid, 0))
-            valid = (p[0,:] >= 0).reshape(
-                equirect_size)
-            
-            valid = np.expand_dims(valid, axis=2)
-            valid_concat = np.concatenate((valid, valid), axis=2)
-            valid_concat = np.concatenate((valid_concat, valid), axis=2) #broadcasting
-
-            pano_sum[valid_concat] += equi_im[valid_concat]
-
-            valid_count[valid_concat] += 1
-    
+            # equi_im = toNumpy(interp2D(img, grid, 0))
+            equi_im = interp2D(torch.Tensor(img).to(self.device_id) \
+                                  if isTorchArray(depth) else img, \
+                                grid, 0)
+            if isTorchArray(equi_im):
+              equi_im = equi_im.permute(2, 0, 1)
             equi_ims.append(equi_im)
- 
-        valid = valid_count > 0
-        pano_sum[valid] = np.round(pano_sum[valid] / valid_count[valid])
 
         return equi_ims 
 
-    def getRefPanorama(self, invdepth, fidx:int, transform=None):
+    def getRefPanorama(self, invdepth: torch.Tensor | np.ndarray, transform=None) -> \
+                        List[torch.Tensor] | List[np.ndarray]:
         ref_depth = []
-
         depth = 1 / invdepth.reshape((1, -1))
 
-        P = depth * self.equi_rays 
+        P = depth * torch.Tensor(self.equi_rays).to(self.device_id) if isTorchArray(depth) else self.equi_rays
         if transform is not None:
             P = applyTransform(transform, P)
         pano_sum = np.zeros(self.equirect_size)
         
-        valid_count = np.zeros(self.equirect_size, dtype=np.uint8)
         for i in range(4):
             P2 = applyTransform(self.ocams[i].rig2cam, P)
             
@@ -1112,34 +1114,19 @@ class OmniMVS(torch.utils.data.Dataset):
             invdepth_cam = 1.0 / depth_cam
             refidx_cam = self.invdepthToIndex(invdepth_cam)
 
-            refidx_cam = refidx_cam.reshape(160, 640)
+            refidx_cam = refidx_cam.reshape(self.equirect_size)
 
             ref_depth.append(refidx_cam)
 
-        # import pdb
-        # pdb.set_trace()
         return ref_depth
 
-
-    def getViewPanorama(self, imgs, invdepth: np.ndarray, frame_num=0,
-                     entropy=None, gt=None, valid=None, transform=None,
-                     vis_depthmap=False, max_depth=100.0, pano=None,
-                     vis_errormap=True, depth_colormap='oliver',
-                     black_invalid=True) -> \
-                         np.ndarray:
-        equirect_size = (160, 640)
-
-        invdepth = toNumpy(invdepth)
+    def getViewPanorama(self, imgs: torch.Tensor | np.ndarray, invdepth: torch.Tensor | np.ndarray, transform=None) -> \
+                         List[torch.Tensor] | List[np.ndarray]:
+        equirect_size = self.equirect_size
         depth = 1 / invdepth.reshape((1, -1))
 
-        # import pdb
-        # pdb.set_trace()
-        self.equi_rays, self.equi_thetas, self.equi_phis = \
-            makeSphericalRays(equirect_size, self.phi_deg,
-                self.phi_max_deg, True)
-
         equi_ims = []
-        P = depth * self.equi_rays
+        P = depth * torch.Tensor(self.equi_rays).to(self.device_id) if isTorchArray(depth) else self.equi_rays
         if transform is not None:
             P = applyTransform(transform, P)
 
@@ -1149,7 +1136,7 @@ class OmniMVS(torch.utils.data.Dataset):
 
             grid = pixelToGrid(p, equirect_size,
                 (self.ocams[i].height,self.ocams[i].width))
-            equi_im = toNumpy(interp2D(imgs[i].cpu(),grid, 1))
+            equi_im = interp2D(imgs[i], grid, 1)
             equi_ims.append(equi_im)
       
         return equi_ims
@@ -1306,112 +1293,6 @@ class OmniMVS(torch.utils.data.Dataset):
                 invdepth_rgb = colorMap(depth_colormap, invdepth,
                     self.min_invdepth, vis_max_invdepth)
         return invdepth_rgb
-
-    ###added##
-    def makeDepthSegVis(self, imgs, seg_pano, invdepth: np.ndarray,
-                     entropy=None, depth_gt_img=None, seg_gt_img=None, valid=None, transform=None,
-                     vis_depthmap=False, max_depth=100.0, pano=None,
-                     vis_errormap=True, depth_colormap='oliver',
-                     black_invalid=True) -> \
-                         np.ndarray:
-        def addColorDepthBar(invdepth, invdepth_rgb, vmin, vmax):
-            h, w =  invdepth.shape
-            bar_w = int(w * 0.03)
-            bar_h = int(h * 0.95)
-            vstep = (vmax - vmin) / (bar_h - 1)
-            invdepths = np.arange(0, bar_h, 1, dtype=np.float32) / \
-                (bar_h - 1) * (vmax - vmin) + vmin
-            bar = colorMapOliver(
-                np.tile(invdepths.reshape(-1, 1), (1, bar_w)), vmin, vmax)
-            black = np.zeros_like(bar)
-            bar = concat([black, bar], 1)
-            ref_depths = (1 / vmax) * np.array([1.0, 1.5, 3.0, 15.0])
-            ref_idxs = ((1 / ref_depths) - vmin) / vstep
-            ref_idxs = np.round(ref_idxs).astype(np.int32)
-            line = np.array([255, 255, 255], dtype=np.uint8).reshape((1, 3))
-            line = np.tile(line, (bar_w, 1))
-            pos_x = w - (2 * bar_w) - 10
-            pos_y = (h - bar_h) // 2
-            invdepth_rgb[pos_y:pos_y+bar_h, pos_x:pos_x+bar_w,:] = \
-                ((invdepth_rgb[pos_y:pos_y+bar_h, pos_x:pos_x+bar_w,:].astype(
-                    np.float32) + \
-                bar[:,:bar_w].astype(np.float32)) / 2.0).astype(np.uint8)
-            invdepth_rgb[pos_y:pos_y+bar_h, pos_x+bar_w:pos_x+2*bar_w,:] = \
-                bar[:,bar_w:]
-            for n, idx in enumerate(ref_idxs):
-                if idx >= bar_h: continue
-                invdepth_rgb[pos_y+idx, pos_x:pos_x+bar_w, :] = line
-                text = '%.1f' % ref_depths[n]
-                textsize, b = cv2.getTextSize(
-                    text, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 1)
-                cv2.putText(invdepth_rgb, '%.1f' % (ref_depths[n]),
-                    (pos_x + (bar_w - textsize[0]) // 2,
-                     pos_y + idx - textsize[1]//2 + 2),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 0), 1)
-
-        for i in range(len(imgs)):
-            imgs[i] = toNumpy(imgs[i]).squeeze()
-            imgs[i][self.ocams[i].invalid_mask] = 0
-        if self.opts.for_car and len(imgs) == 8:
-            inputs = concat(
-                [concat([imgs[0], imgs[1]], axis=1),
-                 concat([imgs[3], imgs[2]], axis=1),
-                 concat([imgs[4], imgs[5]], axis=1),
-                 concat([imgs[7], imgs[6]], axis=1)], axis=0)
-        elif self.opts.for_car and len(imgs) == 6:
-            inputs = concat(
-                [concat([imgs[0], imgs[1]], axis=1),
-                 concat([imgs[3], imgs[2]], axis=1),
-                 concat([imgs[4], imgs[5]], axis=1)], axis=0)
-        else:
-            inputs = concat(
-                [concat([imgs[0], imgs[1]], axis=1),
-                concat([imgs[3], imgs[2]], axis=1)], axis=0)
-
-        if pano is None:
-            pano = self.getPanorama(imgs, invdepth, transform)
-            pano_rgb = np.tile(pano[..., np.newaxis], (1, 1, 3))
-        else:
-            if len(pano.shape) == 2:
-                pano_rgb = np.tile(pano[..., np.newaxis], (1, 1, 3))
-            else:
-                pano_rgb = pano
-        if not pano_rgb.dtype == np.uint8:
-            pano_rgb = np.round(pano_rgb * 255).astype(np.uint8)
-
-        # make color bar
-        if self.opts.for_car:
-            inv_r = self.invdepthToCuboidRadius(invdepth)
-
-        vis_max_invdepth = max(0.3, self.max_invdepth / 2)
-        if vis_depthmap:
-            if self.opts.for_car:
-                depth = 1 / inv_r
-            else:
-                depth = 1 / invdepth
-            invdepth_rgb = colorMap(depth_colormap, np.log(depth),
-                np.log(1 / self.max_invdepth), np.log(max_depth))
-        else:
-            if self.opts.for_car:
-                invdepth_rgb = colorMap(depth_colormap, inv_r,
-                    self.min_invdepth, vis_max_invdepth)
-            else:
-                invdepth_rgb = colorMap(depth_colormap, invdepth,
-                    self.min_invdepth, vis_max_invdepth)
-
-
-        depth_vis = np.concatenate((depth_gt_img, invdepth_rgb), axis=0)
-        seg_vis = np.concatenate((seg_gt_img, seg_pano), axis=0)
-        vis = np.concatenate((depth_vis, seg_vis), axis=0)
-        #vis = np.concatenate((vis, seg_pano), axis=0)
-
-        ratio = vis.shape[0] / float(inputs.shape[0])
-        inputs_rgb = np.tile(
-            imrescale(inputs, ratio)[..., np.newaxis], (1, 1, 3))
-
-        vis = np.concatenate((inputs_rgb, vis), axis=1)
-        return vis
-    ###added##
     
     ## Load Sample ===================================================
     def findDatasetIndex(self,
@@ -1474,7 +1355,7 @@ class OmniMVS(torch.utils.data.Dataset):
         opts.morph_win_size = 5
         opts.input_size = None
         opts = argparse(opts, args)
-        imgs, raw_imgs, gt, valid, seg_gt = None, None, None, None, None
+        imgs, raw_imgs, gt, valid = None, None, None, None
         if read_input_image:
             input_images = self.loadImages(
                 fidx, out_raw_imgs=True, use_rgb=self.opts.use_rgb,
@@ -1505,8 +1386,16 @@ class OmniMVS(torch.utils.data.Dataset):
                     visible_mask[vis] = True
                 valid = np.logical_and(valid, visible_mask)
                 valid = torch.tensor(valid).bool()
+                
+        pose = self.poses[fidx][0]
+        R, tr = getRot(pose), getTr(pose)
+        c2w = np.eye(4)
+        c2w[:3, :] = np.concatenate((R, tr), axis=1)
+        c2w[:3, 1] *= -1
+        c2w[:3, 2] *= -1
+        c2w = torch.from_numpy(c2w).float()
 
-        return (imgs, gt, valid, raw_imgs, seg_gt)
+        return (imgs, gt, valid, raw_imgs, c2w)
 
     ## File I/O ======================================================
     def loadImages(self, fidx: int, out_raw_imgs=False, use_rgb=False,
@@ -1543,38 +1432,32 @@ class OmniMVS(torch.utils.data.Dataset):
         if out_raw_imgs: return (imgs, raw_imgs)
         else: return imgs
 
-    def getPanoramaViewdepthIndex(self, view_depth, fidx: int, invdepth, remove_gt_noise = True,
-                            morph_win_size:int = 5) -> \
-                                Tuple[np.ndarray, np.ndarray] | None:
+    def getPanoramaViewdepthIndex(self, view_depth: torch.Tensor | np.ndarray, invdepth: torch.Tensor | np.ndarray, 
+                                  remove_gt_noise = True, morph_win_size:int = 5) -> \
+                                Tuple[torch.Tensor, torch.Tensor] | Tuple[np.ndarray, np.ndarray] | None:
         h, w = self.equirect_size
 
         # import pdb
         # pdb.set_trace()
-        depth_pano = self.getViewPanorama(view_depth, invdepth, fidx, None)
+        depth_pano = self.getViewPanorama(view_depth, invdepth, transform=None)
         
         view_depth_idx =[]
         for i in range(len(depth_pano)):
             gt = depth_pano[i]
             gt_idx = self.invdepthToIndex(gt)
             gt_idx[gt_idx > (self.num_invdepth - 1)] = self.num_invdepth - 1
-            gt_idx[np.isnan(gt_idx)] = -1
+            if isTorchArray(gt_idx):
+              gt_idx[torch.isnan(gt_idx)] = -1
+            else:
+              gt_idx[np.isnan(gt_idx)] = -1
             if not remove_gt_noise:
                 return gt_idx, gt
-            # make valid mask
-            morph_filter = np.ones(
-                (morph_win_size, morph_win_size), dtype=np.uint8)
-            finite_depth = gt >= 1e-4 # <= 10000 m
-            closed_depth = scipy.ndimage.binary_closing(
-                finite_depth, morph_filter)
-            infinite_depth = np.logical_not(finite_depth)
-            infinite_hole = np.logical_and(infinite_depth, closed_depth)
-            #gt_idx[infinite_hole] = -1
 
-            ##added
             small_than_zero = gt_idx < 0
             gt_idx[small_than_zero] = -1
-            ##added
+            
             view_depth_idx.append(gt_idx)
+
         return view_depth_idx, depth_pano
 
     def loadGTInvdepthIndex(self, fidx: int, remove_gt_noise = True,
@@ -1627,20 +1510,6 @@ class OmniMVS(torch.utils.data.Dataset):
         infinite_hole = np.logical_and(infinite_depth, closed_depth)
         gt_idx[infinite_hole] = -1
         return gt_idx, gt
-
-    ##added
-    def loadGTSeg(self, fidx: int):
-        h, w = self.equirect_size
-        gt_seg_file = osp.join(
-            self.db_path, self.opts.gt_seg_fmt % fidx)
-        gt = cv2.imread(gt_seg_file, cv2.IMREAD_GRAYSCALE)
-
-        if gt is None: 
-            LOG_ERROR('Failed to load Segmentation GT: %s' % gt_seg_file)
-            return None
-
-        seg_gt = torch.Tensor(gt)#.unsqueeze(0)
-        return seg_gt
 
     def readInvdepth(self, path: str) -> np.ndarray:
         if not osp.exists(path):
@@ -1715,9 +1584,11 @@ class BatchCollator:
         if len(self.raw_imgs) == 1:
             self.raw_imgs = self.raw_imgs[0]
 
+        self.c2w = torch.stack(data[4], 0)
 
     def pin_memory(self):
         self.imgs = [I.cuda() for I in self.imgs]
+        self.c2w = self.c2w.cuda()  # change to device
         if self.gt is not None:
             self.gt = self.gt.cuda()
             self.valid = self.valid.cuda()

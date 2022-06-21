@@ -58,7 +58,8 @@ class NICE_SLAM():
 
         self.load_bound(cfg)
         if self.nice:
-            self.load_pretrain(cfg)
+            if cfg['model']['c_dim'] == 32:
+                self.load_pretrain(cfg)
             self.grid_init(cfg)
         else:
             self.shared_c = {}
@@ -153,6 +154,9 @@ class NICE_SLAM():
         # enlarge the bound a bit to allow it divisable by bound_divisable
         self.bound[:, 1] = (((self.bound[:, 1]-self.bound[:, 0]) /
                             bound_divisable).int()+1)*bound_divisable+self.bound[:, 0]
+        
+        print('Bound:', self.bound)
+        
         if self.nice:
             self.shared_decoders.bound = self.bound
             self.shared_decoders.middle_decoder.bound = self.bound
@@ -209,7 +213,6 @@ class NICE_SLAM():
         self.shared_c = ckpt['c']
         self.shared_decoders.load_state_dict(ckpt['decoder_state_dict'])
         
-
     def grid_init(self, cfg):
         """
         Initialize the hierarchical feature grids.
@@ -231,6 +234,8 @@ class NICE_SLAM():
         c_dim = cfg['model']['c_dim']
         xyz_len = self.bound[:, 1]-self.bound[:, 0]
 
+        import pdb
+        pdb.set_trace()
         if self.coarse:
             coarse_key = 'grid_coarse'
             coarse_val_shape = list(
@@ -240,6 +245,7 @@ class NICE_SLAM():
             val_shape = [1, c_dim, *coarse_val_shape]
             coarse_val = torch.zeros(val_shape).normal_(mean=0, std=0.01)
             c[coarse_key] = coarse_val
+            print('Coarse Grid:', coarse_val.shape)
 
         middle_key = 'grid_middle'
         middle_val_shape = list(map(int, (xyz_len/middle_grid_len).tolist()))
@@ -248,6 +254,7 @@ class NICE_SLAM():
         val_shape = [1, c_dim, *middle_val_shape]
         middle_val = torch.zeros(val_shape).normal_(mean=0, std=0.01)
         c[middle_key] = middle_val
+        print('Middle Grid:', middle_val.shape)
 
         fine_key = 'grid_fine'
         fine_val_shape = list(map(int, (xyz_len/fine_grid_len).tolist()))
@@ -256,6 +263,7 @@ class NICE_SLAM():
         val_shape = [1, c_dim, *fine_val_shape]
         fine_val = torch.zeros(val_shape).normal_(mean=0, std=0.0001)
         c[fine_key] = fine_val
+        print('Fine Grid:', fine_val.shape)
 
         color_key = 'grid_color'
         color_val_shape = list(map(int, (xyz_len/color_grid_len).tolist()))
@@ -264,6 +272,7 @@ class NICE_SLAM():
         val_shape = [1, c_dim, *color_val_shape]
         color_val = torch.zeros(val_shape).normal_(mean=0, std=0.01)
         c[color_key] = color_val
+        print('Color Grid:', color_val.shape)
 
         self.shared_c = c
 

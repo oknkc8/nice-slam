@@ -152,7 +152,7 @@ def interp2DNumpy(I: np.ndarray, grid: np.ndarray) -> np.ndarray:
     else:
         return __interpChannel(I, x0, x1, y0, y1, rx, ry, rx1, ry1, invalid)
 
-
+ 
 def interp2D(I: torch.Tensor | np.ndarray, grid: torch.Tensor | np.ndarray, flag) \
         -> torch.Tensor | np.ndarray:
     if not TORCH_FOUND:
@@ -160,22 +160,24 @@ def interp2D(I: torch.Tensor | np.ndarray, grid: torch.Tensor | np.ndarray, flag
     istensor = isTorchArray(I)
     I = torch.tensor(I).float().squeeze().unsqueeze(0) # make 1 x C x H x W
 
-    if flag == 1:
+    if flag == 0: #RGBimages
         is_flipped = I.shape[3] == 3 and I.shape[1] != 3
-        if is_flipped: I = I.permute((0, 3, 1, 2)) #RGBimages
-    elif flag == 0:
+        if is_flipped: I = I.permute((0, 3, 1, 2))
+    elif flag == 1:
         is_flipped = I.shape[2] == 1 and I.shape[0] != 1
-        if is_flipped: I = I.transpose((2, 0)) #grayscale image
-    else:
-        raise ValueError(f'invalid flag: {flag}')
-
+        if is_flipped: I = I.transpose((2, 0))
 
     if len(I.shape) < 4 : # if 1D channel image
         I = I.unsqueeze(0)
     grid = torch.tensor(
         grid).squeeze().unsqueeze(0).float() # make 1 x npts x 2
-    out = F.grid_sample(
-        I, grid, mode='bilinear', align_corners=True).squeeze()
+    if flag == 0: #RGBimages
+        out = F.grid_sample(
+            I, grid, mode='bilinear', align_corners=True).squeeze()
+    elif flag == 1:
+        out = F.grid_sample(
+            I, grid, mode='nearest', align_corners=True).squeeze()
+
     if is_flipped: out = out.permute((1, 2, 0))
     if not istensor: out = out.numpy()
     return out
@@ -274,12 +276,8 @@ def readImage(path: str, read_or_die = True) -> np.ndarray | None:
     try:
         return skimage.io.imread(path)
     except Exception as e:
-        LOG_ERROR('Failed to read image: "%s", "%s"' % (e, path))
+        LOG_ERROR('Failed to read image: "%s"' % (e))
         if read_or_die:
             traceback.print_tb(e.__traceback__)
             sys.exit()
         return None
-
-
-
-

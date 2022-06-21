@@ -23,6 +23,8 @@ class CameraType(Enum):
     OPENCV_FISHEYE = "opencv_fisheye"
     UWFISHEYE = "uwfisheye"
     OCAM = "ocam"
+    RADIALPOLY = "radialpoly" #woodscape
+    CYLINDER = "cylinder"
     OTHER = "other"
 
 class CameraModel:
@@ -34,8 +36,9 @@ class CameraModel:
             (np.identity(3), np.zeros((3, 1))), 1).astype(np.float64)
         self.rig2cam = self.cam2rig.copy()
         self.invalid_mask = None
+        self.invalid_mask_file = None
 
-    def LoadFromDict(self, dict: Dict) -> bool:
+    def loadFromDict(self, dict: Dict) -> bool:
         try:
             if 'cam_id' in dict.keys():
                 self.id = dict['cam_id']
@@ -47,11 +50,20 @@ class CameraModel:
                 self.cam2rig = np.array(dict['pose']).reshape((6, 1))
             elif  'cam2rig_pose' in dict.keys():
                 self.cam2rig = np.array(dict['cam2rig_pose']).reshape((6, 1))
-            self.rig2cam = inverseTransform(self.cam2rig)
+            self.rig2cam = inverseTransform(self.cam2rig) #이거 주석처리 하면 ValueError: cannot reshape array of size 9 into shape (3,1)
             return True
         except KeyError as e:
             LOG_ERROR(e)
             return False
+
+    def exportToDict(self) -> dict:
+        dict = {}
+        dict['model'] = self.type.value
+        if self.id > 0: dict['cam_id'] = self.id
+        dict['image_size'] = [self.height, self.width] \
+            if self.type == CameraType.OCAM else [self.width, self.height]
+        dict['cam2rig_pose'] = toPoseVector(self.cam2rig).flatten().tolist()
+        return dict
 
     @property
     def image_size(self):
@@ -66,10 +78,16 @@ class CameraModel:
             cam = UWFisheyeModel()
         elif cam_type is CameraType.OPENCV_FISHEYE:
             cam = OpenCVFisheyeModel()
+        elif cam_type is CameraType.RADIALPOLY:
+            cam = RadialPolyModel()
+        elif cam_type is CameraType.PINHOLE:
+            cam = PinholeModel()
+        elif cam_type is CameraType.CYLINDER:
+            cam = CylinderCamModel()
         else:
             LOG_ERROR('unknown camera model "%s"' % cam_type)
             return None
-        if not cam.LoadFromDict(dict):
+        if not cam.loadFromDict(dict):
             return None
         return cam
 
@@ -99,6 +117,58 @@ class CameraModel:
             -> Tuple[np.ndarray, np.ndarray]:
         raise NotImplementedError
 
+class CylinderCamModel(CameraModel):
+    def __init__(self):
+        super().__init__()
+        self.xc, self.yc, self.fy = 0, 0, 1
+        self.max_theta = 0
+        self.type = CameraType.CYLINDER
+
+    def loadFromDict(self, dict: Dict) -> bool:
+        #return super().loadFromDict(dict)
+        if not super().loadFromDict(dict): return False
+        try:
+            self.fx, self.fy = dict['focal_length']
+            self.xc, self.yc = dict['center']
+            self.max_theta = dict['max_theta']
+            return True
+        except KeyError as e:
+            LOG_ERROR(e)
+            return False
+
+    def pixelToRay(self, pts2d: np.ndarray | torch.Tensor) \
+            -> np.ndarray | torch.Tensor:
+        thetas = (pts2d[0, :] - self.xc) / self.xc * self.max_theta + np.pi / 2
+        ys = (pts2d[1, :] - self.yc) / self.fy
+        xs = -cos(thetas)
+        zs = sin(thetas)
+        ray = concat(
+            (xs.reshape((1, -1)), ys.reshape((1, -1)), zs.reshape((1, -1))), 0)
+        return ray
+
+    def rayToPixel(self, pts3d: np.ndarray | torch.Tensor) \
+            -> np.ndarray | torch.Tensor:
+        xs = pts3d[0, :]
+        ys = pts3d[1, :]
+        zs = pts3d[2, :]
+        r = sqrt(xs**2 + zs**2)
+        ys = (ys / r) * self.fy + self.yc
+        theta = atan2(zs, -xs)
+        xs = (theta - np.pi / 2) / self.max_theta * self.xc + self.xc
+        return concat((xs.reshape((1, -1)), ys.reshape((1, -1))), 0)
+
+    @staticmethod
+    def getCylinderCameraModel(
+            width: int, height: int, wfov_deg: float):
+        aspect = width / float(height)
+        hfov_deg = wfov_deg / aspect
+        model = CylinderCamModel()
+        model.xc, model.yc = (width - 1) / 2.0, (height - 1) / 2.0
+        model.max_theta = np.deg2rad(wfov_deg / 2.0)
+        model.fy = model.yc / tan(np.deg2rad(hfov_deg / 2.0))
+        model.width, model.height = int(width), int(height)
+        #print(model.xc, model.yc, model.fy, model.width, model.height, model.max_theta)
+        return model
 
 class PinholeModel(CameraModel):
     def __init__(self):
@@ -197,7 +267,7 @@ class PinholeModel(CameraModel):
         model.width, model.height = int(width), int(height)
         #print(model.xc, model.yc, model.fx, model.fy, model.max_theta, model.width, model.height)
         return model
-
+ 
 class OpenCVFisheyeModel(CameraModel):
     def __init__(self):
         super().__init__()
@@ -214,8 +284,8 @@ class OpenCVFisheyeModel(CameraModel):
              [0, self.fy, self.cy],
              [0, 0, 1]])
 
-    def LoadFromDict(self, dict: Dict) -> bool:
-        if not super().LoadFromDict(dict): return False
+    def loadFromDict(self, dict: Dict) -> bool:
+        if not super().loadFromDict(dict): return False
         try:
             self.fx, self.fy = dict['focal_length']
             self.xc, self.yc = dict['center']
@@ -350,6 +420,7 @@ class OpenCVFisheyeModel(CameraModel):
             radii = new_r * self.fx
             return radii, thetas
 
+ 
 
 class UWFisheyeModel(CameraModel):
 
@@ -361,8 +432,8 @@ class UWFisheyeModel(CameraModel):
         self.max_theta = -1.0
         self.type = CameraType.UWFISHEYE
 
-    def LoadFromDict(self, dict: Dict) -> bool:
-        if not super().LoadFromDict(dict): return False
+    def loadFromDict(self, dict: Dict) -> bool:
+        if not super().loadFromDict(dict): return False
         try:
             num_pol = dict['poly'][0]
             if len(dict['poly']) - 1 != num_pol :
@@ -370,14 +441,16 @@ class UWFisheyeModel(CameraModel):
                     'Number of coeffs does not match in ocam\'s poly')
             self.pol = dict['poly'][-1:0:-1] # make reverse
             self.pol.append(0)
+            self.pol = np.array(self.pol)
             num_invpol = dict['inv_poly'][0]
             if len(dict['inv_poly']) - 1 != num_invpol :
                 LOG_WARNING(
                     'Number of coeffs does not match in ocam\'s inv_poly')
             self.invpol = dict['inv_poly'][-1:0:-1] # make reverse
             self.invpol.append(0)
+            self.invpol = np.array(self.invpol)
             self.f, self.xc, self.yc = dict['intrinsic']
-            self.max_theta = np.deg2rad(dict['max_theta'])
+            self.max_theta = float(np.deg2rad(dict['max_theta']))
             if 'invalid_mask' in dict.keys():
                 self.invalid_mask_file = dict['invalid_mask']
             else:
@@ -386,6 +459,18 @@ class UWFisheyeModel(CameraModel):
         except KeyError as e:
             LOG_ERROR(e)
             return False
+
+    def exportToDict(self) -> dict:
+        dict = super().exportToDict()
+        num_pol = len(self.pol) - 1 # except 0
+        dict['poly'] = [num_pol] + self.pol[-2::-1].tolist()
+        num_invpol = len(self.invpol) - 1 # except 0
+        dict['inv_poly'] = [num_invpol] + self.invpol[-2::-1].tolist()
+        dict['intrinsic'] = [self.f, self.xc, self.yc]
+        dict['max_theta'] = float(np.rad2deg(self.max_theta))
+        if self.invalid_mask_file is not None:
+            dict['invalid_mask'] = self.invalid_mask_file
+        return dict
 
     def pixelToRay(self, pts2d: np.ndarray | torch.Tensor) \
             -> np.ndarray | torch.Tensor:
@@ -398,12 +483,19 @@ class UWFisheyeModel(CameraModel):
         y = new_r * y.reshape((1, -1))
         z = cos(theta).reshape((1, -1))
         rays = concat((x, y, z), 0)
+        is_nan = logical_or(isnan(x), isnan(y)).flatten()
+        rays[:, is_nan] = np.nan
         if self.max_theta > 0:
             rays[:, theta > self.max_theta] = np.nan
         return rays
 
-    def rayToPixel(self, pts3d: np.ndarray | torch.Tensor) \
-            -> np.ndarray | torch.Tensor:
+    def rayToPixel(self, pts3d: np.ndarray | torch.Tensor):
+        return self.rayToPixel(pts3d, True)
+
+    def rayToPixel(self,
+            pts3d: np.ndarray | torch.Tensor,
+            use_invalid_mask=True) \
+                -> np.ndarray | torch.Tensor:
         x = pts3d[0, :]
         y = pts3d[1, :]
         z = pts3d[2, :]
@@ -413,8 +505,28 @@ class UWFisheyeModel(CameraModel):
         px = new_r * x.reshape((1, -1)) + self.xc
         py = new_r * y.reshape((1, -1)) + self.yc
         pix = concat((px, py), 0)
+        is_nan = logical_or(isnan(x), isnan(y), isnan(z)).flatten()
+        pix[:, is_nan] = -1
         if self.max_theta > 0:
             pix[:, theta > self.max_theta] = -1
+        if use_invalid_mask and self.invalid_mask is not None:
+            hv, wv = self.invalid_mask.shape
+            invalid_mask = self.invalid_mask.flatten()
+            px = (pix[0, :] * wv / self.width).round().squeeze()
+            py = (pix[1, :] * hv / self.height).round().squeeze()
+            if isTorchArray(pts3d):
+                invalid_mask = torch.tensor(invalid_mask, device=pts3d.device)
+                px, py = px.long(), py.long()
+            else:
+                px, py = px.astype(np.int32), py.astype(np.int32)
+            is_in_image = logical_and(
+                px >= 0, px < wv, py >= 0, py < hv)
+            idxs = px[is_in_image] + py[is_in_image] * wv
+            if isTorchArray(is_in_image):
+                is_in_image[is_in_image.clone()] = invalid_mask[idxs] > 0
+            else:
+                is_in_image[is_in_image] = invalid_mask[idxs] > 0
+            pix[:, is_in_image] = -1.0
         return pix
 
     def getRThetas(self, pix2ray=True, num_sample=500) \
@@ -458,8 +570,8 @@ class OcamModel(CameraModel):
         self.inv_pol = np.zeros(0)
         self.type = CameraType.OCAM
 
-    def LoadFromDict(self, dict: Dict) -> bool:
-        if not super().LoadFromDict(dict): return False
+    def loadFromDict(self, dict: Dict) -> bool:
+        if not super().loadFromDict(dict): return False
         try:
             num_pol = dict['poly'][0]
             if len(dict['poly']) - 1 != num_pol :
@@ -585,10 +697,135 @@ class OcamModel(CameraModel):
             radii = polyval(self.inv_pol, thetas - (np.pi / 2))
             return radii, thetas
 
+class RadialPolyModel(CameraModel): #for woodscape dataset
+    def __init__(self):
+        super().__init__()
+        self.xc, self.yc = 0, 0
+        self.k = np.zeros(0)
+        self.max_theta = np.pi
+        self.aspect = 1.0
+        self.type = CameraType.RADIALPOLY
+
+    def loadFromDict(self, dict: Dict) -> bool:
+        if not super().loadFromDict(dict): return False
+        try:
+            self.xc, self.yc = dict['center']
+            self.k = dict['distortion']
+            self.max_theta = np.deg2rad(dict['max_fov']) / 2.0
+            return True
+        except KeyError as e:
+            LOG_ERROR(e)
+            return False
+
+    def pixelToRay(self, pts2d: np.ndarray | torch.Tensor) \
+            -> np.ndarray | torch.Tensor:
+        return self.pixelToRay(pts2d, False, self.max_theta)
+    def rayToPixel(self, pts3d: np.ndarray | torch.Tensor) \
+            -> np.ndarray | torch.Tensor:
+        return self.rayToPixel(pts3d, False, self.max_theta, True)
+
+    """def pixelToRay(self, pts2d, out_theta = False, max_theta = None):
+        if max_theta is None: max_theta = self.max_theta
+        # flip axis
+        x = pts2d[1,:].reshape((1, -1)) - self.xc
+        y = pts2d[0,:].reshape((1, -1)) - self.yc
+        p = concat((x, y), axis=0)
+        invdet = 1.0 / (self.c - self.d * self.e)
+        A_inv = invdet * np.array([
+            [      1, -self.d],
+            [-self.e,  self.c]])
+        p = A_inv.dot(p)
+        # flip axis
+        x = p[1,:].reshape((1, -1))
+        y = p[0,:].reshape((1, -1))
+        rho = sqrt(x * x + y * y)
+        z = polyval(self.pol, rho).reshape((1, -1))
+        # theta is angle from the optical axis.
+        theta = atan2(rho, -z)
+        out = concat((x, y, -z), axis=0)
+        norm = sqrt((out**2).sum(0)).reshape((1, -1))
+        out = out / norm
+        out[:,theta.squeeze() > max_theta] = np.nan
+        if out_theta:
+            return out, theta
+        else:
+            return out"""
+    # end pixelToRay
+
+    ### added ###
+    def rayToPixel(self, pts3d, out_theta = False, max_theta = None,
+            use_invalid_mask = True):
+        if max_theta is None: max_theta = self.max_theta
+        chi = sqrt(pts3d[0,:]**2 + pts3d[1,:]**2) + EPS
+        theta = atan2(chi, pts3d[2,:])
+        rho = self.k[0] * theta + self.k[1] * theta ** 2 + self.k[2] * theta ** 3 + self.k[3] * theta ** 4
+
+        # flip axis
+        u_ = pts3d[0,:] / chi * rho #if chi != 0 else 0
+        v_ = pts3d[1,:] / chi * rho #if chi != 0 else 0
+
+        u = u_ + self.xc + self.width / 2 - 0.5
+        v = v_ * self.aspect + self.yc + self.height / 2 - 0.5
+
+        u = u.reshape((1, -1))
+        v = v.reshape((1, -1))
+
+        out = concat((u, v), axis=0)
+        out[:, isnan(pts3d[0,:])] = -1.0
+        out[:, theta.squeeze() > max_theta] = -1.0
+        if use_invalid_mask and self.invalid_mask is not None:
+            hv, wv = self.invalid_mask.shape
+            invalid_mask = self.invalid_mask.flatten()
+            px = (v * wv / self.width).round().squeeze()
+            py = (u * hv / self.height).round().squeeze()
+            if isTorchArray(pts3d):
+                invalid_mask = torch.tensor(invalid_mask, device=pts3d.device)
+                px, py = px.long(), py.long()
+            else:
+                px, py = px.astype(np.int32), py.astype(np.int32)
+            is_in_image = logical_and(
+                px >= 0, px < wv, py >= 0, py < hv)
+            idxs = px[is_in_image] + py[is_in_image] * wv
+            # if type(invalid_mask) == torch.Tensor:
+            #     is_in_image[is_in_image] = (invalid_mask[idxs] > 0).clone()
+            # else:
+            if isTorchArray(is_in_image):
+                is_in_image[is_in_image.clone()] = invalid_mask[idxs] > 0
+            else:
+                is_in_image[is_in_image] = invalid_mask[idxs] > 0
+            out[:, is_in_image] = -1.0
+
+        if out_theta:
+            return out, theta
+        else:
+            return out
+    # end rayToPixel
+    ### added ###
+
+    def getRThetas(self, pix2ray=True, num_sample=500) \
+            -> Tuple[np.ndarray, np.ndarray]:
+        if pix2ray:
+            max_x = max(self.xc, self.width - 1 - self.xc)
+            max_y = max(self.yc, self.height - 1 - self.yc)
+            max_r = sqrt(max_x**2 + max_y**2)
+            step = max_r / (num_sample - 1)
+            radii = np.arange(0, max_r + step, step)
+            zs = polyval(self.pol, radii)
+            thetas = atan2(radii, -zs)
+            valid = thetas <= self.max_theta
+            thetas = thetas[valid]
+            radii = radii[valid]
+            return radii, thetas
+        else:
+            step = self.max_theta / (num_sample - 1)
+            thetas = np.arange(0, self.max_theta + step, step)
+            radii = polyval(self.inv_pol, thetas - (np.pi / 2))
+            return radii, thetas
+
 def loadCameraListFromYAML(path: str) -> List[CameraModel]:
     config = yaml.safe_load(open(path))
     cams = []
-    is_capture = not 'dataset' in config.keys()
+    is_capture = 'sensor_nodes' in config.keys()
     if is_capture:
         nodes = config['sensor_nodes']
         for n in nodes:
@@ -604,6 +841,7 @@ def loadCameraListFromYAML(path: str) -> List[CameraModel]:
                 val = config['calib'][cam_node_name][k]
             else:
                 val = cam_node[k]['calib']
+            #print(val)
             cam = CameraModel.CreateFromDict(val)
             cams.append(cam)
     else:
@@ -611,6 +849,7 @@ def loadCameraListFromYAML(path: str) -> List[CameraModel]:
         for i in range(len(cameras_cfg)):
             cam = CameraModel.CreateFromDict(cameras_cfg[i])
             cams.append(cam)
+    morph_filter = np.ones((5, 5), dtype=np.uint8)
     for cam in cams:
         invalid_mask = None
         yaml_dir, _ = osp.split(path)
@@ -619,7 +858,6 @@ def loadCameraListFromYAML(path: str) -> List[CameraModel]:
             if osp.exists(mask_file):
                 invalid_mask = readImage(mask_file).astype(np.bool)
         cam.invalid_mask = cam.makeFoVMask(invalid_mask)
-        morph_filter = np.ones((5, 5), dtype=np.uint8)
         cam.invalid_mask = ndimage.binary_closing(
             cam.invalid_mask, morph_filter, border_value=1)
     return cams

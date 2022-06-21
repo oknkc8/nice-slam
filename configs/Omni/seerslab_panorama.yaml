@@ -2,7 +2,7 @@ dataset: 'ocam_panorama'
 data:
   input_folder: /data/multipleye/211021_seerslab
   # input_folder: /data/chsung/211021_seerslab
-  output: output/Omni_panorama/211021_seerslab_small_2_dense
+  output: output/debug/debug1
   config_file: capture.yaml
   poses_file: trajectory_small.txt
 grid_len:
@@ -39,12 +39,31 @@ mapping:
   keyframe_every: 1
   mapping_window_size: 10
   frustum_feature_selection: False
-  pixels: 5000
-  iters_first: 1000
-  iters: 1000
+  pixels: 1000
+  iters_first: 10
+  iters: 10
   bound: [[-25.0, 20.0], [-2.0, 2.0], [-40.0, 20.0]]
   marching_cubes_bound: [[-25.0, 20.0], [-2.0, 2.0], [-40.0, 20.0]]
   no_vis_on_first_frame: False
+omnimvs:
+  device: "cuda:0"
+  config_file: config.yaml
+  poses_file: trajectory.txt
+  network_type: 'default'
+  snapshot_path: 'pretrained/omnimvs/full3-2x-rgb-reflect2_42.pt'
+  dbname: '211021_seerslab'
+  net_freeze: False
+  omnimvs_opts:
+    phi_deg: -45
+    phi_max_deg: 45
+    num_invdepth: 192
+    equirect_size: [160, 640]
+    out_cost: True
+    lt_equirect_sample_ratio: 2
+    lt_depth_sample_ratio: 4
+  net_opts:
+    ccircular_pad: True
+    upsample: False
 cam:
   H: 160
   W: 640
@@ -59,4 +78,4 @@ rendering:
   lindisp: False
   perturb: 0.0
 model:
-  c_dim: 32
+  c_dim: 96

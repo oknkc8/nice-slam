@@ -7,6 +7,8 @@ import torch
 import torch.nn.functional as F
 from src.omnimvs_src.module.basic import *
 
+import pdb
+
 class FeatureLayers(torch.nn.Module):
     def __init__(self, CH=32, use_rgb=False):
         super(FeatureLayers, self).__init__()
@@ -80,6 +82,7 @@ class CostCompute(torch.nn.Module):
 
     def forward(self, feats):
         c = self.fusion(feats)
+        raw_feat = c
         c = self.convs[0](c)
         c1 = self.convs[1](c)
         c1 = self.convs[2](c1)
@@ -99,8 +102,9 @@ class CostCompute(torch.nn.Module):
         c = self.deconv2(c, residual=c3)
         c = self.deconv3(c, residual=c2)
         c = self.deconv4(c, residual=c1)
+        geo_feat = c
         costs = self.deconv5(c)
-        return costs
+        return costs, raw_feat, geo_feat
 
 class OmniMVSNet(torch.nn.Module):
 
@@ -142,7 +146,7 @@ class OmniMVSNet(torch.nn.Module):
             spherical_feats = torch.cat(
                 [self.spherical_sweep(feats[i], grids[i]) \
                     for i in input_idx],2).permute([0, 2, 1, 3, 4])
-        costs = self.cost_computes(spherical_feats)
+        costs, raw_feat, geo_feat = self.cost_computes(spherical_feats)
         
         # import pdb
         # pdb.set_trace()
@@ -158,7 +162,7 @@ class OmniMVSNet(torch.nn.Module):
         disp = torch.mul(prob, invdepth_indices)
         disp = torch.sum(disp, 1)
         if out_cost:
-            return disp, prob, costs
+            return disp, prob, costs, raw_feat, geo_feat
         else:
             return disp
 

@@ -20,6 +20,8 @@ from src.omni_utils.log import LOG_INFO, LOG_ERROR, LOG_WARNING
 import src.omni_utils.image as utils_im
 # import utils.ocam
 
+import pdb
+
 def loadDBConfigs(dbname: str, dbpath: str, opts: Edict) \
             -> Tuple[Edict, List[CameraModel]]:
     ocams = []
