@@ -40,14 +40,14 @@ class Mesher(object):
         self.depth_test = cfg['meshing']['depth_test']
         
         self.bound = slam.bound
-        self.nice = slam.nice
+        self.method = slam.method
         self.verbose = slam.verbose
 
         self.marching_cubes_bound = torch.from_numpy(
             np.array(cfg['mapping']['marching_cubes_bound']) * self.scale)
 
-        self.frame_reader = get_dataset(cfg, args, self.scale, device='cpu')
-        self.n_img = len(self.frame_reader)
+        # self.frame_reader = get_dataset(cfg, args, self.scale, device='cpu')
+        # self.n_img = len(self.frame_reader)
 
         self.H, self.W, self.fx, self.fy, self.cx, self.cy = slam.H, slam.W, slam.fx, slam.fy, slam.cx, slam.cy
 
@@ -291,6 +291,8 @@ class Mesher(object):
             ret (tensor): occupancy (and color) value of input points.
         """
 
+        # decoders_device = f'cuda:{decoders.get_device()}'
+        decoders = decoders.to(device)
         p_split = torch.split(p, self.points_batch_size)
         bound = self.bound
         rets = []
@@ -302,8 +304,10 @@ class Mesher(object):
             mask = mask_x & mask_y & mask_z
 
             pi = pi.unsqueeze(0)
-            if self.nice:
+            if self.method == 'nice':
                 ret = decoders(pi, c_grid=c, stage=stage)
+            elif self.method == 'omni_feat':
+                ret = decoders(pi, c_grid=c)
             else:
                 ret = decoders(pi, c_grid=None)
             ret = ret.squeeze(0)
@@ -314,6 +318,7 @@ class Mesher(object):
             rets.append(ret)
 
         ret = torch.cat(rets, dim=0)
+        # decoders = decoders.to(decoders_device)
         return ret
 
     def get_grid_uniform(self, resolution):
@@ -571,6 +576,160 @@ class Mesher(object):
                     vertex_colors[forecast_mask, 0] = 0
                     vertex_colors[forecast_mask, 1] = 255
                     vertex_colors[forecast_mask, 2] = 255
+
+            else:
+                vertex_colors = None
+
+            vertices /= self.scale
+            mesh = trimesh.Trimesh(vertices, faces, vertex_colors=vertex_colors)
+            mesh.export(mesh_out_file)
+            if self.verbose:
+                print('Saved mesh at', mesh_out_file)
+            
+            del vertices
+            del faces
+            del vertex_colors
+            del mesh
+            gc.collect()
+
+    def get_mesh_omni(self,
+                      mesh_out_file,
+                      c,
+                      decoders,
+                      device='cuda:0',
+                      color=True,
+                      clean_mesh=True):
+        """
+        Extract mesh from scene representation and save mesh to file.
+
+        Args:
+            mesh_out_file (str): output mesh filename.
+            c (dicts): feature grids.
+            decoders (nn.module): decoders.
+            keyframe_dict (list):  list of keyframe info.
+            estimate_c2w_list (tensor): estimated camera pose.
+            idx (int): current processed camera ID.
+            device (str, optional): device name to compute on. Defaults to 'cuda:0'.
+            show_forecast (bool, optional): show forecast. Defaults to False.
+            color (bool, optional): whether to extract colored mesh. Defaults to True.
+            clean_mesh (bool, optional): whether to clean the output mesh 
+                                        (remove outliers outside the convexhull and small geometry noise). 
+                                        Defaults to True.
+            get_mask_use_all_frames (bool, optional): 
+                whether to use all frames or just keyframes when getting the seen/unseen mask. Defaults to False.
+        """
+        with torch.no_grad():
+
+            grid = self.get_grid_uniform(self.resolution)
+            points = grid['grid_points']
+            points = points.to(device)
+
+            z = []
+            for i, pnts in enumerate(torch.split(points, self.points_batch_size, dim=0)):
+                z.append(self.eval_points(pnts, decoders, c, 'fine',
+                                            device).cpu().numpy()[:, -1])
+
+            z = np.concatenate(z, axis=0)
+
+            z = z.astype(np.float32)
+
+            try:
+                if version.parse(
+                        skimage.__version__) > version.parse('0.15.0'):
+                    # for new version as provided in environment.yaml
+                    verts, faces, normals, values = skimage.measure.marching_cubes(
+                        volume=z.reshape(
+                            grid['xyz'][1].shape[0], grid['xyz'][0].shape[0],
+                            grid['xyz'][2].shape[0]).transpose([1, 0, 2]),
+                        level=self.level_set,
+                        spacing=(grid['xyz'][0][2] - grid['xyz'][0][1],
+                                 grid['xyz'][1][2] - grid['xyz'][1][1],
+                                 grid['xyz'][2][2] - grid['xyz'][2][1]))
+                else:
+                    # for lower version
+                    verts, faces, normals, values = skimage.measure.marching_cubes_lewiner(
+                        volume=z.reshape(
+                            grid['xyz'][1].shape[0], grid['xyz'][0].shape[0],
+                            grid['xyz'][2].shape[0]).transpose([1, 0, 2]),
+                        level=self.level_set,
+                        spacing=(grid['xyz'][0][2] - grid['xyz'][0][1],
+                                 grid['xyz'][1][2] - grid['xyz'][1][1],
+                                 grid['xyz'][2][2] - grid['xyz'][2][1]))
+            except:
+                print(
+                    'marching_cubes error. Possibly no surface extracted from the level set.'
+                )
+                return
+
+            # convert back to world coordinates
+            vertices = verts + np.array(
+                [grid['xyz'][0][0], grid['xyz'][1][0], grid['xyz'][2][0]])
+
+            if clean_mesh:
+                points = vertices
+                mesh = trimesh.Trimesh(vertices=vertices,
+                                    faces=faces,
+                                    process=False)
+
+                # get connected components
+                components = mesh.split(only_watertight=False)
+                if self.get_largest_components:
+                    areas = np.array([c.area for c in components], dtype=np.float)
+                    mesh = components[areas.argmax()]
+                else:
+                    new_components = []
+                    for comp in components:
+                        if comp.area > self.remove_small_geometry_threshold * self.scale * self.scale:
+                            new_components.append(comp)
+                    mesh = trimesh.util.concatenate(new_components)
+                vertices = mesh.vertices
+                faces = mesh.faces
+
+            if color:
+                if self.color_mesh_extraction_method == 'direct_point_query':
+                    # color is extracted by passing the coordinates of mesh vertices through the network
+                    points = torch.from_numpy(vertices)
+                    z = []
+                    for i, pnts in enumerate(
+                            torch.split(points, self.points_batch_size, dim=0)):
+                        z_color = self.eval_points(
+                            pnts.to(device).float(), decoders, c, 'color',
+                            device).cpu()[..., :3]
+                        z.append(z_color)
+                    z = torch.cat(z, axis=0)
+                    vertex_colors = z.numpy()
+
+                elif self.color_mesh_extraction_method == 'render_ray_along_normal':
+                    # for imap*
+                    # render out the color of the ray along vertex normal, and assign it to vertex color
+                    import open3d as o3d
+                    mesh = o3d.geometry.TriangleMesh(
+                        vertices=o3d.utility.Vector3dVector(vertices),
+                        triangles=o3d.utility.Vector3iVector(faces))
+                    mesh.compute_vertex_normals()
+                    vertex_normals = np.asarray(mesh.vertex_normals)
+                    rays_d = torch.from_numpy(vertex_normals).to(device)
+                    sign = -1.0
+                    length = 0.1
+                    rays_o = torch.from_numpy(
+                        vertices+sign*length*vertex_normals).to(device)
+                    color_list = []
+                    batch_size = self.ray_batch_size
+                    gt_depth = torch.zeros(vertices.shape[0]).to(device)
+                    gt_depth[:] = length
+                    for i in range(0, rays_d.shape[0], batch_size):
+                        rays_d_batch = rays_d[i:i+batch_size]
+                        rays_o_batch = rays_o[i:i+batch_size]
+                        gt_depth_batch = gt_depth[i:i+batch_size]
+                        depth, uncertainty, color = self.renderer.render_batch_ray(
+                            c, decoders, rays_d_batch, rays_o_batch, device, 
+                            stage='color', gt_depth=gt_depth_batch)
+                        color_list.append(color)
+                    color = torch.cat(color_list, dim=0)
+                    vertex_colors = color.cpu().numpy()
+
+                vertex_colors = np.clip(vertex_colors, 0, 1) * 255
+                vertex_colors = vertex_colors.astype(np.uint8)
 
             else:
                 vertex_colors = None

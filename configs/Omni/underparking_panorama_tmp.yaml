@@ -1,0 +1,99 @@
+method: nice
+dataset: 'ocam_panorama'
+occupancy: True
+data:
+  input_folder: /data/chsung/under_parking_seq
+  output: output/new_underparking_tmp/80_debug_nice_occ_200_geo_feat_use_pretrain_no_feat_fusion_add_3dconv_bias_bnrelu_l1_128_48_16_lre6e3_tsdfintg_leakyrelu
+  config_file: capture.yaml
+  poses_file: trajectory.txt
+grid_len:
+  coarse: 2 
+  middle: 0.32 
+  fine: 0.16
+  color: 0.16
+  bound_divisable: 0.32
+pretrained_decoders:
+  use: True
+meshing:
+  level_set: 0
+  resolution: 0.04 # change to 512 for higher resolution geometry
+  device: "cuda:3"
+  clean_mesh: True
+mapping:
+  device: "cuda:3"
+  BA: False
+  middle_iter_ratio: 0.0
+  fine_iter_ratio: 1.0
+  every_frame: 1
+  vis_freq: 1
+  vis_inside_freq: 10
+  mesh_freq: 1
+  ckpt_freq: 1
+  keyframe_every: 1
+  mapping_window_size: 10
+  frustum_feature_selection: False
+  pixels: 7500
+  iters_first: 10
+  iters: 200
+  w_color_loss: 0.1
+  # bound: [[-24.0, 37.0], [-3.0, 2.0], [-9.0, 63.0]] # all
+  # marching_cubes_bound: [[-24.0, 37.0], [-3.0, 2.0], [-9.0, 63.0]]  # all
+  bound: [[-16.0, 24.0], [-3.0, 2.0], [-9.0, 34.0]] # 200
+  marching_cubes_bound: [[-16.0, 24.0], [-3.0, 2.0], [-9.0, 34.0]] # 200
+  # bound: [[-16.0, 26.0], [-4.0, 2.0], [-9.0, 40.0]] # 400
+  # marching_cubes_bound: [[-16.0, 26.0], [-4.0, 2.0], [-9.0, 40.0]] # 400
+  # bound: [[-16.0, 34.0], [-4.0, 2.0], [-9.0, 54.0]] # 600
+  # marching_cubes_bound: [[-16.0, 34.0], [-4.0, 2.0], [-9.0, 54.0]] # 600
+  # bound: [[-24.0, 37.0], [-3.0, 2.0], [-9.0, 63.0]] # 1000
+  # marching_cubes_bound: [[-24.0, 37.0], [-3.0, 2.0], [-9.0, 63.0]]  # 1000
+  no_vis_on_first_frame: False
+  stage:
+    middle:
+      decoders_lr: 0.000001
+    fine:
+      decoders_lr: 0.000001
+    color:
+      decoders_lr: 0.000001
+cam:
+  H: 320
+  W: 640
+  crop_edge: 0
+  method: 'panorama'
+  phi_deg: -90.0
+  phi_max_deg: 90.0
+omnimvs:
+  device: "cuda:2"
+  config_file: config.yaml
+  network_type: default
+  snapshot_path: pretrained/omnimvs/full3-2x-rgb-reflect2_42.pt
+  dbname: under_parking_seq
+  db_root: /data/chsung
+  db_config_idxs: []
+  resp_volume_freeze: True
+  net_freeze: False
+  lr: 0.001
+  omnimvs_opts:
+    poses_file: trajectory_400.txt
+    dtype:
+    step: 30
+    phi_deg: -90
+    phi_max_deg: 90
+    num_invdepth: 192
+    equirect_size: [320, 640]
+    out_cost: True
+    lt_equirect_sample_ratio: 1
+    lt_depth_sample_ratio: 2
+  net_opts:
+    CH: 32
+    circular_pad: True
+    upsample: False
+    use_rgb: True
+rendering:
+  N_samples: 128
+  N_surface: 48
+  N_importance: 16
+  lindisp: False
+  perturb: 0.0
+model:
+  c_dim: 32
+  feature_fusion: False

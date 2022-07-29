@@ -1,1 +1,1 @@
-python -W ignore run.py configs/Omni/coex_panorama.yaml
+python -W ignore run.py configs/Omni/underparking_panorama_imap.yaml --imap

@@ -27,7 +27,7 @@ class Tracker(object):
         self.sync_method = cfg['sync_method']
 
         self.idx = slam.idx
-        self.nice = slam.nice
+        self.method = slam.method
         self.bound = slam.bound
         self.mesher = slam.mesher
         self.output = slam.output
@@ -97,7 +97,7 @@ class Tracker(object):
         elif self.cam_method == 'panorama':
             batch_rays_o, batch_rays_d, batch_gt_depth, batch_gt_color = get_samples_omni(
                 Hedge, H-Hedge, Wedge, W-Wedge, batch_size, H, W, phi_deg, phi_max_deg, c2w, gt_depth, gt_color, self.device)
-        if self.nice:
+        if self.method == 'nice':
             # should pre-filter those out of bounding box depth value
             with torch.no_grad():
                 det_rays_o = batch_rays_o.clone().detach().unsqueeze(-1)  # (N, 3, 1)

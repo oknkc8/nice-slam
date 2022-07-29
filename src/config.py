@@ -60,7 +60,7 @@ def update_recursive(dict1, dict2):
 
 
 # Models
-def get_model(cfg, nice=True):
+def get_model(cfg, model='nice'):
     """
     Returns the model instance.
 
@@ -74,6 +74,6 @@ def get_model(cfg, nice=True):
 
     method = 'conv_onet'
     model = method_dict[method].config.get_model(
-        cfg,  nice=nice)
+        cfg,  model=model)
 
     return model

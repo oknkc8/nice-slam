@@ -5,9 +5,12 @@
 #
 import torch
 import torch.nn.functional as F
+from inplace_abn import InPlaceABN
 from src.omnimvs_src.module.basic import *
 
 import pdb
+
+torch.autograd.set_detect_anomaly(True)
 
 class FeatureLayers(torch.nn.Module):
     def __init__(self, CH=32, use_rgb=False):
@@ -105,6 +108,72 @@ class CostCompute(torch.nn.Module):
         geo_feat = c
         costs = self.deconv5(c)
         return costs, raw_feat, geo_feat
+        # return costs, raw_feat
+        
+        
+class CostFusion(torch.nn.Module):
+    def __init__(self, ch_in=64):
+        super(CostFusion, self).__init__()
+        
+        CH = 32 if ch_in != 1 else 8
+            
+        self.enc_conv0 = ConvBnReLU3D(ch_in, CH)
+        
+        self.enc_conv1 = ConvBnReLU3D(CH, 2*CH, stride=2)
+        self.enc_conv2 = ConvBnReLU3D(2*CH, 2*CH)
+        
+        self.enc_conv3 = ConvBnReLU3D(2*CH, 4*CH)
+        self.enc_conv4 = ConvBnReLU3D(4*CH, 4*CH)
+        
+        # self.deconv0 = DeConvBnReLU3D(4*CH, 2*CH, stride=1, norm_act=norm_act)
+        # self.deconv1 = DeConvBnReLU3D(2*CH, 2*CH, stride=1, norm_act=norm_act)
+        
+        # self.deconv2 = DeConvBnReLU3D(2*CH, CH, stride=2, out_pad=1, norm_act=norm_act)
+        # self.deconv3 = DeConvBnReLU3D(CH, CH, stride=1, norm_act=norm_act)
+        
+        # self.deconv5 = DeConvBnReLU3D(CH, ch_in, stride=2, out_pad=1, norm_act=norm_act)
+        
+        self.dec_conv0 = ConvBnReLU3D(4*CH, 2*CH)
+        self.dec_conv1 = ConvBnReLU3D(2*CH, 2*CH)
+        
+        self.dec_conv2 = ConvBnReLU3D(2*CH, CH)
+        self.dec_conv3 = ConvBnReLU3D(CH, CH)
+        
+        self.dec_conv4 = ConvBnReLU3D(CH, 32, bn=False, relu=False)
+
+    def forward(self, x):
+        """x = torch.nan_to_num(x)
+        conv0 = torch.nan_to_num(self.enc_conv0(x))
+        conv2 = torch.nan_to_num(self.enc_conv2(torch.nan_to_num(self.enc_conv1(conv0))))
+        x = torch.nan_to_num(self.enc_conv4(torch.nan_to_num(self.enc_conv3(conv2))))
+        
+        conv0_size = conv0.shape[-3:]
+        conv2_size = conv2.shape[-3:]
+        
+        x = F.upsample(x, conv2_size, mode='trilinear', align_corners=True)
+        x = conv2 + torch.nan_to_num(self.dec_conv1(torch.nan_to_num(self.dec_conv0(x))))
+        x = F.upsample(x, conv0_size, mode='trilinear', align_corners=True)
+        x = conv0 + torch.nan_to_num(self.dec_conv3(torch.nan_to_num(self.dec_conv2(x))))
+        x = torch.nan_to_num(self.dec_conv4(x))"""
+        
+        conv0 = self.enc_conv0(x)
+        conv2 = self.enc_conv2(self.enc_conv1(conv0))
+        x = self.enc_conv4(self.enc_conv3(conv2))
+        
+        conv0_size = conv0.shape[-3:]
+        conv2_size = conv2.shape[-3:]
+        
+        x = F.upsample(x, conv2_size, mode='trilinear', align_corners=True)
+        x = conv2 + self.dec_conv1(self.dec_conv0(x))
+        x = F.upsample(x, conv0_size, mode='trilinear', align_corners=True)
+        x = conv0 + self.dec_conv3(self.dec_conv2(x))
+        x = self.dec_conv4(x)
+        
+        del conv2
+        del conv0
+        
+        return x
+
 
 class OmniMVSNet(torch.nn.Module):
 
@@ -124,7 +193,7 @@ class OmniMVSNet(torch.nn.Module):
             self.opts.CH, self.opts.circular_pad)
 
     def forward(self, imgs, grids, invdepth_indices,
-            off_indices=[], out_cost=True):
+            off_indices=[], out_cost=True, integrate=False):
         feats = [self.feature_layers(x) for x in imgs]
         input_idx = list(range(len(imgs)))
         if self.training:
@@ -147,6 +216,7 @@ class OmniMVSNet(torch.nn.Module):
                 [self.spherical_sweep(feats[i], grids[i]) \
                     for i in input_idx],2).permute([0, 2, 1, 3, 4])
         costs, raw_feat, geo_feat = self.cost_computes(spherical_feats)
+        # costs, raw_feat = self.cost_computes(spherical_feats)
         
         # import pdb
         # pdb.set_trace()
@@ -157,12 +227,15 @@ class OmniMVSNet(torch.nn.Module):
             costs = torch.squeeze(costs, 1)
         # costs = torch.squeeze(costs, 1)
         
+        if integrate:
+            return costs, raw_feat, geo_feat
 
         prob = F.softmax(costs, 1)
         disp = torch.mul(prob, invdepth_indices)
         disp = torch.sum(disp, 1)
         if out_cost:
             return disp, prob, costs, raw_feat, geo_feat
+            # return disp, prob, costs, raw_feat
         else:
             return disp
 

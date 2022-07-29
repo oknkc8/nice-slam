@@ -467,7 +467,7 @@ class OCam_panorama(BaseDataset):
         fidxs, rig_poses, _ = self.splitTrajectoryResult(np.loadtxt(rig_poses_path).T)
         cam_poses = rig_poses.T
         
-        skip = 2
+        skip = 30
         
         self.color_paths = []
         self.depth_paths = []
@@ -476,8 +476,10 @@ class OCam_panorama(BaseDataset):
         for i, fidx in tqdm(enumerate(fidxs)):
             if i % skip != 0:
                 continue
-            self.color_paths.append(os.path.join(self.input_folder, ('rgb_omni_160/sigma_3/%05d.png' % (fidx))))
-            self.depth_paths.append(os.path.join(self.input_folder, ('depth_omni_160/%05d.tiff' % (fidx))))
+            # self.color_paths.append(os.path.join(self.input_folder, ('rgb_omni_160/sigma_3/%05d.png' % (fidx))))
+            # self.depth_paths.append(os.path.join(self.input_folder, ('depth_omni_160/%05d.tiff' % (fidx))))
+            self.color_paths.append(os.path.join(self.input_folder, ('cam_center_square_640/%05d.png' % (fidx))))
+            self.depth_paths.append(os.path.join(self.input_folder, ('cam_center_square_640_depth/%05d.tiff' % (fidx))))
             R, tr = getRot(cam_poses[i]), getTr(cam_poses[i])
             c2w = np.eye(4)
             c2w[:3, :] = np.concatenate((R, tr), axis=1)

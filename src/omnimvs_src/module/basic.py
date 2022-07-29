@@ -3,6 +3,7 @@ import torch
 import torch.nn.functional as F
 from torch.nn.modules.utils import _triple
 from torch.autograd import Variable
+from inplace_abn import InPlaceABN
 from src.omni_utils.common import *
 
 
@@ -23,7 +24,7 @@ class Conv2D(torch.nn.Module):
         if self.opts.bn:
             x = self.bn(x)
         if not residual is None:
-            x += residual
+            x = x + residual
         if self.opts.relu:
             x = F.relu(x)
         return x
@@ -46,10 +47,45 @@ class Conv3D(torch.nn.Module):
         if self.opts.bn:
             x = self.bn(x)
         if not residual is None:
-            x += residual
+            x = x + residual
         if self.opts.relu:
             x = F.relu(x)
         return x
+
+
+class ConvBnReLU3D(torch.nn.Module):
+    def __init__(self, ch_in, ch_out, kernel_size=3, stride=1, pad=1,
+                 bn=True, relu=True):
+        super(ConvBnReLU3D, self).__init__()
+        self.conv = torch.nn.Conv3d(ch_in, ch_out, kernel_size,
+                                    stride, padding=pad, bias=False)
+        self.relu = relu
+        self.bn = None
+        if bn:
+            self.bn = torch.nn.BatchNorm3d(ch_out)
+
+    def forward(self, x):
+        if self.bn is not None:
+            x= self.bn(self.conv(x))
+        else:
+            x = self.conv(x)
+        if self.relu:
+            return F.leaky_relu(x)
+            # return F.relu(x)
+        else:
+            return x
+
+
+class DeConvBnReLU3D(torch.nn.Module):
+    def __init__(self, ch_in, ch_out, kernel_size=3, stride=1, pad=1,
+                 dilation=1, out_pad=0, norm_act=InPlaceABN):
+        super(DeConvBnReLU3D, self).__init__()
+        self.conv = torch.nn.ConvTranspose3d(ch_in, ch_out, kernel_size,
+                                             stride, padding=pad, output_padding=out_pad, bias=False)
+        self.bn = norm_act(ch_out)
+
+    def forward(self, x):
+        return self.bn(self.conv(x))
 
 
 class DeConv3D(torch.nn.Module):
@@ -69,7 +105,7 @@ class DeConv3D(torch.nn.Module):
         if self.opts.bn:
             x = self.bn(x)
         if not residual is None:
-            x += residual
+            x = x + residual
         if self.opts.relu:
             x = F.relu(x)
         return x
@@ -94,7 +130,7 @@ class HorizontalCircularConv2D(torch.nn.Module):
         if self.opts.bn:
             x = self.bn(x)
         if not residual is None:
-            x += residual
+            x = x + residual
         if self.opts.relu:
             x = F.relu(x)
         return x
@@ -119,7 +155,7 @@ class HorizontalCircularConv3D(torch.nn.Module):
         if self.opts.bn:
             x = self.bn(x)
         if not residual is None:
-            x += residual
+            x = x + residual
         if self.opts.relu:
             x = F.relu(x)
         return x
@@ -164,7 +200,7 @@ class _NestedConv2d(torch.nn.Conv2d):
         ch_in = np.sum(self.ch_ins[:level+1])
         ch_out = np.sum(self.ch_outs[:level+1])
         return self.conv2d_forward(x, self.weight[:ch_out, :ch_in, ...],
-                                   self.bias[:ch_out])
+                                self.bias[:ch_out])
 
 class SeparableConv3D(torch.nn.Module):
     def __init__(self, ch_in, ch_out, kernel_size, stride=1, pad=1,
@@ -196,7 +232,7 @@ class SeparableConv3D(torch.nn.Module):
         if self.opts.bn:
             x = self.bn(x)
         if not residual is None:
-            x += residual
+            x = x + residual
         if self.opts.relu:
             x = F.relu(x)
         return x
@@ -233,7 +269,7 @@ class HCircularSeparableConv3D(torch.nn.Module):
         if self.opts.bn:
             x = self.bn(x)
         if not residual is None:
-            x += residual
+            x = x + residual
         if self.opts.relu:
             x = F.relu(x)
         return x
@@ -265,7 +301,7 @@ class _NestedConv3d(torch.nn.Conv3d):
         ch_in = np.sum(self.ch_ins[:level+1])
         ch_out = np.sum(self.ch_outs[:level+1])
         return self.conv3d_forward(x, self.weight[:ch_out, :ch_in, ...],
-                                   self.bias[:ch_out])
+                                self.bias[:ch_out])
 
 class _NestedConvTranspose3d(torch.nn.ConvTranspose3d):
     def __init__(self, ch_ins, ch_outs, kernel_size, stride=1,
@@ -307,7 +343,7 @@ class NestedConv2D(torch.nn.Module):
         if self.opts.bn:
             x = self.bns[level](x)
         if not residual is None:
-            x += residual
+            x = x + residual
         if self.opts.relu:
             x = F.relu(x)
         return x
@@ -332,7 +368,7 @@ class NestedConv3D(torch.nn.Module):
         if self.opts.bn:
             x = self.bns[level](x)
         if not residual is None:
-            x += residual
+            x = x + residual
         if self.opts.relu:
             x = F.relu(x)
         return x
@@ -357,7 +393,7 @@ class NestedDeConv3D(torch.nn.Module):
         if self.opts.bn:
             x = self.bns[level](x)
         if not residual is None:
-            x += residual
+            x = x + residual
         if self.opts.relu:
             x = F.relu(x)
         return x

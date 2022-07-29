@@ -14,6 +14,7 @@ from src.common import (get_camera_from_tensor, get_samples, get_samples_omni,
 from src.utils.datasets import get_dataset
 from src.utils.Visualizer import Visualizer
 
+import pdb
 
 class Mapper(object):
     """
@@ -29,7 +30,7 @@ class Mapper(object):
         self.coarse_mapper = coarse_mapper
 
         self.idx = slam.idx
-        self.nice = slam.nice
+        self.method = slam.method
         self.c = slam.shared_c
         self.bound = slam.bound
         self.logger = slam.logger
@@ -76,10 +77,13 @@ class Mapper(object):
         self.frustum_feature_selection = cfg['mapping']['frustum_feature_selection']
         self.keyframe_selection_method = cfg['mapping']['keyframe_selection_method']
         self.save_selected_keyframes_info = cfg['mapping']['save_selected_keyframes_info']
+        
+        self.mesher_device = cfg['meshing']['device']
+        
         if self.save_selected_keyframes_info:
             self.selected_keyframes = {}
 
-        if self.nice:
+        if self.method == 'nice':
             if coarse_mapper:
                 self.keyframe_selection_method = 'global'
 
@@ -306,7 +310,7 @@ class Mapper(object):
         fine_grid_para = []
         color_grid_para = []
         gt_depth_np = cur_gt_depth.cpu().numpy()
-        if self.nice:
+        if self.method == 'nice':
             if self.frustum_feature_selection:
                 masked_c_grad = {}
                 mask_c2w = cur_c2w
@@ -344,7 +348,7 @@ class Mapper(object):
                     elif key == 'grid_color':
                         color_grid_para.append(val_grad)
 
-        if self.nice:
+        if self.method == 'nice':
             if not self.fix_fine:
                 decoders_para_list += list(
                     self.decoders.fine_decoder.parameters())
@@ -374,7 +378,7 @@ class Mapper(object):
                     gt_camera_tensor = get_tensor_from_camera(gt_c2w)
                     gt_camera_tensor_list.append(gt_camera_tensor)
 
-        if self.nice:
+        if self.method == 'nice':
             if self.BA:
                 # The corresponding lr will be set according to which stage the optimization is in
                 optimizer = torch.optim.Adam([{'params': decoders_para_list, 'lr': 0},
@@ -402,7 +406,7 @@ class Mapper(object):
 
         for joint_iter in tqdm(range(num_joint_iters)):
             self.global_iter += 1
-            if self.nice:
+            if self.method == 'nice':
                 if self.frustum_feature_selection:
                     for key, val in c.items():
                         if (self.coarse_mapper and 'coarse' in key) or \
@@ -485,7 +489,7 @@ class Mapper(object):
             batch_gt_depth = torch.cat(batch_gt_depth_list)
             batch_gt_color = torch.cat(batch_gt_color_list)
 
-            if self.nice:
+            if self.method == 'nice':
                 # should pre-filter those out of bounding box depth value
                 with torch.no_grad():
                     det_rays_o = batch_rays_o.clone().detach().unsqueeze(-1)  # (N, 3, 1)
@@ -500,14 +504,15 @@ class Mapper(object):
                 batch_gt_color = batch_gt_color[inside_mask]
             ret = self.renderer.render_batch_ray(c, self.decoders, batch_rays_d,
                                                  batch_rays_o, device, self.stage,
-                                                 gt_depth=None if self.coarse_mapper else batch_gt_depth)
+                                                 gt_depth=None if self.coarse_mapper else batch_gt_depth,
+                                                 summary_writer=(self.summary_writer, self.global_iter))
             depth, uncertainty, color = ret
 
             depth_mask = (batch_gt_depth > 0)
             loss = torch.abs(
                 batch_gt_depth[depth_mask]-depth[depth_mask]).mean()
             self.summary_writer.add_scalar(f'{self.stage}/mapping_depth_loss', loss, global_step=self.global_iter)
-            if ((not self.nice) or (self.stage == 'color')):
+            if ((self.method != 'nice') or (self.stage == 'color')):
                 color_loss = torch.abs(batch_gt_color - color).mean()
                 weighted_color_loss = self.w_color_loss*color_loss
                 loss += weighted_color_loss
@@ -525,13 +530,13 @@ class Mapper(object):
 
             loss.backward(retain_graph=False)
             optimizer.step()
-            if not self.nice:
+            if self.method != 'nice':
                 # for imap*
                 scheduler.step()
             optimizer.zero_grad()
 
             # put selected and updated features back to the grid
-            if self.nice and self.frustum_feature_selection:
+            if self.method == 'nice' and self.frustum_feature_selection:
                 for key, val in c.items():
                     if (self.coarse_mapper and 'coarse' in key) or \
                             ((not self.coarse_mapper) and ('coarse' not in key)):
@@ -610,7 +615,7 @@ class Mapper(object):
                     self.fix_color = True
                     self.frustum_feature_selection = False
                 else:
-                    if self.nice:
+                    if self.method == 'nice':
                         outer_joint_iters = 1
                     else:
                         outer_joint_iters = 3
@@ -661,22 +666,24 @@ class Mapper(object):
                 if (idx % self.mesh_freq == 0) and (not (idx == 0 and self.no_mesh_on_first_frame)):
                     mesh_out_file = f'{self.output}/mesh/{idx:05d}_mesh.ply'
                     self.mesher.get_mesh(mesh_out_file, self.c, self.decoders, self.keyframe_dict, self.estimate_c2w_list,
-                                         idx,  self.device, show_forecast=self.mesh_coarse_level,
+                                         idx,  self.mesher_device, show_forecast=self.mesh_coarse_level,
                                          clean_mesh=self.clean_mesh, get_mask_use_all_frames=False)
 
                 if idx == self.n_img-1:
                     mesh_out_file = f'{self.output}/mesh/final_mesh.ply'
                     self.mesher.get_mesh(mesh_out_file, self.c, self.decoders, self.keyframe_dict, self.estimate_c2w_list,
-                                         idx,  self.device, show_forecast=self.mesh_coarse_level,
+                                         idx,  self.mesher_device, show_forecast=self.mesh_coarse_level,
                                          clean_mesh=self.clean_mesh, get_mask_use_all_frames=False)
                     os.system(
                         f"cp {mesh_out_file} {self.output}/mesh/{idx:05d}_mesh.ply")
                     if self.eval_rec:
                         mesh_out_file = f'{self.output}/mesh/final_mesh_eval_rec.ply'
                         self.mesher.get_mesh(mesh_out_file, self.c, self.decoders, self.keyframe_dict,
-                                             self.estimate_c2w_list, idx, self.device, show_forecast=False,
+                                             self.estimate_c2w_list, idx, self.mesher_device, show_forecast=False,
                                              clean_mesh=self.clean_mesh, get_mask_use_all_frames=True)
                     break
+                
+                self.decoders = self.decoders.to(self.device)
 
             if idx == self.n_img-1:
                 break

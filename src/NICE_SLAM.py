@@ -16,6 +16,7 @@ from src.utils.Renderer import Renderer
 
 torch.multiprocessing.set_sharing_strategy('file_system')
 
+import pdb
 
 class NICE_SLAM():
     """
@@ -27,7 +28,7 @@ class NICE_SLAM():
 
         self.cfg = cfg
         self.args = args
-        self.nice = args.nice
+        self.method = cfg['method']
 
         self.coarse = cfg['coarse']
         self.occupancy = cfg['occupancy']
@@ -51,13 +52,13 @@ class NICE_SLAM():
         self.phi_deg, self.phi_max_deg = cfg['cam']['phi_deg'], cfg['cam']['phi_max_deg']
         self.update_cam()
 
-        model = config.get_model(cfg,  nice=self.nice)
+        model = config.get_model(cfg,  model=self.method)
         self.shared_decoders = model
 
         self.scale = cfg['scale']
 
         self.load_bound(cfg)
-        if self.nice:
+        if self.method == 'nice':
             if cfg['model']['c_dim'] == 32:
                 self.load_pretrain(cfg)
             self.grid_init(cfg)
@@ -157,7 +158,7 @@ class NICE_SLAM():
         
         print('Bound:', self.bound)
         
-        if self.nice:
+        if self.method == 'nice':
             self.shared_decoders.bound = self.bound
             self.shared_decoders.middle_decoder.bound = self.bound
             self.shared_decoders.fine_decoder.bound = self.bound
@@ -234,8 +235,7 @@ class NICE_SLAM():
         c_dim = cfg['model']['c_dim']
         xyz_len = self.bound[:, 1]-self.bound[:, 0]
 
-        import pdb
-        pdb.set_trace()
+        # pdb.set_trace()
         if self.coarse:
             coarse_key = 'grid_coarse'
             coarse_val_shape = list(

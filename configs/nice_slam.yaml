@@ -1,3 +1,4 @@
+method: nice
 coarse: True
 sync_method: strict
 scale: 1
@@ -11,6 +12,7 @@ grid_len:
   color: 0.16
   bound_divisable: 0.32
 pretrained_decoders:
+  use: True
   coarse: pretrained/coarse.pt
   middle_fine: pretrained/middle_fine.pt # one ckpt contain both middle and fine
 meshing:
@@ -137,3 +139,4 @@ model:
   c_dim: 32
   coarse_bound_enlarge: 2
   pos_embedding_method: fourier
+  feature_fusion: False

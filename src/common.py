@@ -2,6 +2,9 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 
+from src.omni_utils.array import asin, atan2, cos, sqrt
+
+import pdb
 
 def as_intrinsics_matrix(intrinsics):
     """
@@ -127,6 +130,38 @@ def get_rays_from_uv_omni(i, j, c2w, H, W, phi_deg, phi_max_deg, device):
     return rays_o, rays_d
 
 
+def get_ij_from_rays_omni(pts, c2w, H, W, phi_deg, phi_max_deg, device):
+    """
+    Get corresponding ij(cam coord) points from input rays(world coord) in omni system.
+
+    """
+    w2c = torch.inverse(c2w)
+    pts = w2c.dot(pts)
+    
+    d = sqrt((pts**2).sum(0)).reshape(1, -1)
+    nx = pts[0, :] / d
+    ny = -pts[1, :] / d
+    nz = -pts[2, :] / d
+    
+    phi = asin(ny)
+    sign = cos(phi); sign[sign < 0] = -1.0; sign[sign >= 0] = 1.0
+    theta = atan2(nz * sign, -nx * sign)
+    
+    equi_x = ((theta - torch.pi / 2) / torch.pi + 1) * W / 2
+    equi_x[equi_x < 0] += W
+    equi_x[equi_x >= W] -= W
+    
+    if phi_max_deg < 0:
+        equi_y = (phi / np.deg2rad(phi_deg) + 1) * h / 2
+    else:
+        med = np.deg2rad((phi_max_deg - phi_deg) / 2)
+        med2 = np.deg2rad((phi_max_deg + phi_deg) / 2)
+        equi_y = ((phi + med2) / med + 1) * H / 2
+    
+    return torch.cat([equi_x, equi_y], axis=0)
+    # return concat([equi_x, equi_y], axis=0)
+
+
 def select_uv(i, j, n, depth, color, device='cuda:0'):
     """
     Select n uv from dense uv.
@@ -159,6 +194,44 @@ def get_sample_uv(H0, H1, W0, W1, n, depth, color, device='cuda:0'):
     i, j, depth, color = select_uv(i, j, n, depth, color, device=device)
     return i, j, depth, color
 
+def select_uv_omni(i, j, n, depth, color, gt_depth, gt_color, device='cuda:0'):
+    """
+    Select n uv from dense uv.
+
+    """
+    i = i.reshape(-1)
+    j = j.reshape(-1)
+    indices = torch.randint(i.shape[0], (n,), device=device)
+    indices = indices.clamp(0, i.shape[0])
+    i = i[indices]  # (n)
+    j = j[indices]  # (n)
+    depth = depth.reshape(-1)
+    color = color.reshape(-1, 3)
+    depth = depth[indices]  # (n)
+    color = color[indices]  # (n,3)
+    gt_depth = gt_depth.reshape(-1)
+    gt_color = gt_color.reshape(-1, 3)
+    gt_depth = gt_depth[indices]  # (n)
+    gt_color = gt_color[indices]  # (n,3)
+    return i, j, depth, color, gt_depth, gt_color
+
+
+def get_sample_uv_omni(H0, H1, W0, W1, n, depth, color, gt_depth, gt_color, device='cuda:0'):
+    """
+    Sample n uv coordinates from an image region H0..H1, W0..W1
+
+    """
+    depth = depth[H0:H1, W0:W1]
+    color = color[H0:H1, W0:W1]
+    gt_depth = gt_depth[H0:H1, W0:W1]
+    gt_color = gt_color[H0:H1, W0:W1]
+    i, j = torch.meshgrid(torch.linspace(
+        W0, W1-1, W1-W0).to(device), torch.linspace(H0, H1-1, H1-H0).to(device))
+    i = i.t()  # transpose
+    j = j.t()
+    i, j, depth, color, gt_depth, gt_color = select_uv_omni(i, j, n, depth, color, gt_depth, gt_color, device=device)
+    return i, j, depth, color, gt_depth, gt_color
+
 
 def get_samples(H0, H1, W0, W1, n, H, W, fx, fy, cx, cy, c2w, depth, color, device):
     """
@@ -172,16 +245,22 @@ def get_samples(H0, H1, W0, W1, n, H, W, fx, fy, cx, cy, c2w, depth, color, devi
     return rays_o, rays_d, sample_depth, sample_color
 
 
-def get_samples_omni(H0, H1, W0, W1, n, H, W, phi_deg, phi_max_deg, c2w, depth, color, device):
+def get_samples_omni(H0, H1, W0, W1, n, H, W, phi_deg, phi_max_deg, c2w, depth, color, device, gt_depth=None, gt_color=None):
     """
     Get n rays from the image region H0..H1, W0..W1.
     c2w is its camera pose and depth/color is the corresponding image tensor.
 
     """
-    i, j, sample_depth, sample_color = get_sample_uv(
-        H0, H1, W0, W1, n, depth, color, device=device)
-    rays_o, rays_d = get_rays_from_uv_omni(i, j, c2w, H, W, phi_deg, phi_max_deg, device)
-    return rays_o, rays_d, sample_depth, sample_color
+    if gt_depth is None:
+        i, j, sample_depth, sample_color = get_sample_uv(
+            H0, H1, W0, W1, n, depth, color, device=device)
+        rays_o, rays_d = get_rays_from_uv_omni(i, j, c2w, H, W, phi_deg, phi_max_deg, device)
+        return rays_o, rays_d, sample_depth, sample_color, None, None
+    else:
+        i, j, sample_depth, sample_color, sample_gt_depth, sample_gt_color = get_sample_uv_omni(
+            H0, H1, W0, W1, n, depth, color, gt_depth, gt_color, device=device)
+        rays_o, rays_d = get_rays_from_uv_omni(i, j, c2w, H, W, phi_deg, phi_max_deg, device)
+        return rays_o, rays_d, sample_depth, sample_color, sample_gt_depth, sample_gt_color
 
 
 def quad2rotation(quad):
@@ -251,7 +330,7 @@ def get_tensor_from_camera(RT, Tquad=False):
     return tensor
 
 
-def raw2outputs_nerf_color(raw, z_vals, rays_d, occupancy=False, device='cuda:0'):
+def raw2outputs_nerf_color(raw, z_vals, rays_d, occupancy=False, device='cuda:0', summary_writer=None):
     """
     Transforms model's predictions to semantically meaningful values.
 
@@ -269,22 +348,45 @@ def raw2outputs_nerf_color(raw, z_vals, rays_d, occupancy=False, device='cuda:0'
         weights (tensor, N_rays*N_samples): weights assigned to each sampled color.
     """
 
+    def act_f(densities):
+        densities = torch.logsumexp(torch.cat([torch.zeros_like(densities)[None], densities[None]], dim=0), dim=0)
+        return densities
     def raw2alpha(raw, dists, act_fn=F.relu): return 1. - \
         torch.exp(-act_fn(raw)*dists)
+    # def raw2alpha(raw, dists, act_fn=act_f): 
+    #     return 1. - torch.exp(-act_fn(raw)*dists)
+    
     dists = z_vals[..., 1:] - z_vals[..., :-1]
     dists = dists.float()
     dists = torch.cat([dists, torch.Tensor([1e10]).float().to(
         device).expand(dists[..., :1].shape)], -1)  # [N_rays, N_samples]
 
+    if summary_writer is not None:
+        global_step = summary_writer[1]
+        writer = summary_writer[0]
+        # if global_step % 1 == 0:
+        writer.add_histogram('occupancy' if occupancy else 'density', raw[..., -1].reshape(-1), global_step)
+
     # different ray angle corresponds to different unit length
     dists = dists * torch.norm(rays_d[..., None, :], dim=-1)
     rgb = raw[..., :-1]
     if occupancy:
+        # """occ"""
         raw[..., 3] = torch.sigmoid(10*raw[..., -1])
         alpha = raw[..., -1]
+        """sdf"""
+        # s = 0.04
+        # raw[..., 3] = 4 * (torch.sigmoid(raw[..., -1] / s) * torch.sigmoid(-raw[..., -1] / s))
+        # alpha = raw[..., -1]
+        
     else:
         # original nerf, volume density
         alpha = raw2alpha(raw[..., -1], dists)  # (N_rays, N_samples)
+        
+    if summary_writer is not None:
+        global_step = summary_writer[1]
+        writer = summary_writer[0]
+        writer.add_histogram('alpha', alpha.reshape(-1), global_step)
 
     weights = alpha.float() * torch.cumprod(torch.cat([torch.ones((alpha.shape[0], 1)).to(
         device).float(), (1.-alpha + 1e-10).float()], -1).float(), -1)[:, :-1]
@@ -371,4 +473,5 @@ def normalize_3d_coordinate(p, bound):
     p[:, 0] = ((p[:, 0]-bound[0, 0])/(bound[0, 1]-bound[0, 0]))*2-1.0
     p[:, 1] = ((p[:, 1]-bound[1, 0])/(bound[1, 1]-bound[1, 0]))*2-1.0
     p[:, 2] = ((p[:, 2]-bound[2, 0])/(bound[2, 1]-bound[2, 0]))*2-1.0
+    # p = p[:, [2,1,0]]
     return p

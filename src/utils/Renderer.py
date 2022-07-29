@@ -1,6 +1,10 @@
 import torch
+import torch.nn.functional as F
 from src.common import get_rays, get_rays_omni, raw2outputs_nerf_color, sample_pdf
 
+import pdb
+
+torch.autograd.set_detect_anomaly(True)
 
 class Renderer(object):
     def __init__(self, cfg, args, slam, points_batch_size=500000, ray_batch_size=100000):
@@ -15,7 +19,7 @@ class Renderer(object):
 
         self.scale = cfg['scale']
         self.occupancy = cfg['occupancy']
-        self.nice = slam.nice
+        self.method = slam.method
         self.bound = slam.bound
         self.cam_method = slam.cam_method
         self.phi_deg, self.phi_max_deg = slam.phi_deg, slam.phi_max_deg
@@ -48,21 +52,27 @@ class Renderer(object):
             mask = mask_x & mask_y & mask_z
 
             pi = pi.unsqueeze(0)
-            if self.nice:
+            if self.method == 'nice':
                 ret = decoders(pi, c_grid=c, stage=stage)
+            elif self.method == 'omni_feat':
+                ret = decoders(pi, c_grid=c)
             else:
                 ret = decoders(pi, c_grid=None)
             ret = ret.squeeze(0)
             if len(ret.shape) == 1 and ret.shape[0] == 4:
                 ret = ret.unsqueeze(0)
 
-            ret[~mask, 3] = 100
+            if self.occupancy:
+                ret[~mask, 3] = 100
+            else:
+                ret[~mask, 3] = 100
+                pass
             rets.append(ret)
 
         ret = torch.cat(rets, dim=0)
         return ret
 
-    def render_batch_ray(self, c, decoders, rays_d, rays_o, device, stage, gt_depth=None):
+    def render_batch_ray(self, c, decoders, rays_d, rays_o, device, stage, gt_depth=None, summary_writer=None):
         """
         Render color, depth and uncertainty of a batch of rays.
 
@@ -106,7 +116,7 @@ class Renderer(object):
             far_bb = far_bb.unsqueeze(-1)
             far_bb += 0.01
 
-        if gt_depth is not None:
+        if False and gt_depth is not None:
             # in case the bound is too large
             far = torch.clamp(far_bb, 0,  torch.max(gt_depth*1.2))
         else:
@@ -173,13 +183,103 @@ class Renderer(object):
 
         pts = rays_o[..., None, :] + rays_d[..., None, :] * \
             z_vals[..., :, None]  # [N_rays, N_samples+N_surface, 3]
-        pointsf = pts.reshape(-1, 3)
+        # if gt_depth is not None:
+        #     pts_gt = rays_o[..., None, :] + rays_d[..., None, :] * gt_depth[..., None, :]
+
+        pointsf = pts.reshape(-1, 3)        
 
         raw = self.eval_points(pointsf, decoders, c, stage, device)
+        # raw[..., -1] = F.relu(raw[..., -1])
+        
+        ###############################
+        """ for debug, visualize points """
+        if False and 'fine' in stage:
+            import plotly.graph_objects as go
+            import plotly.io as po
+            import numpy as np
+            with torch.no_grad():
+                raw_gt = self.eval_points(pts_gt.reshape(-1, 3), decoders, c, stage, device)
+                raw_gt[..., -1] = F.relu(raw_gt[..., -1])
+                pdb.set_trace()
+                
+                sshape = c['grid_' + stage][0][0].shape
+                x_range = [self.bound[2][0].item(), sshape[0] * 0.16 + self.bound[2][0].item()]
+                y_range = [self.bound[1][0].item(), sshape[1] * 0.16 + self.bound[1][0].item()]
+                z_range = [self.bound[0][0].item(), sshape[2] * 0.16 + self.bound[0][0].item()]
+                
+                rays = pts[:500].cpu().numpy().reshape(-1, 3)
+                # vals = raw[:500, -1].cpu().numpy().reshape(-1)
+                raw_sample = self.eval_points(pts[:500].reshape(-1, 3), decoders, c, stage, device)
+                raw_sample[..., -1] = F.relu(raw_sample[..., -1])
+                vals = raw_sample[:, -1].cpu().numpy().reshape(-1)
+                x = rays[:, 0].reshape(-1)
+                y = rays[:, 1].reshape(-1)
+                z = rays[:, 2].reshape(-1)
+                rays_data = go.Scatter3d(
+                    x=x,
+                    y=y,
+                    z=z,
+                    mode='markers',
+                    marker=dict(
+                        size=1,
+                        color=vals,
+                        colorscale='Viridis',
+                        opacity=0.2
+                    )
+                )
+                
+                rays_gt = pts_gt[:].cpu().numpy().reshape(-1, 3)
+                vals_gt = raw_gt[:, -1].cpu().numpy().reshape(-1)
+                x = rays_gt[:, 0].reshape(-1)
+                y = rays_gt[:, 1].reshape(-1)
+                z = rays_gt[:, 2].reshape(-1)
+                rays_gt_data = go.Scatter3d(
+                    x=x,
+                    y=y,
+                    z=z,
+                    mode='markers',
+                    marker=dict(
+                        size=1,
+                        color=vals_gt,
+                        colorscale='Viridis',
+                        opacity=0.7
+                    )
+                )
+                
+                rays_o_data = go.Scatter3d(
+                    x=rays_o[:200, 0].cpu().numpy().reshape(-1),
+                    y=rays_o[:200, 1].cpu().numpy().reshape(-1),
+                    z=rays_o[:200, 2].cpu().numpy().reshape(-1),
+                    mode='markers',
+                    marker=dict(
+                        size=1,
+                        color='rgb(255,0,0)',
+                        opacity=0.8
+                    )
+                )
+                
+                fig = go.Figure(data=[rays_data, rays_o_data, rays_gt_data])
+                fig.update_layout(
+                    scene=dict(
+                        xaxis=dict(range=z_range),
+                        yaxis=dict(range=y_range),
+                        zaxis=dict(range=x_range),
+                    ),
+                    scene_aspectratio=dict(x=sshape[2]//5, y=sshape[1]//5, z=sshape[1]//5)
+                )
+                
+                
+                po.write_html(fig, file='debug/html/rays.html', auto_open=False)
+        
+        ###############################
+        
+        
         raw = raw.reshape(N_rays, N_samples+N_surface, -1)
+        
+        
 
         depth, uncertainty, color, weights = raw2outputs_nerf_color(
-            raw, z_vals, rays_d, occupancy=self.occupancy, device=device)
+            raw, z_vals, rays_d, occupancy=self.occupancy, device=device, summary_writer=summary_writer)
         if N_importance > 0:
             z_vals_mid = .5 * (z_vals[..., 1:] + z_vals[..., :-1])
             z_samples = sample_pdf(

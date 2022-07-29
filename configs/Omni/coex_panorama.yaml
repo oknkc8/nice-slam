@@ -1,10 +1,11 @@
 dataset: 'ocam_panorama'
 data:
-  # input_folder: /data/chsung/201029_coex_s9
-  input_folder: /data/multipleye/201029_coex_s9
-  output: output/tmp/tmp1
+  input_folder: /data/chsung/201029_coex_s9
+  # input_folder: /data/multipleye/201029_coex_s9
+  # output: output/tmp/tmp1
+  output: output/tmp_exp/tmp_original2
   config_file: config.yaml
-  poses_file: trajectory_no_dynamic_lidar_large.txt
+  poses_file: trajectory_no_dynamic_lidar_small.txt
 grid_len:
   coarse: 2 
   middle: 0.32 
@@ -34,24 +35,24 @@ mapping:
   every_frame: 1
   vis_freq: 1
   vis_inside_freq: 100
-  mesh_freq: 10
+  mesh_freq: 1
   ckpt_freq: 10
   keyframe_every: 1
   mapping_window_size: 10
   frustum_feature_selection: False
   pixels: 5000
-  iters_first: 1000
-  iters: 1000
+  iters_first: 500
+  iters: 500
   # bound: [[-25.0, 60.0], [-5.0, 2.0], [-60.0, 25.0]]
   # bound: [[-33.0, 28.0], [-5.0, 2.0], [-23.0, 26.0]]
   # bound: [[-20.0, 20.0], [-5.0, 2.0], [-20.0, 20.0]] 
-  # bound: [[-20.0, 30.0], [-5.0, 2.0], [-30.0, 20.0]] 
-  bound: [[-1.0, 1.0], [-1.0, 1.0], [-1.0, 1.0]] 
+  bound: [[-20.0, 30.0], [-5.0, 2.0], [-30.0, 20.0]] 
+  # bound: [[-1.0, 1.0], [-1.0, 1.0], [-1.0, 1.0]] 
   # marching_cubes_bound: [[-25.0, 60.0], [-5.0, 2.0], [-60.0, 25.0]]
   # marching_cubes_bound: [[-33.0, 28.0], [-5.0, 2.0], [-23.0, 26.0]]
   # marching_cubes_bound: [[-20.0, 20.0], [-5.0, 2.0], [-20.0, 20.0]] 
-  # marching_cubes_bound: [[-20.0, 30.0], [-5.0, 2.0], [-30.0, 20.0]]
-  marching_cubes_bound: [[-1.0, 1.0], [-1.0, 1.0], [-1.0, 1.0]] 
+  marching_cubes_bound: [[-20.0, 30.0], [-5.0, 2.0], [-30.0, 20.0]]
+  # marching_cubes_bound: [[-1.0, 1.0], [-1.0, 1.0], [-1.0, 1.0]] 
   no_vis_on_first_frame: False
 cam:
   H: 160
@@ -61,16 +62,19 @@ cam:
   phi_deg: -45.0
   phi_max_deg: 45.0
 omnimvs:
-  device: "cuda:0"
+  device: "cuda:1"
   config_file: config.yaml
   network_type: default
   snapshot_path: pretrained/omnimvs/full3-2x-rgb-reflect2_42.pt
   dbname: 201029_coex_s9
-  db_root: /data/multipleye
+  db_root: /data/chsung
+  # db_root: /data/multipleye
   db_config_idxs: []
   net_freeze: False
+  lr: 0.0001
   omnimvs_opts:
     poses_file: trajectory_no_dynamic_lidar_small.txt
+    step: 5
     phi_deg: -45
     phi_max_deg: 45
     num_invdepth: 192

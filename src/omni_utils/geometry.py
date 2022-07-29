@@ -9,8 +9,12 @@ from __future__ import print_function
 from __future__ import annotations
 from typing import *
 
+from numpy import dtype
+
 from src.omni_utils.common import *
 from scipy.spatial.transform import Rotation as R
+
+import pdb
 
 def rodrigues(r: np.ndarray) -> np.ndarray:
     if r.size == 3: return R.from_rotvec(r.squeeze()).as_matrix()
@@ -73,8 +77,8 @@ def applyTransform(transform: np.ndarray, P: torch.Tensor | np.ndarray) \
         -> torch.Tensor | np.ndarray:
     R, tr = getRot(transform), getTr(transform)
     if isTorchArray(P):
-        R = torch.Tensor(R).to(P.device)
-        tr = torch.Tensor(tr).to(P.device)
+        R = torch.tensor(R, dtype=P.dtype).to(P.device)
+        tr = torch.tensor(tr, dtype=P.dtype).to(P.device)
         return torch.matmul(R, P) + tr
     else:
         return R.dot(P) + tr

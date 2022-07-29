@@ -1,3 +1,4 @@
+method: imap
 coarse: False
 sync_method: strict
 scale: 0.1
@@ -115,3 +116,4 @@ model:
   c_dim: 32
   coarse_bound_enlarge: 2
   pos_embedding_method: fourier
+  feature_fusion: False

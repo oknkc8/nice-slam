@@ -7,6 +7,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 from __future__ import annotations
+from tkinter import Variable
 from turtle import pos
 from typing import *
 import os.path as osp
@@ -17,6 +18,7 @@ import scipy.ndimage
 from easydict import EasyDict as Edict
 import torch
 import torch.utils
+from torch.autograd import Variable
 
 import sys
 from src.omni_utils.common import *
@@ -29,6 +31,7 @@ from src.omni_utils.sensor_data import SensorDataReader, SensorDataType
 import src.omni_utils.dbhelper
 
 import pdb
+torch.autograd.set_detect_anomaly(True)
 
 def getEquirectCoordinate(
         pts: np.ndarray, equirect_size: Tuple[int, int],
@@ -155,7 +158,7 @@ def buildIndividualLookupTable(
             invdepth_rig = 1.0 / sqrt(torch.sum(pts_rig**2, 0))
             
             equi_pix  = getEquirectCoordinate(
-                pts_rig, omnimvs.equirect_size, -omnimvs.phi_deg) 
+                pts_rig, omnimvs.equirect_size, omnimvs.phi_deg, omnimvs.phi_max_deg) 
             equi_didx = omnimvs.invdepthToIndex(invdepth_rig)
 
             equi_didx[isnan(equi_didx)] = -1
@@ -167,6 +170,7 @@ def buildIndividualLookupTable(
             equi_grid_d = (equi_didx / (num_invdepth - 1)) * 2 - 1
             equi_grid_d = equi_grid_d.reshape((cam.height, cam.width, 1))
             equi_grid = concat((equi_grid_hw, equi_grid_d), 2)
+            # equi_grid = concat((equi_grid_d, equi_grid_hw), 2)
             if output_gpu_tensor:
                 grids[i][d, ...] = equi_grid
             else:
@@ -521,6 +525,7 @@ class OmniMVS(torch.utils.data.Dataset):
         #_opts.img_fmt = 'cam%d/%05d.png' # [cam_idx, fidx]
         _opts.img_fmt = 'cam%d_square_832/%05d.png' # [cam_idx, fidx]
         _opts.gt_depth_fmt = 'omnidepth_gt_%d/%05d.tiff' # [equi_w, fidx]
+        _opts.gt_img_fmt = 'cam_center_square_%d/%05d.png' #[equi_w, fidx]
         _opts.read_input_image = True # for evaluation, False if read only GT
         _opts.start, _opts.step, _opts.end = 0, 1, 4061 # frame read indices
         _opts.use_frame_idxs_for_test = False
@@ -603,7 +608,7 @@ class OmniMVS(torch.utils.data.Dataset):
         if self.dbname == '201029_coex_s9':
             opts.start = 0
             opts.end = 4061
-            opts.step = 1
+            # opts.step = 1
             opts.train_idx = list(range(0, 4061))
             opts.test_idx = list(range(0, 4061))
             #opts.train_idx = list(range(0, 3928)) #3928
@@ -615,7 +620,7 @@ class OmniMVS(torch.utils.data.Dataset):
         elif self.dbname == '210624_xingxing_block6':
             opts.start = 0
             opts.end = 25985
-            opts.step = 5
+            # opts.step = 5
             opts.train_idx = list(range(0, 25985))
             opts.test_idx = list(range(0, 25985))
             opts.train_idx = list(set(opts.train_idx) - set(opts.test_idx))
@@ -628,7 +633,7 @@ class OmniMVS(torch.utils.data.Dataset):
         elif self.dbname == 'omnithings4':
             opts.start = 0
             opts.end = 10239
-            opts.step = 1
+            # opts.step = 1
             opts.train_idx = list(range(0, 10240 ,1))
             opts.test_idx = list(range(0, 10240, 1))
             opts.min_depth = 0.3
@@ -641,25 +646,39 @@ class OmniMVS(torch.utils.data.Dataset):
         elif self.dbname == '211021_seerslab':
             opts.start = 1403
             opts.end = 5597
-            opts.step = 1
+            # opts.step = 1
             opts.dtype = 'nogt'
             opts.train_idx = list(range(1403, 5597))
             opts.test_idx = list(range(1403, 5597))
             opts.min_depth = 0.3
             opts.gt_phi = 45
             opts.img_fmt = 'cam%d/%06d.png' # [cam_idx, fidx]
+        elif self.dbname == 'under_parking_seq':
+            opts.gt_depth_fmt = 'cam_center_square_%d_depth/%05d.tiff' # [equi_w, fidx]
+            opts.gt_img_fmt = 'cam_center_square_%d/%05d.png' #[equi_w, fidx]
+            opts.start = 1
+            opts.end = 2049
+            opts.train_idx = list(range(1, 2049))
+            opts.test_idx = list(range(1, 2049))
+            opts.min_depth = 0.3
+            opts.gt_phi = 90
+            opts.dtype = 'gt'
         """else:
             raise KeyError(f'Dataset name error {dbname}')"""
    
         fidxs, poses = self.splitTrajectoryResult(np.loadtxt(osp.join(self.db_path, self.opts.poses_file)).T)
-        self.poses = dict.fromkeys(fidxs, poses)
+        self.poses = {fidxs[i]: poses[i] for i in range(len(fidxs))}
         
         opts.start, opts.end = fidxs[0], fidxs[-1]
-        opts.train_idx = list(range(opts.start, opts.end))
-        opts.test_idx = list(range(opts.start, opts.end))
+        # opts.train_idx = list(range(opts.start, opts.end, opts.step))
+        # opts.test_idx = list(range(opts.start, opts.end, opts.step))
         
-        self.frame_idx = list(range(
-            opts.start, opts.end + opts.step, opts.step))
+        opts.train_idx = fidxs[::opts.step]
+        opts.test_idx = fidxs[::opts.step]
+        self.frame_idx = fidxs[::opts.step]
+        
+        # self.frame_idx = list(range(
+        #     opts.start, opts.end, opts.step))
         self.train_idx, self.test_idx = opts.train_idx, opts.test_idx
         #print(self.train_idx, self.test_idx)
 
@@ -879,7 +898,7 @@ class OmniMVS(torch.utils.data.Dataset):
         index, prob, resp, raw_feat, geo_feat = net(imgs, grids, self.invdepth_indices, off_indices)
         feats = []
         feats.append(raw_feat)
-        feats.append(geo_feat)
+        # feats.append(geo_feat)
 
         entropy = torch.sum(-torch.log(prob + EPS) * prob, 1)
         if output_numpy:
@@ -891,6 +910,55 @@ class OmniMVS(torch.utils.data.Dataset):
         
         # if self.out_cost:
         #     return index, entropy, resp
+            
+    def forwardNetwork_for_integrate(self,
+            net: torch.nn.Module, imgs: List[torch.Tensor],
+            sub_dataset_idxs: List[int] | None = None,
+            output_numpy: bool = False,
+            grid_widxs: List[int] | None = None,
+            off_indices=[],
+            resp_volume_freeze=True) \
+                 -> Tuple[np.ndarray | torch.Tensor]:
+        with torch.no_grad():
+            if sub_dataset_idxs is not None:
+                if self.load_multiple_datasets:
+                    grids = []
+                    for i in sub_dataset_idxs:
+                        grid_idx = self.db_config_idxs[i]
+                        if grid_widxs is not None:
+                            grids.append([g[..., grid_widxs, :] for g in \
+                                self.sub_datasets[grid_idx].grids])
+                        else:
+                            grids.append(self.sub_datasets[grid_idx].grids)
+                else:
+                    if grid_widxs is not None:
+                        grids = [[g[..., grid_widxs, :] for g in self.grids]] * \
+                            len(sub_dataset_idxs)
+                    else:
+                        grids = [self.grids] * len(sub_dataset_idxs)
+            else:
+                if grid_widxs is not None:
+                    grids = [g[..., grid_widxs, :] for g in self.grids]
+                else:
+                    grids = self.grids
+            resp, raw_feat, geo_feat = net(imgs, grids, self.invdepth_indices, off_indices, integrate=True)
+        
+        # pdb.set_trace()
+        if False and not resp_volume_freeze:
+            resp = Variable(resp, requires_grad=True)
+        
+        return resp, raw_feat, geo_feat
+        
+        """entropy = torch.sum(-torch.log(prob + EPS) * prob, 1)
+        if output_numpy:
+            index = toNumpy(index.detach()) #toNumpy(index)
+            entropy = scipy.ndimage.gaussian_filter(
+                toNumpy(exp(entropy).detach()), sigma=1) #toNumpy(exp(entropy)), sigma=1) 
+        
+        return index, entropy, prob, resp, raw_feat
+        
+        # if self.out_cost:
+        #     return index, entropy, resp"""
 
     def __len__(self) -> int:
         if self.train:
@@ -1078,10 +1146,11 @@ class OmniMVS(torch.utils.data.Dataset):
             P = applyTransform(transform, P)
 
         equi_ims = []
+        valid_masks = []
         for i in range(4):
             img = imgs[i]
             if not isTorchArray(depth):
-              img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
+                img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
             P2 = applyTransform(self.ocams[i].rig2cam, P)
             p = self.ocams[i].rayToPixel(P2)
 
@@ -1089,13 +1158,15 @@ class OmniMVS(torch.utils.data.Dataset):
                 (self.ocams[i].height,self.ocams[i].width))
             # equi_im = toNumpy(interp2D(img, grid, 0))
             equi_im = interp2D(torch.Tensor(img).to(self.device_id) \
-                                  if isTorchArray(depth) else img, \
+                                if isTorchArray(depth) else img, \
                                 grid, 0)
+            valid = (p[0,:] >= 0).reshape(self.equirect_size)
+            valid_masks.append(valid)
             if isTorchArray(equi_im):
-              equi_im = equi_im.permute(2, 0, 1)
+                equi_im = equi_im.permute(2, 0, 1)
             equi_ims.append(equi_im)
 
-        return equi_ims 
+        return equi_ims, valid_masks
 
     def getRefPanorama(self, invdepth: torch.Tensor | np.ndarray, transform=None) -> \
                         List[torch.Tensor] | List[np.ndarray]:
@@ -1356,6 +1427,7 @@ class OmniMVS(torch.utils.data.Dataset):
         opts.input_size = None
         opts = argparse(opts, args)
         imgs, raw_imgs, gt, valid = None, None, None, None
+        gt_img = None
         if read_input_image:
             input_images = self.loadImages(
                 fidx, out_raw_imgs=True, use_rgb=self.opts.use_rgb,
@@ -1369,6 +1441,8 @@ class OmniMVS(torch.utils.data.Dataset):
         if self.opts.dtype == 'gt':
             gt = self.loadGTInvdepthIndex(fidx,
                 opts.remove_gt_noise, opts.morph_win_size)
+            gt_img = self.loadGTImage(fidx)
+            gt_img = torch.tensor(gt_img).float()
             if gt is not None:
                 gt, gt_invdepth = gt
                 valid = np.logical_and(
@@ -1386,16 +1460,16 @@ class OmniMVS(torch.utils.data.Dataset):
                     visible_mask[vis] = True
                 valid = np.logical_and(valid, visible_mask)
                 valid = torch.tensor(valid).bool()
-                
-        pose = self.poses[fidx][0]
+
+        pose = self.poses[fidx]
         R, tr = getRot(pose), getTr(pose)
         c2w = np.eye(4)
         c2w[:3, :] = np.concatenate((R, tr), axis=1)
         c2w[:3, 1] *= -1
         c2w[:3, 2] *= -1
         c2w = torch.from_numpy(c2w).float()
-
-        return (imgs, gt, valid, raw_imgs, c2w)
+        
+        return (imgs, gt, valid, raw_imgs, c2w, gt_img)
 
     ## File I/O ======================================================
     def loadImages(self, fidx: int, out_raw_imgs=False, use_rgb=False,
@@ -1447,9 +1521,9 @@ class OmniMVS(torch.utils.data.Dataset):
             gt_idx = self.invdepthToIndex(gt)
             gt_idx[gt_idx > (self.num_invdepth - 1)] = self.num_invdepth - 1
             if isTorchArray(gt_idx):
-              gt_idx[torch.isnan(gt_idx)] = -1
+                gt_idx[torch.isnan(gt_idx)] = -1
             else:
-              gt_idx[np.isnan(gt_idx)] = -1
+                gt_idx[np.isnan(gt_idx)] = -1
             if not remove_gt_noise:
                 return gt_idx, gt
 
@@ -1510,6 +1584,13 @@ class OmniMVS(torch.utils.data.Dataset):
         infinite_hole = np.logical_and(infinite_depth, closed_depth)
         gt_idx[infinite_hole] = -1
         return gt_idx, gt
+
+    def loadGTImage(self, fidx: int) -> np.ndarray | None:
+        h, w = self.equirect_size
+        gt_img_file = osp.join(
+            self.db_path, self.opts.gt_img_fmt % (w, fidx))
+        gt_img = np.array(Image.open(gt_img_file), dtype=np.float32) / 255.
+        return gt_img
 
     def readInvdepth(self, path: str) -> np.ndarray:
         if not osp.exists(path):
@@ -1573,13 +1654,19 @@ class BatchCollator:
         if data[0][0]:
             self.imgs = [torch.stack(I, 0) for I in list(zip(*data[0]))]
         all_batch_have_gt = all([gt is not None for gt in data[1]])
+        all_batch_have_gt_img = all([gt_img is not None for gt_img in data[5]])
 
         if all_batch_have_gt:
             self.gt = torch.stack(data[1], 0)
             self.valid = torch.stack(data[2], 0)
+            if all_batch_have_gt_img:
+                self.gt_img = torch.stack(data[5], 0)
+            else:
+                self.gt_img = None
         else:
             self.gt = None
             self.valid = None
+            self.gt_img = None
         self.raw_imgs = data[3]
         if len(self.raw_imgs) == 1:
             self.raw_imgs = self.raw_imgs[0]
@@ -1592,6 +1679,8 @@ class BatchCollator:
         if self.gt is not None:
             self.gt = self.gt.cuda()
             self.valid = self.valid.cuda()
+        if self.gt_img is not None:
+            self.gt_img = self.gt_img.cuda()
         return self
 
     @staticmethod

@@ -3,6 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from src.common import normalize_3d_coordinate
 
+import pdb
 
 class GaussianFourierFeatureTransform(torch.nn.Module):
     """
@@ -109,7 +110,7 @@ class MLP(nn.Module):
 
     def __init__(self, name='', dim=3, c_dim=128,
                  hidden_size=256, n_blocks=5, leaky=False, sample_mode='bilinear',
-                 color=False, skips=[2], grid_len=0.16, pos_embedding_method='fourier', concat_feature=False):
+                 color=False, skips=[2], grid_len=0.16, pos_embedding_method='fourier', concat_feature=False, feature_fusion=False):
         super().__init__()
         self.name = name
         self.color = color
@@ -119,6 +120,7 @@ class MLP(nn.Module):
         self.concat_feature = concat_feature
         self.n_blocks = n_blocks
         self.skips = skips
+        self.feature_fusion = feature_fusion
 
         if c_dim != 0:
             self.fc_c = nn.ModuleList([
@@ -157,6 +159,13 @@ class MLP(nn.Module):
         else:
             self.output_linear = DenseLayer(
                 hidden_size, 1, activation="linear")
+        if self.feature_fusion and name != '':
+            if name == 'fine':
+                self.fusion_linear = DenseLayer(
+                    1, c_dim//2, activation="relu")
+            else:
+                self.fusion_linear = DenseLayer(
+                    1, c_dim, activation="relu")
 
         if not leaky:
             self.actvn = F.relu
@@ -166,73 +175,81 @@ class MLP(nn.Module):
         self.sample_mode = sample_mode
 
     def sample_grid_feature(self, p, c):
-        print('     sample_grid_feature')
-        print('     p:', p.shape)
-        print('     c:', c.shape)
+        # print('     sample_grid_feature')
+        # print('     p:', p.shape)
+        # print('     c:', c.shape)
+        c = c.to(f'cuda:{p.get_device()}')
         p_nor = normalize_3d_coordinate(p.clone(), self.bound)
-        print('     p_nor:', p_nor.shape)
+        # print('     p_nor:', p_nor.shape)
         p_nor = p_nor.unsqueeze(0)
-        print('     p_nor(unsqueeze):', p_nor.shape)
+        # print('     p_nor(unsqueeze):', p_nor.shape)
         vgrid = p_nor[:, :, None, None].float()
-        print('     vgrid:', vgrid.shape)
+        # print('     vgrid:', vgrid.shape)
         # acutally trilinear interpolation if mode = 'bilinear'
         c = F.grid_sample(c, vgrid, padding_mode='border', align_corners=True,
-                          mode=self.sample_mode).squeeze(-1).squeeze(-1)
-        print('     c:', c.shape)
+                        mode=self.sample_mode).squeeze(-1).squeeze(-1)
+        # print('     c:', c.shape)
         return c
 
     def forward(self, p, c_grid=None):
-        print('-'*30)
-        print('MLP')
+        # print('-'*30)
+        # print('MLP')
         
-        print('p:', p.shape)
-        print('c_grid:', c_grid['grid_' + self.name].shape)
+        # print('p:', p.shape)
+        # print('c_grid:', c_grid['grid_' + self.name].shape)
         
         if self.c_dim != 0:
             # c = self.sample_grid_feature(
             #     p, c_grid['grid_' + self.name]).transpose(1, 2).squeeze(0)
             c = self.sample_grid_feature(
                 p, c_grid['grid_' + self.name])
-            print('c(before):', c.shape)
+            # print('c(before):', c.shape)
             c = c.transpose(1, 2).squeeze(0)
-            print('c(after):', c.shape)
+            if self.feature_fusion and self.name != '':
+                c = self.fusion_linear(c)
+            # print('c(after):', c.shape)
 
             if self.concat_feature:
                 # only happen to fine decoder, get feature from middle level and concat to the current feature
                 with torch.no_grad():
                     c_middle = self.sample_grid_feature(
                         p, c_grid['grid_middle']).transpose(1, 2).squeeze(0)
+                    if self.feature_fusion and self.name != '':
+                        c_middle = self.fusion_linear(c_middle)
                 c = torch.cat([c, c_middle], dim=1)
-                print('c(concat_feature):', c.shape)
+                # print('c(concat_feature):', c.shape)
 
         p = p.float()
 
         embedded_pts = self.embedder(p)
-        print('embedded_pts:', embedded_pts.shape)
+        # print('embedded_pts:', embedded_pts.shape)
         h = embedded_pts
         for i, l in enumerate(self.pts_linears):
-            print('----')
-            print('     i:', i)
-            print('     h', h.shape)
+            # print('----')
+            # print('     i:', i)
+            # print('     h', h.shape)
             h = self.pts_linears[i](h)
-            print('     h(pts_linears)', h.shape)
+            # print('     h(pts_linears)', h.shape)
             h = F.relu(h)
             if self.c_dim != 0:
-                print('     c:', c.shape)
+                # print('     c_dim:', self.c_dim)
+                # print('     c:', c.shape)
+                # print(self.name)
+                # print(self.fc_c[i])
                 fc_c = self.fc_c[i](c)
-                print('     c(fc_c):', fc_c.shape)
+                # print('     c(fc_c):', fc_c.shape)
                 h = h + fc_c
                 # h = h + self.fc_c[i](c)
             if i in self.skips:
                 h = torch.cat([embedded_pts, h], -1)
-                print('     h(skip):', h.shape)
-            print('     h:', h.shape)
+            #     print('     h(skip):', h.shape)
+            # print('     h:', h.shape)
         out = self.output_linear(h)
-        print('out:', out.shape)
+        # print('out:', out.shape)
         if not self.color:
             out = out.squeeze(-1)
-            print('out(not color):', out.shape)
-        print('-'*30)
+        #     print('out(not color):', out.shape)
+        # print('-'*30)
         return out
 
 
@@ -255,7 +272,7 @@ class MLP_no_xyz(nn.Module):
 
     def __init__(self, name='', dim=3, c_dim=128,
                  hidden_size=256, n_blocks=5, leaky=False,
-                 sample_mode='bilinear', color=False, skips=[2], grid_len=0.16):
+                 sample_mode='bilinear', color=False, skips=[2], grid_len=0.16, feature_fusion=False):
         super().__init__()
         self.name = name
         self.no_grad_feature = False
@@ -264,6 +281,7 @@ class MLP_no_xyz(nn.Module):
         self.c_dim = c_dim
         self.n_blocks = n_blocks
         self.skips = skips
+        self.feature_fusion = feature_fusion
 
         self.pts_linears = nn.ModuleList(
             [DenseLayer(hidden_size, hidden_size, activation="relu")] +
@@ -276,6 +294,10 @@ class MLP_no_xyz(nn.Module):
         else:
             self.output_linear = DenseLayer(
                 hidden_size, 1, activation="linear")
+        
+        if self.feature_fusion and self.name != '':
+            self.fusion_linear = DenseLayer(
+                1, c_dim, activation="relu")
 
         if not leaky:
             self.actvn = F.relu
@@ -285,51 +307,54 @@ class MLP_no_xyz(nn.Module):
         self.sample_mode = sample_mode
 
     def sample_grid_feature(self, p, grid_feature):
-        print('     sample_grid_feature(MLP_no_xyz)')
-        print('     p:', p.shape)
-        print('     grid_feature:', grid_feature.shape)
+        # print('     sample_grid_feature(MLP_no_xyz)')
+        # print('     p:', p.shape)
+        # print('     grid_feature:', grid_feature.shape)
+        grid_feature = grid_feature.to(f'cuda:{p.get_device()}')
         p_nor = normalize_3d_coordinate(p.clone(), self.bound)
-        print('     p_nor:', p_nor.shape)
+        # print('     p_nor:', p_nor.shape)
         p_nor = p_nor.unsqueeze(0)
-        print('     p_nor(unsqueeze):', p_nor.shape)
+        # print('     p_nor(unsqueeze):', p_nor.shape)
         vgrid = p_nor[:, :, None, None].float()
-        print('     vgrid:', vgrid.shape)
+        # print('     vgrid:', vgrid.shape)
         c = F.grid_sample(grid_feature, vgrid, padding_mode='border',
-                          align_corners=True, mode=self.sample_mode).squeeze(-1).squeeze(-1)
-        print('     c:', c.shape)
+                        align_corners=True, mode=self.sample_mode).squeeze(-1).squeeze(-1)
+        # print('     c:', c.shape)
         return c
 
     def forward(self, p, c_grid, **kwargs):
-        print('-'*30)
-        print('MLP_no_xyz')
+        # print('-'*30)
+        # print('MLP_no_xyz')
         
-        print('p:', p.shape)
-        print('c_grid:', c_grid['grid_' + self.name].shape)
+        # print('p:', p.shape)
+        # print('c_grid:', c_grid['grid_' + self.name].shape)
         
         c = self.sample_grid_feature(
             p, c_grid['grid_' + self.name])
-        print('c(before):', c.shape)
+        # print('c(before):', c.shape)
         c = c.transpose(1, 2).squeeze(0)
-        print('c(after):', c.shape)
+        if self.feature_fusion and self.name != '':
+            c = self.fusion_linear(c)
+        # print('c(after):', c.shape)
         
         h = c
         for i, l in enumerate(self.pts_linears):
-            print('----')
-            print('     i:', i)
-            print('     h', h.shape)
+            # print('----')
+            # print('     i:', i)
+            # print('     h', h.shape)
             h = self.pts_linears[i](h)
-            print('     h(pts_linears)', h.shape)
+            # print('     h(pts_linears)', h.shape)
             h = F.relu(h)
             if i in self.skips:
                 h = torch.cat([c, h], -1)
-                print('     h(skip):', h.shape)
-            print('     h:', h.shape)
+            #     print('     h(skip):', h.shape)
+            # print('     h:', h.shape)
         out = self.output_linear(h)
-        print('out:', out.shape)
+        # print('out:', out.shape)
         if not self.color:
             out = out.squeeze(-1)
-            print('out(not color):', out.shape)
-        print('-'*30)
+            # print('out(not color):', out.shape)
+        # print('-'*30)
         return out
 
 
@@ -351,30 +376,30 @@ class NICE(nn.Module):
 
     def __init__(self, dim=3, c_dim=32,
                  coarse_grid_len=2.0,  middle_grid_len=0.16, fine_grid_len=0.16,
-                 color_grid_len=0.16, hidden_size=32, coarse=False, pos_embedding_method='fourier'):
+                 color_grid_len=0.16, hidden_size=32, coarse=False, pos_embedding_method='fourier', feature_fusion=False):
         super().__init__()
 
         if coarse:
             self.coarse_decoder = MLP_no_xyz(
-                name='coarse', dim=dim, c_dim=c_dim, color=False, hidden_size=hidden_size, grid_len=coarse_grid_len)
+                name='coarse', dim=dim, c_dim=c_dim, color=False, hidden_size=hidden_size, grid_len=coarse_grid_len, feature_fusion=feature_fusion)
 
         self.middle_decoder = MLP(name='middle', dim=dim, c_dim=c_dim, color=False,
                                   skips=[2], n_blocks=5, hidden_size=hidden_size,
-                                  grid_len=middle_grid_len, pos_embedding_method=pos_embedding_method)
+                                  grid_len=middle_grid_len, pos_embedding_method=pos_embedding_method, feature_fusion=feature_fusion)
         self.fine_decoder = MLP(name='fine', dim=dim, c_dim=c_dim*2, color=False,
                                 skips=[2], n_blocks=5, hidden_size=hidden_size,
-                                grid_len=fine_grid_len, concat_feature=True, pos_embedding_method=pos_embedding_method)
+                                grid_len=fine_grid_len, concat_feature=True, pos_embedding_method=pos_embedding_method, feature_fusion=feature_fusion)
         self.color_decoder = MLP(name='color', dim=dim, c_dim=c_dim, color=True,
                                  skips=[2], n_blocks=5, hidden_size=hidden_size,
-                                 grid_len=color_grid_len, pos_embedding_method=pos_embedding_method)
+                                 grid_len=color_grid_len, pos_embedding_method=pos_embedding_method, feature_fusion=feature_fusion)
 
     def forward(self, p, c_grid, stage='middle', **kwargs):
         """
             Output occupancy/color in different stage.
         """
-        print('='*40)
-        print('Rendering Net')
-        print('Stage:', stage)
+        # print('='*40)
+        # print('Rendering Net')
+        # print('Stage:', stage)
         
         
         device = f'cuda:{p.get_device()}'
@@ -383,20 +408,20 @@ class NICE(nn.Module):
             occ = occ.squeeze(0)
             raw = torch.zeros(occ.shape[0], 4).to(device).float()
             raw[..., -1] = occ
-            print('points:', p.shape)
-            print('Feature Grid:', c_grid['grid_'+stage].shape)
-            print('Occ:', occ.shape)
-            print('Raw:', raw.shape)
+            # print('points:', p.shape)
+            # print('Feature Grid:', c_grid['grid_'+stage].shape)
+            # print('Occ:', occ.shape)
+            # print('Raw:', raw.shape)
             return raw
         elif stage == 'middle':
             middle_occ = self.middle_decoder(p, c_grid)
             middle_occ = middle_occ.squeeze(0)
             raw = torch.zeros(middle_occ.shape[0], 4).to(device).float()
             raw[..., -1] = middle_occ
-            print('points:', p.shape)
-            print('Feature Grid:', c_grid['grid_'+stage].shape)
-            print('Occ:', middle_occ.shape)
-            print('Raw:', raw.shape)
+            # print('points:', p.shape)
+            # print('Feature Grid:', c_grid['grid_'+stage].shape)
+            # print('Occ:', middle_occ.shape)
+            # print('Raw:', raw.shape)
             return raw
         elif stage == 'fine':
             fine_occ = self.fine_decoder(p, c_grid)
@@ -404,11 +429,11 @@ class NICE(nn.Module):
             middle_occ = self.middle_decoder(p, c_grid)
             middle_occ = middle_occ.squeeze(0)
             raw[..., -1] = fine_occ+middle_occ
-            print('points:', p.shape)
-            print('Feature Grid:', c_grid['grid_'+stage].shape)
-            print('Fine Occ:', fine_occ.shape)
-            print('Middle Occ:', middle_occ.shape)
-            print('Raw:', raw.shape)
+            # print('points:', p.shape)
+            # print('Feature Grid:', c_grid['grid_'+stage].shape)
+            # print('Fine Occ:', fine_occ.shape)
+            # print('Middle Occ:', middle_occ.shape)
+            # print('Raw:', raw.shape)
             return raw
         elif stage == 'color':
             fine_occ = self.fine_decoder(p, c_grid)
@@ -416,9 +441,9 @@ class NICE(nn.Module):
             middle_occ = self.middle_decoder(p, c_grid)
             middle_occ = middle_occ.squeeze(0)
             raw[..., -1] = fine_occ+middle_occ
-            print('points:', p.shape)
-            print('Feature Grid:', c_grid['grid_'+stage].shape)
-            print('Fine Occ:', fine_occ.shape)
-            print('Middle Occ:', middle_occ.shape)
-            print('Raw:', raw.shape)
+            # print('points:', p.shape)
+            # print('Feature Grid:', c_grid['grid_'+stage].shape)
+            # print('Fine Occ:', fine_occ.shape)
+            # print('Middle Occ:', middle_occ.shape)
+            # print('Raw:', raw.shape)
             return raw

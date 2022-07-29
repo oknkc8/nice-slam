@@ -5,9 +5,11 @@ import numpy as np
 import torch
 import torch.multiprocessing
 import torch.multiprocessing as mp
+from tqdm import tqdm
+from colorama import Fore, Style
 
 from src import config
-from src.Mapper import Mapper
+from src.Mapper_Omni import Mapper
 from src.Tracker import Tracker
 from src.Integrator import Integrator
 from src.utils.datasets import get_dataset
@@ -17,6 +19,8 @@ from src.utils.Renderer import Renderer
 
 torch.multiprocessing.set_sharing_strategy('file_system')
 
+import pdb
+torch.autograd.set_detect_anomaly(True)
 
 class NICE_SLAM_Omni():
     """
@@ -28,7 +32,7 @@ class NICE_SLAM_Omni():
 
         self.cfg = cfg
         self.args = args
-        self.nice = args.nice
+        self.method = cfg['method']
 
         self.coarse = cfg['coarse']
         self.occupancy = cfg['occupancy']
@@ -52,17 +56,21 @@ class NICE_SLAM_Omni():
         self.phi_deg, self.phi_max_deg = cfg['cam']['phi_deg'], cfg['cam']['phi_max_deg']
         self.update_cam()
 
-        model = config.get_model(cfg,  nice=self.nice)
+        model = config.get_model(cfg,  model=self.method)
         self.shared_decoders = model
 
         self.scale = cfg['scale']
+        self.n_img = 0
 
         self.load_bound(cfg)
-        if self.nice:
-            self.load_pretrain(cfg)
+        if self.method != 'imap':
+            if self.method == 'nice' and cfg['pretrained_decoders']['use']:
+                self.load_pretrain(cfg)
             self.grid_init(cfg)
         else:
             self.shared_c = {}
+            self.shared_coord = {}
+            self.shared_vote = {}
 
         # need to use spawn
         try:
@@ -71,8 +79,8 @@ class NICE_SLAM_Omni():
             pass
 
         # self.summary_writer = SummaryWriter(f'{self.output}/log')
-        self.frame_reader = get_dataset(cfg, args, self.scale)
-        self.n_img = len(self.frame_reader)
+        # self.frame_reader = get_dataset(cfg, args, self.scale)
+        # self.n_img = len(self.frame_reader)
         self.estimate_c2w_list = torch.zeros((self.n_img, 4, 4))
         self.estimate_c2w_list.share_memory_()
 
@@ -88,27 +96,44 @@ class NICE_SLAM_Omni():
         self.mapping_cnt = torch.zeros((1)).int()  # counter for mapping
         self.mapping_cnt.share_memory_()
         for key, val in self.shared_c.items():
-            val = val.to(self.cfg['mapping']['device'])
+            val = val.to(self.cfg['omnimvs']['device'])
             val.share_memory_()
             self.shared_c[key] = val
+        for key, val in self.shared_coord.items():
+            val = val.to(self.cfg['omnimvs']['device'])
+            val.share_memory_()
+            self.shared_coord[key] = val
+        for key, val in self.shared_vote.items():
+            val = val.to(self.cfg['omnimvs']['device'])
+            val.share_memory_()
+            self.shared_vote[key] = val
         self.shared_decoders = self.shared_decoders.to(
             self.cfg['mapping']['device'])
         self.shared_decoders.share_memory()
         self.renderer = Renderer(cfg, args, self)
         self.mesher = Mesher(cfg, args, self)
         self.logger = Logger(cfg, args, self)
+        """ OmniMVS """
+        self.target_depths = []
+        self.target_colors = []
+        self.use_depths = []
+        self.use_colors = []
+        self.target_entropys = []
+        self.resps = []
+        self.raw_feats = []
+        self.probs = []
+        self.target_c2w = []
+        self.resp_volume_freeze = self.cfg['omnimvs']['resp_volume_freeze']
+        self.integrator = Integrator(cfg, args, self)
+        self.dbloader = self.integrator.dbloader
+        self.mvsnet = self.integrator.mvsnet
+        # self.feature_fusion = self.integrator.feature_fusion
+        """"""
         self.mapper = Mapper(cfg, args, self, coarse_mapper=False)
         if self.coarse:
             self.coarse_mapper = Mapper(cfg, args, self, coarse_mapper=True)
-        self.tracker = Tracker(cfg, args, self)
-        
-        self.target_depths = []
-        self.target_colors = []
-        self.target_entropys = []
-        
-        
-        """ OmniMVS """
-        self.integrator = Integrator(cfg, args, self)
+            
+        self.costfusion = self.mapper.costfusion
         
         self.print_output_desc()
 
@@ -163,13 +188,15 @@ class NICE_SLAM_Omni():
         # enlarge the bound a bit to allow it divisable by bound_divisable
         self.bound[:, 1] = (((self.bound[:, 1]-self.bound[:, 0]) /
                             bound_divisable).int()+1)*bound_divisable+self.bound[:, 0]
-        if self.nice:
+        if self.method == 'nice':
             self.shared_decoders.bound = self.bound
             self.shared_decoders.middle_decoder.bound = self.bound
             self.shared_decoders.fine_decoder.bound = self.bound
             self.shared_decoders.color_decoder.bound = self.bound
             if self.coarse:
                 self.shared_decoders.coarse_decoder.bound = self.bound*self.coarse_bound_enlarge
+        elif self.method == 'omni_feat':
+            self.shared_decoders.bound = self.bound
 
     def load_pretrain(self, cfg):
         """
@@ -187,7 +214,7 @@ class NICE_SLAM_Omni():
                 if ('decoder' in key) and ('encoder' not in key):
                     key = key[8:]
                     coarse_dict[key] = val
-            self.shared_decoders.coarse_decoder.load_state_dict(coarse_dict)
+            self.shared_decoders.coarse_decoder.load_state_dict(coarse_dict, strict=False)
 
         ckpt = torch.load(cfg['pretrained_decoders']['middle_fine'],
                           map_location=cfg['mapping']['device'])
@@ -201,8 +228,8 @@ class NICE_SLAM_Omni():
                 elif 'fine' in key:
                     key = key[8+5:]
                     fine_dict[key] = val
-        self.shared_decoders.middle_decoder.load_state_dict(middle_dict)
-        self.shared_decoders.fine_decoder.load_state_dict(fine_dict)
+        self.shared_decoders.middle_decoder.load_state_dict(middle_dict, strict=False)
+        self.shared_decoders.fine_decoder.load_state_dict(fine_dict, strict=False)
         
     def load_pretrain_full(self, cfg, ckpt_path):
         """
@@ -218,7 +245,6 @@ class NICE_SLAM_Omni():
         self.gt_c2w_list = ckpt['gt_c2w_list']
         self.shared_c = ckpt['c']
         self.shared_decoders.load_state_dict(ckpt['decoder_state_dict'])
-        
 
     def grid_init(self, cfg):
         """
@@ -238,8 +264,15 @@ class NICE_SLAM_Omni():
         self.color_grid_len = color_grid_len
 
         c = {}
-        c_dim = cfg['model']['c_dim']
+        # c_dim = cfg['model']['c_dim']
+        c_dim = 64
+        # c_dim = 1
         xyz_len = self.bound[:, 1]-self.bound[:, 0]
+        tmp_bound = self.bound.clone()
+        self.bound[0], self.bound[2] = tmp_bound[2], tmp_bound[0]
+        
+        coord = {}
+        vote = {}
 
         if self.coarse:
             coarse_key = 'grid_coarse'
@@ -250,6 +283,14 @@ class NICE_SLAM_Omni():
             val_shape = [1, c_dim, *coarse_val_shape]
             coarse_val = torch.zeros(val_shape)
             c[coarse_key] = coarse_val
+            
+            # coarse_val_shape[0], coarse_val_shape[2] = coarse_val_shape[2], coarse_val_shape[0]
+            grid_range = [torch.arange(0, n_vox) + 0.5 for n_vox in coarse_val_shape]
+            coarse_coord_grid = torch.stack(torch.meshgrid(*grid_range)) * self.coarse_grid_len
+            coarse_coord_grid = coarse_coord_grid.reshape(3, -1) + self.bound[:, 0].unsqueeze(-1) * self.coarse_bound_enlarge
+            coord[coarse_key] = coarse_coord_grid.reshape(1, 3, *coarse_val_shape)
+            
+            vote[coarse_key] = torch.zeros(val_shape)
 
         middle_key = 'grid_middle'
         middle_val_shape = list(map(int, (xyz_len/middle_grid_len).tolist()))
@@ -258,6 +299,14 @@ class NICE_SLAM_Omni():
         val_shape = [1, c_dim, *middle_val_shape]
         middle_val = torch.zeros(val_shape)
         c[middle_key] = middle_val
+        
+        # middle_val_shape[0], middle_val_shape[2] = middle_val_shape[2], middle_val_shape[0]
+        grid_range = [torch.arange(0, n_vox) + 0.5 for n_vox in middle_val_shape]
+        middle_coord_grid = torch.stack(torch.meshgrid(*grid_range)) * self.middle_grid_len
+        middle_coord_grid = middle_coord_grid.reshape(3, -1) + self.bound[:, 0].unsqueeze(-1)
+        coord[middle_key] = middle_coord_grid.reshape(1, 3, *middle_val_shape)
+        
+        vote[middle_key] = torch.zeros(val_shape)
 
         fine_key = 'grid_fine'
         fine_val_shape = list(map(int, (xyz_len/fine_grid_len).tolist()))
@@ -266,6 +315,14 @@ class NICE_SLAM_Omni():
         val_shape = [1, c_dim, *fine_val_shape]
         fine_val = torch.zeros(val_shape)
         c[fine_key] = fine_val
+        
+        # fine_val_shape[0], fine_val_shape[2] = fine_val_shape[2], fine_val_shape[0]
+        grid_range = [torch.arange(0, n_vox) + 0.5 for n_vox in fine_val_shape]
+        fine_coord_grid = torch.stack(torch.meshgrid(*grid_range)) * self.fine_grid_len
+        fine_coord_grid = fine_coord_grid.reshape(3, -1) + self.bound[:, 0].unsqueeze(-1)
+        coord[fine_key] = fine_coord_grid.reshape(1, 3, *fine_val_shape)
+        
+        vote[fine_key] = torch.zeros(val_shape)
 
         color_key = 'grid_color'
         color_val_shape = list(map(int, (xyz_len/color_grid_len).tolist()))
@@ -274,47 +331,36 @@ class NICE_SLAM_Omni():
         val_shape = [1, c_dim, *color_val_shape]
         color_val = torch.zeros(val_shape)
         c[color_key] = color_val
+        
+        # color_val_shape[0], color_val_shape[2] = color_val_shape[2], color_val_shape[0]
+        grid_range = [torch.arange(0, n_vox) + 0.5 for n_vox in color_val_shape]
+        color_coord_grid = torch.stack(torch.meshgrid(*grid_range)) * self.color_grid_len
+        color_coord_grid = color_coord_grid.reshape(3, -1) + self.bound[:, 0].unsqueeze(-1)
+        coord[color_key] = color_coord_grid.reshape(1, 3, *color_val_shape)
+        
+        vote[color_key] = torch.zeros(val_shape)
 
+        self.bound = tmp_bound
+        
         self.shared_c = c
-
-    def tracking(self, rank):
-        """
-        Tracking Thread.
-
-        Args:
-            rank (int): Thread ID.
-        """
-
-        # should wait until the mapping of first frame is finished
-        while (1):
-            if self.mapping_first_frame[0] == 1:
-                break
-            time.sleep(1)
-
-        self.tracker.run()
-
-    def mapping(self, rank):
-        """
-        Mapping Thread. (updates middle, fine, and color level)
-
-        Args:
-            rank (int): Thread ID.
-        """
-
-        self.mapper.run()
-
-    def coarse_mapping(self, rank):
-        """
-        Coarse mapping Thread. (updates coarse level)
-
-        Args:
-            rank (int): Thread ID.
-        """
-
-        self.coarse_mapper.run()
+        self.shared_coord = coord
+        self.shared_vote = vote
 
     def run(self):
-        self.integrator.run()
+        if self.verbose:
+            print(Fore.GREEN)
+            print("Run OmniMVS...")
+            print(Style.RESET_ALL)
+            
+        for i, data in tqdm(enumerate(self.dbloader)):
+            self.integrator.run_omni(data, i)
+            
+        del self.integrator.mvsnet
+        del self.integrator.omnimvs
+            
+        for epoch in tqdm(range(500)):
+            # self.coarse_mapper.run_omni(epoch)
+            self.mapper.run_omni(epoch)
 
 
 # This part is required by torch.multiprocessing
