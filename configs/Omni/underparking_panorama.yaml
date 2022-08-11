@@ -7,15 +7,15 @@ data:
   # output: output/tmp/tmp1
   # output: output/tmp_exp/tmp_original2
   # output: output/Omni_panorama/underparking_all_5_debug
-  output: output/new_underparking_tmp/restore/1_nice_restore
+  output: output/new_underparking_tmp/restore/2_nice_restore_dense
   config_file: capture.yaml
-  poses_file: trajectory_small.txt
+  poses_file: trajectory_200.txt
 grid_len:
-  coarse: 2 
-  middle: 0.32 
-  fine: 0.16
-  color: 0.16
-  bound_divisable: 0.32
+  coarse: 1 
+  middle: 0.16 
+  fine: 0.08
+  color: 0.08
+  bound_divisable: 0.16
 pretrained_decoders:
   use: True
 meshing:
@@ -52,8 +52,10 @@ mapping:
   iters: 1000
   # bound: [[-24.0, 37.0], [-5.0, 2.0], [-9.0, 63.0]] 
   # marching_cubes_bound: [[-24.0, 37.0], [-5.0, 2.0], [-9.0, 63.0]] 
-  bound: [[-16.0, 24.0], [-3.0, 2.0], [-9.0, 34.0]] # small
-  marching_cubes_bound: [[-16.0, 24.0], [-3.0, 2.0], [-9.0, 34.0]] # small
+  bound: [[-16.0, 24.0], [-3.0, 2.0], [-9.0, 34.0]] # 200
+  marching_cubes_bound: [[-16.0, 24.0], [-3.0, 2.0], [-9.0, 34.0]] # 200
+  # bound: [[-16.0, 26.0], [-4.0, 2.0], [-9.0, 40.0]] # 400
+  # marching_cubes_bound: [[-16.0, 26.0], [-4.0, 2.0], [-9.0, 40.0]] # 400
   no_vis_on_first_frame: False
   imap_decoders_lr: 0.0002
 cam:

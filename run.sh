@@ -1,1 +1,1 @@
-python -W ignore run.py configs/Omni/underparking_panorama_imap.yaml --imap
+python -W ignore run.py configs/Omni/underparking_panorama.yaml

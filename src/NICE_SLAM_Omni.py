@@ -70,6 +70,7 @@ class NICE_SLAM_Omni():
         else:
             self.shared_c = {}
             self.shared_coord = {}
+            self.shared_grid_coord = {}
             self.shared_vote = {}
 
         # need to use spawn
@@ -103,6 +104,10 @@ class NICE_SLAM_Omni():
             val = val.to(self.cfg['omnimvs']['device'])
             val.share_memory_()
             self.shared_coord[key] = val
+        for key, val in self.shared_grid_coord.items():
+            val = val.to(self.cfg['omnimvs']['device'])
+            val.share_memory_()
+            self.shared_grid_coord[key] = val
         for key, val in self.shared_vote.items():
             val = val.to(self.cfg['omnimvs']['device'])
             val.share_memory_()
@@ -120,6 +125,10 @@ class NICE_SLAM_Omni():
         self.use_colors = []
         self.target_entropys = []
         self.resps = []
+        self.backproj_feats = {}
+        self.backproj_feats['grid_middle'] = []
+        self.backproj_feats['grid_fine'] = []
+        self.backproj_feats['grid_color'] = []
         self.raw_feats = []
         self.probs = []
         self.target_c2w = []
@@ -272,6 +281,7 @@ class NICE_SLAM_Omni():
         self.bound[0], self.bound[2] = tmp_bound[2], tmp_bound[0]
         
         coord = {}
+        grid_coord = {}
         vote = {}
 
         if self.coarse:
@@ -290,6 +300,10 @@ class NICE_SLAM_Omni():
             coarse_coord_grid = coarse_coord_grid.reshape(3, -1) + self.bound[:, 0].unsqueeze(-1) * self.coarse_bound_enlarge
             coord[coarse_key] = coarse_coord_grid.reshape(1, 3, *coarse_val_shape)
             
+            grid_range = [torch.arange(0, n_vox) for n_vox in coarse_val_shape]
+            coarse_coord_grid = torch.stack(torch.meshgrid(*grid_range))
+            grid_coord[coarse_key] = coarse_coord_grid.reshape(1, 3, *coarse_val_shape).type(torch.int)
+            
             vote[coarse_key] = torch.zeros(val_shape)
 
         middle_key = 'grid_middle'
@@ -305,6 +319,10 @@ class NICE_SLAM_Omni():
         middle_coord_grid = torch.stack(torch.meshgrid(*grid_range)) * self.middle_grid_len
         middle_coord_grid = middle_coord_grid.reshape(3, -1) + self.bound[:, 0].unsqueeze(-1)
         coord[middle_key] = middle_coord_grid.reshape(1, 3, *middle_val_shape)
+        
+        grid_range = [torch.arange(0, n_vox) for n_vox in middle_val_shape]
+        middle_coord_grid = torch.stack(torch.meshgrid(*grid_range))
+        grid_coord[middle_key] = middle_coord_grid.reshape(1, 3, *middle_val_shape).type(torch.int)
         
         vote[middle_key] = torch.zeros(val_shape)
 
@@ -322,6 +340,10 @@ class NICE_SLAM_Omni():
         fine_coord_grid = fine_coord_grid.reshape(3, -1) + self.bound[:, 0].unsqueeze(-1)
         coord[fine_key] = fine_coord_grid.reshape(1, 3, *fine_val_shape)
         
+        grid_range = [torch.arange(0, n_vox) for n_vox in fine_val_shape]
+        fine_coord_grid = torch.stack(torch.meshgrid(*grid_range))
+        grid_coord[fine_key] = fine_coord_grid.reshape(1, 3, *fine_val_shape).type(torch.int)
+        
         vote[fine_key] = torch.zeros(val_shape)
 
         color_key = 'grid_color'
@@ -329,7 +351,7 @@ class NICE_SLAM_Omni():
         color_val_shape[0], color_val_shape[2] = color_val_shape[2], color_val_shape[0]
         self.color_val_shape = color_val_shape
         val_shape = [1, c_dim, *color_val_shape]
-        color_val = torch.zeros(val_shape)
+        color_val = torch.ones(val_shape)
         c[color_key] = color_val
         
         # color_val_shape[0], color_val_shape[2] = color_val_shape[2], color_val_shape[0]
@@ -338,12 +360,17 @@ class NICE_SLAM_Omni():
         color_coord_grid = color_coord_grid.reshape(3, -1) + self.bound[:, 0].unsqueeze(-1)
         coord[color_key] = color_coord_grid.reshape(1, 3, *color_val_shape)
         
+        grid_range = [torch.arange(0, n_vox) for n_vox in color_val_shape]
+        color_coord_grid = torch.stack(torch.meshgrid(*grid_range))
+        grid_coord[color_key] = color_coord_grid.reshape(1, 3, *color_val_shape).type(torch.int)
+        
         vote[color_key] = torch.zeros(val_shape)
 
         self.bound = tmp_bound
         
         self.shared_c = c
         self.shared_coord = coord
+        self.shared_grid_coord = grid_coord
         self.shared_vote = vote
 
     def run(self):
@@ -351,7 +378,7 @@ class NICE_SLAM_Omni():
             print(Fore.GREEN)
             print("Run OmniMVS...")
             print(Style.RESET_ALL)
-            
+        
         for i, data in tqdm(enumerate(self.dbloader)):
             self.integrator.run_omni(data, i)
             

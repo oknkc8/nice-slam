@@ -3,12 +3,12 @@ dataset: 'ocam_panorama'
 occupancy: True
 data:
   input_folder: /data/chsung/under_parking_seq
-  output: output/new_underparking_tmp/80_debug_nice_occ_200_geo_feat_use_pretrain_no_feat_fusion_add_3dconv_bias_bnrelu_l1_128_48_16_lre6e3_tsdfintg_leakyrelu
+  output: output/underparking_sparse/11_debug_nice_occ_200_geo_feat_use_pretrain_convgru_1x1conv_nobias_solvebug_backmask
   config_file: capture.yaml
   poses_file: trajectory.txt
 grid_len:
-  coarse: 2 
-  middle: 0.32 
+  coarse: 2
+  middle: 0.32
   fine: 0.16
   color: 0.16
   bound_divisable: 0.32
@@ -26,7 +26,7 @@ mapping:
   fine_iter_ratio: 1.0
   every_frame: 1
   vis_freq: 1
-  vis_inside_freq: 10
+  vis_inside_freq: 1
   mesh_freq: 1
   ckpt_freq: 1
   keyframe_every: 1
@@ -38,8 +38,10 @@ mapping:
   w_color_loss: 0.1
   # bound: [[-24.0, 37.0], [-3.0, 2.0], [-9.0, 63.0]] # all
   # marching_cubes_bound: [[-24.0, 37.0], [-3.0, 2.0], [-9.0, 63.0]]  # all
-  bound: [[-16.0, 24.0], [-3.0, 2.0], [-9.0, 34.0]] # 200
-  marching_cubes_bound: [[-16.0, 24.0], [-3.0, 2.0], [-9.0, 34.0]] # 200
+  # bound: [[-8.0, 7.0], [-3.0, 2.0], [-9.0, 16.0]] # 100
+  # marching_cubes_bound: [[-8.0, 7.0], [-3.0, 2.0], [-9.0, 16.0]] # 100
+  bound: [[-8.0, 15.0], [-3.0, 2.0], [-9.0, 24.0]] # 200
+  marching_cubes_bound: [[-8.0, 15.0], [-3.0, 2.0], [-9.0, 24.0]] # 200
   # bound: [[-16.0, 26.0], [-4.0, 2.0], [-9.0, 40.0]] # 400
   # marching_cubes_bound: [[-16.0, 26.0], [-4.0, 2.0], [-9.0, 40.0]] # 400
   # bound: [[-16.0, 34.0], [-4.0, 2.0], [-9.0, 54.0]] # 600
@@ -55,12 +57,12 @@ mapping:
     color:
       decoders_lr: 0.000001
 cam:
-  H: 320
+  H: 160
   W: 640
   crop_edge: 0
   method: 'panorama'
-  phi_deg: -90.0
-  phi_max_deg: 90.0
+  phi_deg: -45.0
+  phi_max_deg: 45.0
 omnimvs:
   device: "cuda:2"
   config_file: config.yaml
@@ -73,13 +75,13 @@ omnimvs:
   net_freeze: False
   lr: 0.001
   omnimvs_opts:
-    poses_file: trajectory_400.txt
+    poses_file: trajectory_200.txt
     dtype:
-    step: 30
-    phi_deg: -90
-    phi_max_deg: 90
+    step: 10
+    phi_deg: -45
+    phi_max_deg: 45
     num_invdepth: 192
-    equirect_size: [320, 640]
+    equirect_size: [160, 640]
     out_cost: True
     lt_equirect_sample_ratio: 1
     lt_depth_sample_ratio: 2

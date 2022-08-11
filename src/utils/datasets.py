@@ -467,7 +467,7 @@ class OCam_panorama(BaseDataset):
         fidxs, rig_poses, _ = self.splitTrajectoryResult(np.loadtxt(rig_poses_path).T)
         cam_poses = rig_poses.T
         
-        skip = 30
+        skip = 10
         
         self.color_paths = []
         self.depth_paths = []

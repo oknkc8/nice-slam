@@ -1590,6 +1590,33 @@ class OmniMVS(torch.utils.data.Dataset):
         gt_img_file = osp.join(
             self.db_path, self.opts.gt_img_fmt % (w, fidx))
         gt_img = np.array(Image.open(gt_img_file), dtype=np.float32) / 255.
+        
+        gt_h, gt_w, _ = gt_img.shape
+        if gt_w != w:
+            LOG_ERROR('width of GT Image map is not equal to equirect size')
+            return None
+
+        # crop height
+        gt_phi_min_deg, gt_phi_max_deg = -self.opts.gt_phi, self.opts.gt_phi
+        if self.phi_max_deg > 0.0:
+            phi_min_deg, phi_max_deg = self.phi_deg, self.phi_max_deg
+        else:
+            phi_min_deg, phi_max_deg = -self.phi_deg, self.phi_deg
+
+        if phi_min_deg < gt_phi_min_deg or phi_max_deg > gt_phi_max_deg:
+            print(phi_min_deg,gt_phi_min_deg,phi_max_deg,gt_phi_max_deg )
+            LOG_ERROR('vertical FoV is out of GT image map')
+            return None
+
+        gt_px_per_deg = gt_h / (gt_phi_max_deg - gt_phi_min_deg)
+        px_per_deg = h / (phi_max_deg - phi_min_deg)
+        if abs(gt_px_per_deg - px_per_deg) > 1e-6:
+            LOG_ERROR('number of pixels/vertical FoV is not equal to GTs')
+            return None
+
+        start_h = int(round(gt_px_per_deg * (gt_phi_max_deg - phi_max_deg)))
+        gt_img = gt_img[start_h:start_h + h, :, :]
+        
         return gt_img
 
     def readInvdepth(self, path: str) -> np.ndarray:

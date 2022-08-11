@@ -55,7 +55,7 @@ class Conv3D(torch.nn.Module):
 
 class ConvBnReLU3D(torch.nn.Module):
     def __init__(self, ch_in, ch_out, kernel_size=3, stride=1, pad=1,
-                 bn=True, relu=True):
+                 bn=True, relu=True, bias=True):
         super(ConvBnReLU3D, self).__init__()
         self.conv = torch.nn.Conv3d(ch_in, ch_out, kernel_size,
                                     stride, padding=pad, bias=False)
@@ -74,6 +74,22 @@ class ConvBnReLU3D(torch.nn.Module):
             # return F.relu(x)
         else:
             return x
+        
+class ResidualBlock3D(torch.nn.Module):
+    def __init__(self, ch_in, ch_out, kernel_size=3, stride=1, pad=1):
+        super(ResidualBlock3D, self).__init__()
+        self.net = torch.nn.Sequential(
+                        torch.nn.Conv3d(ch_in, ch_out, kernel_size,
+                                        stride, padding=pad, bias=False),
+                        torch.nn.BatchNorm3d(ch_out),
+                        torch.nn.LeakyReLU(True),
+                        torch.nn.Conv3d(ch_out, ch_out, kernel_size,
+                                        stride, padding=pad, bias=False),
+                        torch.nn.BatchNorm3d(ch_out))
+        self.relu = torch.nn.LeakyReLU(True)
+    def forward(self, x):
+        out = self.relu(self.net(x) + x)
+        return out
 
 
 class DeConvBnReLU3D(torch.nn.Module):

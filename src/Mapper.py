@@ -197,7 +197,7 @@ class Mapper(object):
             rays_o, rays_d, gt_depth, gt_color = get_samples(
                 0, H, 0, W, pixels, H, W, fx, fy, cx, cy, c2w, gt_depth, gt_color, self.device)
         elif self.cam_method == 'panorama':
-            rays_o, rays_d, gt_depth, gt_color = get_samples_omni(
+            rays_o, rays_d, gt_depth, gt_color, _, _ = get_samples_omni(
                 0, H, 0, W, pixels, H, W, phi_deg, phi_max_deg, c2w, gt_depth, gt_color, self.device)
 
         gt_depth = gt_depth.reshape(-1, 1)
@@ -476,7 +476,7 @@ class Mapper(object):
                     batch_rays_o, batch_rays_d, batch_gt_depth, batch_gt_color = get_samples(
                         0, H, 0, W, pixs_per_image, H, W, fx, fy, cx, cy, c2w, gt_depth, gt_color, self.device)
                 elif self.cam_method == 'panorama':
-                    batch_rays_o, batch_rays_d, batch_gt_depth, batch_gt_color = get_samples_omni(
+                    batch_rays_o, batch_rays_d, batch_gt_depth, batch_gt_color, _, _ = get_samples_omni(
                         0, H, 0, W, pixs_per_image, H, W, phi_deg, phi_max_deg, c2w, gt_depth, gt_color, self.device)
 
                 batch_rays_o_list.append(batch_rays_o.float())

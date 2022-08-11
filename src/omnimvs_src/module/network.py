@@ -7,6 +7,14 @@ import torch
 import torch.nn.functional as F
 from inplace_abn import InPlaceABN
 from src.omnimvs_src.module.basic import *
+from src.omnimvs_src.module.basic_sparse import *
+
+import torchsparse
+import torchsparse.nn as spnn
+from torchsparse.tensor import PointTensor
+from torchsparse.utils import *
+
+from src.omni_utils.torchsparse_utils import *
 
 import pdb
 
@@ -112,26 +120,18 @@ class CostCompute(torch.nn.Module):
         
         
 class CostFusion(torch.nn.Module):
-    def __init__(self, ch_in=64):
+    def __init__(self, ch_in=64, ch_out=32):
         super(CostFusion, self).__init__()
         
-        CH = 32 if ch_in != 1 else 8
+        CH = ch_out if ch_in != 1 else 8
             
         self.enc_conv0 = ConvBnReLU3D(ch_in, CH)
         
         self.enc_conv1 = ConvBnReLU3D(CH, 2*CH, stride=2)
         self.enc_conv2 = ConvBnReLU3D(2*CH, 2*CH)
         
-        self.enc_conv3 = ConvBnReLU3D(2*CH, 4*CH)
+        self.enc_conv3 = ConvBnReLU3D(2*CH, 4*CH, stride=2)
         self.enc_conv4 = ConvBnReLU3D(4*CH, 4*CH)
-        
-        # self.deconv0 = DeConvBnReLU3D(4*CH, 2*CH, stride=1, norm_act=norm_act)
-        # self.deconv1 = DeConvBnReLU3D(2*CH, 2*CH, stride=1, norm_act=norm_act)
-        
-        # self.deconv2 = DeConvBnReLU3D(2*CH, CH, stride=2, out_pad=1, norm_act=norm_act)
-        # self.deconv3 = DeConvBnReLU3D(CH, CH, stride=1, norm_act=norm_act)
-        
-        # self.deconv5 = DeConvBnReLU3D(CH, ch_in, stride=2, out_pad=1, norm_act=norm_act)
         
         self.dec_conv0 = ConvBnReLU3D(4*CH, 2*CH)
         self.dec_conv1 = ConvBnReLU3D(2*CH, 2*CH)
@@ -139,23 +139,9 @@ class CostFusion(torch.nn.Module):
         self.dec_conv2 = ConvBnReLU3D(2*CH, CH)
         self.dec_conv3 = ConvBnReLU3D(CH, CH)
         
-        self.dec_conv4 = ConvBnReLU3D(CH, 32, bn=False, relu=False)
+        self.dec_conv4 = ConvBnReLU3D(CH, ch_out, bn=False, relu=False, bias=False)
 
-    def forward(self, x):
-        """x = torch.nan_to_num(x)
-        conv0 = torch.nan_to_num(self.enc_conv0(x))
-        conv2 = torch.nan_to_num(self.enc_conv2(torch.nan_to_num(self.enc_conv1(conv0))))
-        x = torch.nan_to_num(self.enc_conv4(torch.nan_to_num(self.enc_conv3(conv2))))
-        
-        conv0_size = conv0.shape[-3:]
-        conv2_size = conv2.shape[-3:]
-        
-        x = F.upsample(x, conv2_size, mode='trilinear', align_corners=True)
-        x = conv2 + torch.nan_to_num(self.dec_conv1(torch.nan_to_num(self.dec_conv0(x))))
-        x = F.upsample(x, conv0_size, mode='trilinear', align_corners=True)
-        x = conv0 + torch.nan_to_num(self.dec_conv3(torch.nan_to_num(self.dec_conv2(x))))
-        x = torch.nan_to_num(self.dec_conv4(x))"""
-        
+    def forward(self, x):        
         conv0 = self.enc_conv0(x)
         conv2 = self.enc_conv2(self.enc_conv1(conv0))
         x = self.enc_conv4(self.enc_conv3(conv2))
@@ -173,7 +159,168 @@ class CostFusion(torch.nn.Module):
         del conv0
         
         return x
+    
+class CostFusion_Residual(torch.nn.Module):
+    def __init__(self, ch_in=64, ch_out=32):
+        super(CostFusion_Residual, self).__init__()
+        
+        CH = ch_out if ch_in != 1 else 8
+            
+        self.enc_conv0 = ConvBnReLU3D(ch_in, CH)
+        
+        self.enc_conv1 = ConvBnReLU3D(CH, 2*CH, stride=2)
+        self.enc_conv2 = ResidualBlock3D(2*CH, 2*CH)
+        
+        self.enc_conv3 = ConvBnReLU3D(2*CH, 4*CH, stride=2)
+        self.enc_conv4 = ResidualBlock3D(4*CH, 4*CH)
+        
+        self.dec_conv0 = ConvBnReLU3D(4*CH, 2*CH)
+        self.dec_conv1 = ResidualBlock3D(2*CH, 2*CH)
+        
+        self.dec_conv2 = ConvBnReLU3D(2*CH, CH)
+        self.dec_conv3 = ResidualBlock3D(CH, CH)
+        
+        self.dec_conv4 = ConvBnReLU3D(CH, ch_out, bn=False, relu=False, bias=False)
 
+    def forward(self, x):        
+        conv0 = self.enc_conv0(x)
+        conv2 = self.enc_conv2(self.enc_conv1(conv0))
+        x = self.enc_conv4(self.enc_conv3(conv2))
+        
+        conv0_size = conv0.shape[-3:]
+        conv2_size = conv2.shape[-3:]
+        
+        x = F.upsample(x, conv2_size, mode='trilinear', align_corners=True)
+        x = conv2 + self.dec_conv1(self.dec_conv0(x))
+        x = F.upsample(x, conv0_size, mode='trilinear', align_corners=True)
+        x = conv0 + self.dec_conv3(self.dec_conv2(x))
+        x = self.dec_conv4(x)
+        
+        del conv2
+        del conv0
+        
+        return x
+    
+    
+class GRUFusion(torch.nn.Module):
+    def __init__(self, ch_in=64, ch_out=64):
+        super().__init__()
+        self.ch_in = ch_in
+        self.ch_out = ch_out
+        self.gru = torch.nn.GRUCell(ch_in, ch_out)
+        
+    def forward(self, x, h=None):
+        grid_dim = [*x.shape]
+        grid_dim[1] = self.ch_out
+        x = x.reshape(self.ch_in, -1).T
+        if h is None:
+            ret = self.gru(x)
+            ret = ret.reshape(*grid_dim)
+            return ret
+        else:
+            h = h.reshape(self.ch_out, -1).T
+            ret = self.gru(x, h)
+            ret = ret.reshape(*grid_dim)
+            return ret
+        
+        
+class ConvGRU(nn.Module):
+    def __init__(self, hidden_dim=128, input_dim=192 + 128, pres=1, vres=1):
+        super(ConvGRU, self).__init__()
+        self.convz = SConv3d(hidden_dim + input_dim, hidden_dim, pres, vres, 1)
+        self.convr = SConv3d(hidden_dim + input_dim, hidden_dim, pres, vres, 1)
+        self.convq = SConv3d(hidden_dim + input_dim, hidden_dim, pres, vres, 1)
+
+    def forward(self, h, x):
+        '''
+
+        :param h: PointTensor
+        :param x: PointTensor
+        :return: h.F: Tensor (N, C)
+        '''
+        # hx = PointTensor(torch.cat([h.F, x.F], dim=1), h.C)
+        hx = torchsparse.cat([h, x])
+
+        z = torch.sigmoid(self.convz(hx).F)
+        r = torch.sigmoid(self.convr(hx).F)
+        x.F = torch.cat([r * h.F, x.F], dim=1)
+        q = torch.tanh(self.convq(x).F)
+
+        h.F = (1 - z) * h.F + z * q
+        return h
+
+
+class CostFusion_Sparse(nn.Module):
+    def __init__(self, ch_in=64, ch_out=32, pres=1, vres=1):
+        super(CostFusion, self).__init__()
+        
+        self.pres = pres
+        self.vres = vres
+        CH = 32 if ch_in != 1 else 8
+        
+        self.conv0 = BasicConvolutionBlock(ch_in, CH)
+        
+        self.conv1 = BasicConvolutionBlock(CH, 2*CH, ks=3, stride=2)
+        self.conv2 = BasicConvolutionBlock(2*CH, 2*CH, relu=False)
+        
+        self.conv3 = BasicConvolutionBlock(2*CH, 4*CH, ks=3, stride=2)
+        self.conv4 = BasicConvolutionBlock(4*CH, 4*CH, relu=False)
+        
+        self.deconv0 = BasicDeconvolutionBlock(4*CH, 2*CH, ks=3, stride=2)
+        self.deconv1 = BasicDeconvolutionBlock(2*CH, 2*CH)
+        
+        self.deconv2 = BasicDeconvolutionBlock(2*CH, CH, ks=3, stride=2)
+        self.deconv3 = BasicDeconvolutionBlock(CH, CH)
+        
+        self.deconv4 = BasicDeconvolutionBlock(CH, ch_out, bn=False, relu=False)
+        
+        self.point_transforms = nn.ModuleList([
+            nn.Sequential(
+                nn.Linear(2*CH, 2*CH),
+                nn.BatchNorm1d(2*CH),
+                nn.LeakyReLU(True),
+            ),
+            nn.Sequential(
+                nn.Linear(CH, CH),
+                nn.BatchNorm1d(CH),
+                nn.LeakyReLU(True),
+            )
+        ])
+        
+        # self.weight_initialization()
+        
+    def weight_initialization(self):
+        for m in self.modules():
+            if isinstance(m, nn.BatchNorm1d):
+                nn.init.constant_(m.weight, 1)
+                nn.init.constant_(m.bias, 0)
+
+    def forward(self, x):
+        # x: PointTensor
+        x0 = self.conv0(x)
+        
+        x1 = self.conv1(x0)
+        # x1.F = x1.F + x.F
+        x2 = self.conv2(x1)
+        
+        x3 = self.conv3(x2)
+        x4 = self.conv4(x3)
+        
+        y0 = self.deconv0(x4)
+        y1 = self.deconv1(y0)
+        # y1.F = y1.F + self.point_transforms[0](x2.F)
+        y1.F = y1.F + x2.F
+        
+        y2 = self.deconv2(y1)
+        y3 = self.deconv3(y2)
+        # y3.F = y3.F + self.point_transforms[1](x0.F)
+        y3.F = y3.F + x0.F
+        
+        y4 = self.deconv4(y3)
+        
+        return y4
+    
+        
 
 class OmniMVSNet(torch.nn.Module):
 

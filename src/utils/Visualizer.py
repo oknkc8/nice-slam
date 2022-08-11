@@ -210,6 +210,7 @@ class Visualizer(object):
                     # gt_depth=None)
                 depth_np = depth.detach().cpu().numpy()
                 color_np = color.detach().cpu().numpy()
+                use_depth_np = use_depth.detach().cpu().numpy()
                 depth_residual = np.abs(gt_depth_np - depth_np)
                 depth_residual[gt_depth_np == 0.0] = 0.0
                 color_residual = np.abs(gt_color_np - color_np)
@@ -227,10 +228,12 @@ class Visualizer(object):
                 tmp_gt_depth_np = gt_depth_np.copy()
                 gt_depth_np[tmp_gt_depth_np == 0] = EPS
                 depth_np[tmp_gt_depth_np == 0] = EPS
+                use_depth_np[tmp_gt_depth_np == 0] = EPS
                 depth_residual[tmp_gt_depth_np == 0] = EPS
                 invdepth_np_2 = colorMap('oliver', 1/depth_np, 1/gen_max_depth, 1/gen_min_depth)
                 gt_invdepth_np = colorMap('oliver', 1/gt_depth_np, 1/max_depth, 1/min_depth)
                 invdepth_np = colorMap('oliver', 1/depth_np, 1/max_depth, 1/min_depth)
+                use_invdepth_np = colorMap('oliver', 1/use_depth_np, 1/max_depth, 1/min_depth)
                 # gt_invdepth_np = colorMap('oliver', 1/gt_depth_np, 1/gt_max_depth, 1/gt_min_depth)
                 # invdepth_np = colorMap('oliver', 1/depth_np, 1/gen_max_depth, 1/gen_min_depth)
                 invdepth_residual = colorMap('oliver', 1/depth_residual, 1/np.max(depth_residual), 1/(np.unique(depth_residual)[1]))
@@ -243,21 +246,44 @@ class Visualizer(object):
                 gt_color_np = gt_color_np.astype(np.float64)
                 color_np = color_np.astype(np.float64)
                 color_residual = color_residual.astype(np.float64)
+                use_depth_np = use_depth_np.astype(np.float64)
                 
                 depth_np_2 = colorMap('plasma', depth_np, gen_min_depth, gen_max_depth)
                 gt_depth_np = colorMap('plasma', gt_depth_np, min_depth, max_depth)
                 depth_np = colorMap('plasma', depth_np, min_depth, max_depth)
+                use_depth_np = colorMap('plasma', use_depth_np, min_depth, max_depth)
                 # gt_depth_np = colorMap('plasma', gt_depth_np, gt_min_depth, gt_max_depth)
                 # depth_np = colorMap('plasma', depth_np, gen_min_depth, gen_max_depth)
                 depth_residual = colorMap('plasma', depth_residual, 0, np.max(depth_residual))
                                 
                 # prev_1 = cv2.hconcat([gt_depth_np.astype(np.float64), depth_np.astype(np.float64), depth_residual.astype(np.float64)])
                 # prev_2 = cv2.hconcat([gt_invdepth_np.astype(np.float64), invdepth_np.astype(np.float64), invdepth_residual.astype(np.float64)])
-                prev_1 = cv2.hconcat([gt_depth_np.astype(np.float64), depth_np.astype(np.float64), depth_np_2.astype(np.float64)])
-                prev_2 = cv2.hconcat([gt_invdepth_np.astype(np.float64), invdepth_np.astype(np.float64), invdepth_np_2.astype(np.float64)])
-                prev_3 = cv2.hconcat([gt_color_np*255, color_np*255, color_residual*255])
-                                
+                
+                gt_depth_np = np.pad(gt_depth_np, ((2,2), (2,2), (0,0)), 'constant', constant_values=255)
+                depth_np = np.pad(depth_np, ((2,2), (2,2), (0,0)), 'constant', constant_values=255)
+                depth_np_2 = np.pad(depth_np_2, ((2,2), (2,2), (0,0)), 'constant', constant_values=255)
+                use_depth_np = np.pad(use_depth_np, ((2,2), (2,2), (0,0)), 'constant', constant_values=255)
+                
+                gt_invdepth_np = np.pad(gt_invdepth_np, ((2,2), (2,2), (0,0)), 'constant', constant_values=255)
+                invdepth_np = np.pad(invdepth_np, ((2,2), (2,2), (0,0)), 'constant', constant_values=255)
+                invdepth_np_2 = np.pad(invdepth_np_2, ((2,2), (2,2), (0,0)), 'constant', constant_values=255)
+                use_invdepth_np = np.pad(use_invdepth_np, ((2,2), (2,2), (0,0)), 'constant', constant_values=255)
+                
+                gt_color_np = np.pad(gt_color_np, ((2,2), (2,2), (0,0)), 'constant', constant_values=1)
+                color_np = np.pad(color_np, ((2,2), (2,2), (0,0)), 'constant', constant_values=1)
+                color_residual = np.pad(color_residual, ((2,2), (2,2), (0,0)), 'constant', constant_values=1)
+                
+                # prev_1 = cv2.hconcat([gt_depth_np.astype(np.float64), depth_np.astype(np.float64), depth_np_2.astype(np.float64)])
+                # prev_2 = cv2.hconcat([gt_invdepth_np.astype(np.float64), invdepth_np.astype(np.float64), invdepth_np_2.astype(np.float64)])
+                # prev_3 = cv2.hconcat([gt_color_np*255, color_np*255, color_residual*255])                
+                # prev_output = np.round(cv2.vconcat([prev_1, prev_2, prev_3])).astype(np.uint8)
+                
+                prev_1 = cv2.hconcat([gt_depth_np.astype(np.float64), depth_np.astype(np.float64)])
+                prev_2 = cv2.hconcat([gt_invdepth_np.astype(np.float64), invdepth_np.astype(np.float64)])
+                # prev_3 = cv2.hconcat([gt_color_np*255, color_np*255])
+                prev_3 = cv2.hconcat([gt_color_np*255, use_invdepth_np.astype(np.float64)])
                 prev_output = np.round(cv2.vconcat([prev_1, prev_2, prev_3])).astype(np.uint8)
+                
                 prev_output = cv2.cvtColor(prev_output, cv2.COLOR_RGB2BGR)
                 cv2.imwrite(f'{self.vis_dir}/{stage}_{epoch:05d}_{iter:04d}.png', prev_output)
                 

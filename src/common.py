@@ -475,3 +475,39 @@ def normalize_3d_coordinate(p, bound):
     p[:, 2] = ((p[:, 2]-bound[2, 0])/(bound[2, 1]-bound[2, 0]))*2-1.0
     # p = p[:, [2,1,0]]
     return p
+
+
+def sparse_to_dense(sparse_tensor, dense_tensor, default_val=0):
+    coord = sparse_tensor.C.type(torch.long)
+    values = sparse_tensor.F
+    dense = torch.full(dense_tensor.shape, default_val, device=coord.device).float()
+    dense[coord[:, 3], :, coord[:, 0], coord[:, 1], coord[:, 2]] = values
+    return dense
+    
+
+
+def sparse_to_dense_torch_batch(locs, values, dim, default_val):
+    dense = torch.full([dim[0], dim[1], dim[2], dim[3]], float(default_val), device=locs.device)
+    dense[locs[:, 0], locs[:, 1], locs[:, 2], locs[:, 3]] = values
+    return dense
+
+
+def sparse_to_dense_torch(locs, values, dim, default_val, device):
+    dense = torch.full([dim[0], dim[1], dim[2]], float(default_val), device=device)
+    if locs.shape[0] > 0:
+        dense[locs[:, 0], locs[:, 1], locs[:, 2]] = values
+    return dense
+
+
+def sparse_to_dense_channel(locs, values, dim, c, default_val, device):
+    dense = torch.full([dim[0], dim[1], dim[2], c], float(default_val), device=device)
+    if locs.shape[0] > 0:
+        dense[locs[:, 0], locs[:, 1], locs[:, 2]] = values
+    return dense
+
+
+def sparse_to_dense_np(locs, values, dim, default_val):
+    dense = np.zeros([dim[0], dim[1], dim[2]], dtype=values.dtype)
+    dense.fill(default_val)
+    dense[locs[:, 0], locs[:, 1], locs[:, 2]] = values
+    return dense
