@@ -278,7 +278,7 @@ class NICE_SLAM_Omni():
         # c_dim = 1
         xyz_len = self.bound[:, 1]-self.bound[:, 0]
         tmp_bound = self.bound.clone()
-        self.bound[0], self.bound[2] = tmp_bound[2], tmp_bound[0]
+        # self.bound[0], self.bound[2] = tmp_bound[2], tmp_bound[0]
         
         coord = {}
         grid_coord = {}
