@@ -2,8 +2,10 @@ method: nice
 dataset: 'ocam_panorama'
 occupancy: True
 data:
-  input_folder: /data/chsung/under_parking_seq
-  output: output/underparking_sparse/11_debug_nice_occ_200_geo_feat_use_pretrain_convgru_1x1conv_nobias_solvebug_backmask
+  # input_folder: /data/chsung/under_parking_seq
+  input_folder: /data5/chnagho/data/under_parking_seq
+  # output: /data5/changho/nice-slam/output/underparking_sparse/34_debug_nice_occ_100_150_geo_feat_multiplyProb_use_pretrain_convgru_1x1conv_nobias_48_16_fix_backmask_trunc1_newcostfusion_noshuffle_change_integration_signarea
+  output: /data5/changho/nice-slam/output/underparking_sparse/37_debug_nice_occ_geo_feat_multiplyProb_use_pretrain_avg_nobias_48_16_backmask_trunc1_newcostfusion_noshuffle_change_integration_5step_25_75
   config_file: capture.yaml
   poses_file: trajectory.txt
 grid_len:
@@ -17,10 +19,10 @@ pretrained_decoders:
 meshing:
   level_set: 0
   resolution: 0.04 # change to 512 for higher resolution geometry
-  device: "cuda:3"
+  device: "cuda:5"
   clean_mesh: True
 mapping:
-  device: "cuda:3"
+  device: "cuda:5"
   BA: False
   middle_iter_ratio: 0.0
   fine_iter_ratio: 1.0
@@ -34,14 +36,18 @@ mapping:
   frustum_feature_selection: False
   pixels: 7500
   iters_first: 10
-  iters: 200
+  iters: 100
   w_color_loss: 0.1
   # bound: [[-24.0, 37.0], [-3.0, 2.0], [-9.0, 63.0]] # all
   # marching_cubes_bound: [[-24.0, 37.0], [-3.0, 2.0], [-9.0, 63.0]]  # all
-  # bound: [[-8.0, 7.0], [-3.0, 2.0], [-9.0, 16.0]] # 100
-  # marching_cubes_bound: [[-8.0, 7.0], [-3.0, 2.0], [-9.0, 16.0]] # 100
-  bound: [[-8.0, 15.0], [-3.0, 2.0], [-9.0, 24.0]] # 200
-  marching_cubes_bound: [[-8.0, 15.0], [-3.0, 2.0], [-9.0, 24.0]] # 200
+  # bound: [[-8.0, 5.0], [-3.0, 2.0], [-8.0, 14.0]] # 표지판
+  # marching_cubes_bound: [[-8.0, 5.0], [-3.0, 2.0], [-8.0, 14.0]] # 표지판
+  bound: [[-8.0, 7.0], [-3.0, 2.0], [-10.0, 16.0]] # 100
+  marching_cubes_bound: [[-8.0, 7.0], [-3.0, 2.0], [-10.0, 16.0]] # 100
+  # bound: [[-8.0, 9.0], [-3.0, 2.0], [-9.0, 21.0]] # 150
+  # marching_cubes_bound: [[-8.0, 9.0], [-3.0, 2.0], [-9.0, 21.0]] # 150
+  # bound: [[-8.0, 15.0], [-3.0, 2.0], [-9.0, 24.0]] # 200
+  # marching_cubes_bound: [[-8.0, 15.0], [-3.0, 2.0], [-9.0, 24.0]] # 200
   # bound: [[-16.0, 26.0], [-4.0, 2.0], [-9.0, 40.0]] # 400
   # marching_cubes_bound: [[-16.0, 26.0], [-4.0, 2.0], [-9.0, 40.0]] # 400
   # bound: [[-16.0, 34.0], [-4.0, 2.0], [-9.0, 54.0]] # 600
@@ -52,10 +58,13 @@ mapping:
   stage:
     middle:
       decoders_lr: 0.000001
+      # decoders_lr: 0.0
     fine:
       decoders_lr: 0.000001
+      # decoders_lr: 0.0
     color:
       decoders_lr: 0.000001
+      # decoders_lr: 0.0
 cam:
   H: 160
   W: 640
@@ -64,20 +73,20 @@ cam:
   phi_deg: -45.0
   phi_max_deg: 45.0
 omnimvs:
-  device: "cuda:2"
+  device: "cuda:4"
   config_file: config.yaml
   network_type: default
   snapshot_path: pretrained/omnimvs/full3-2x-rgb-reflect2_42.pt
   dbname: under_parking_seq
-  db_root: /data/chsung
+  db_root: /data5/changho/data
   db_config_idxs: []
   resp_volume_freeze: True
   net_freeze: False
   lr: 0.001
   omnimvs_opts:
-    poses_file: trajectory_200.txt
+    poses_file: trajectory_sign.txt
     dtype:
-    step: 10
+    step: 5
     phi_deg: -45
     phi_max_deg: 45
     num_invdepth: 192
@@ -98,4 +107,6 @@ rendering:
   perturb: 0.0
 model:
   c_dim: 32
+  fusion_method: grufusion
+  convgru_ks: 1
   feature_fusion: False

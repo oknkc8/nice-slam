@@ -5,7 +5,6 @@
 #
 import torch
 import torch.nn.functional as F
-from inplace_abn import InPlaceABN
 from src.omnimvs_src.module.basic import *
 from src.omnimvs_src.module.basic_sparse import *
 
@@ -141,6 +140,18 @@ class CostFusion(torch.nn.Module):
         
         self.dec_conv4 = ConvBnReLU3D(CH, ch_out, bn=False, relu=False, bias=False)
 
+        self.weight_initialization()
+
+    def weight_initialization(self):
+        for m in self.modules():
+            if isinstance(m, nn.BatchNorm3d):
+                nn.init.constant_(m.weight, 1)
+                nn.init.constant_(m.bias, 0)
+            elif isinstance(m, nn.Conv3d):
+                nn.init.xavier_uniform_(m.weight)
+                if m.bias is not None:
+                    nn.init.zeros_(m.bias)
+
     def forward(self, x):        
         conv0 = self.enc_conv0(x)
         conv2 = self.enc_conv2(self.enc_conv1(conv0))
@@ -159,7 +170,75 @@ class CostFusion(torch.nn.Module):
         del conv0
         
         return x
-    
+
+
+class CostFusion_tmp(torch.nn.Module):
+    def __init__(self, ch_in=64, ch_out=32):
+        super(CostFusion_tmp, self).__init__()
+        
+        CH = ch_out if ch_in != 1 else 8
+
+        self.conv1 = ConvBnReLU3D(ch_in, CH)
+        self.conv2 = ConvBnReLU3D(CH, CH)
+
+        self.conv3 = ConvBnReLU3D(CH, 2*CH, stride=2)
+        self.conv4 = ConvBnReLU3D(2*CH, 2*CH)
+
+        self.conv5 = ConvBnReLU3D(2*CH, 4*CH, stride=2)
+        self.conv6 = ConvBnReLU3D(4*CH, 4*CH)
+
+        self.deconv1 = DeConvBnReLU3D(4*CH, 2*CH, stride=2)
+        self.deconv2 = DeConvBnReLU3D(2*CH, 2*CH)
+
+        self.deconv3 = DeConvBnReLU3D(2*CH, CH, stride=2)
+        self.deconv4 = DeConvBnReLU3D(CH, CH)
+
+        self.deconv5 = DeConvBnReLU3D(CH, ch_out, bn=False, relu=False, bias=False)
+        
+        self.residual1 = ConvBnReLU3D(CH, CH)
+        self.residual2 = ConvBnReLU3D(CH, CH)
+        self.residual3 = ConvBnReLU3D(2*CH, 2*CH)
+        self.residual4 = ConvBnReLU3D(2*CH, 2*CH)
+
+        self.weight_initialization()
+
+    def weight_initialization(self):
+        for m in self.modules():
+            if isinstance(m, nn.BatchNorm3d):
+                nn.init.constant_(m.weight, 1)
+                nn.init.constant_(m.bias, 0)
+            elif isinstance(m, nn.Conv3d):
+                nn.init.xavier_uniform_(m.weight)
+                if m.bias is not None:
+                    nn.init.zeros_(m.bias)
+
+    def forward(self, x):
+        grid_shape = x.shape[-3:]
+
+        c1 = self.conv1(x)
+        c2 = self.conv2(c1)
+        res1 = self.residual1(c1)
+        res2 = self.residual2(c2)
+
+        c3 = self.conv3(c2)
+        c4 = self.conv4(c3)
+        res3 = self.residual3(c3)
+        res4 = self.residual3(c4)
+
+        c5 = self.conv5(c4)
+        c6 = self.conv6(c5)
+
+        c = self.deconv1(c6, residual=res4)
+        c = self.deconv2(c, residual=res3)
+        c = self.deconv3(c, residual=res2)
+        c = self.deconv4(c, residual=res1)
+
+        c = self.deconv5(c)
+        c = F.interpolate(c, grid_shape, mode='trilinear', align_corners=True)
+
+        return c
+
+
 class CostFusion_Residual(torch.nn.Module):
     def __init__(self, ch_in=64, ch_out=32):
         super(CostFusion_Residual, self).__init__()
@@ -225,11 +304,11 @@ class GRUFusion(torch.nn.Module):
         
         
 class ConvGRU(nn.Module):
-    def __init__(self, hidden_dim=128, input_dim=192 + 128, pres=1, vres=1):
+    def __init__(self, hidden_dim=128, input_dim=192 + 128, ks=3, pres=1, vres=1):
         super(ConvGRU, self).__init__()
-        self.convz = SConv3d(hidden_dim + input_dim, hidden_dim, pres, vres, 1)
-        self.convr = SConv3d(hidden_dim + input_dim, hidden_dim, pres, vres, 1)
-        self.convq = SConv3d(hidden_dim + input_dim, hidden_dim, pres, vres, 1)
+        self.convz = SConv3d(hidden_dim + input_dim, hidden_dim, pres, vres, ks)
+        self.convr = SConv3d(hidden_dim + input_dim, hidden_dim, pres, vres, ks)
+        self.convq = SConv3d(hidden_dim + input_dim, hidden_dim, pres, vres, ks)
 
     def forward(self, h, x):
         '''
@@ -249,7 +328,7 @@ class ConvGRU(nn.Module):
         h.F = (1 - z) * h.F + z * q
         return h
 
-
+"""
 class CostFusion_Sparse(nn.Module):
     def __init__(self, ch_in=64, ch_out=32, pres=1, vres=1):
         super(CostFusion, self).__init__()
@@ -319,7 +398,7 @@ class CostFusion_Sparse(nn.Module):
         y4 = self.deconv4(y3)
         
         return y4
-    
+"""
         
 
 class OmniMVSNet(torch.nn.Module):

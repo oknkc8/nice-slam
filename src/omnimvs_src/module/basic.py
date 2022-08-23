@@ -3,9 +3,9 @@ import torch
 import torch.nn.functional as F
 from torch.nn.modules.utils import _triple
 from torch.autograd import Variable
-from inplace_abn import InPlaceABN
 from src.omni_utils.common import *
 
+import pdb
 
 class Conv2D(torch.nn.Module):
     def __init__(self, ch_in, ch_out, kernel_size, stride=1, pad=1,
@@ -52,58 +52,6 @@ class Conv3D(torch.nn.Module):
             x = F.relu(x)
         return x
 
-
-class ConvBnReLU3D(torch.nn.Module):
-    def __init__(self, ch_in, ch_out, kernel_size=3, stride=1, pad=1,
-                 bn=True, relu=True, bias=True):
-        super(ConvBnReLU3D, self).__init__()
-        self.conv = torch.nn.Conv3d(ch_in, ch_out, kernel_size,
-                                    stride, padding=pad, bias=False)
-        self.relu = relu
-        self.bn = None
-        if bn:
-            self.bn = torch.nn.BatchNorm3d(ch_out)
-
-    def forward(self, x):
-        if self.bn is not None:
-            x= self.bn(self.conv(x))
-        else:
-            x = self.conv(x)
-        if self.relu:
-            return F.leaky_relu(x)
-            # return F.relu(x)
-        else:
-            return x
-        
-class ResidualBlock3D(torch.nn.Module):
-    def __init__(self, ch_in, ch_out, kernel_size=3, stride=1, pad=1):
-        super(ResidualBlock3D, self).__init__()
-        self.net = torch.nn.Sequential(
-                        torch.nn.Conv3d(ch_in, ch_out, kernel_size,
-                                        stride, padding=pad, bias=False),
-                        torch.nn.BatchNorm3d(ch_out),
-                        torch.nn.LeakyReLU(True),
-                        torch.nn.Conv3d(ch_out, ch_out, kernel_size,
-                                        stride, padding=pad, bias=False),
-                        torch.nn.BatchNorm3d(ch_out))
-        self.relu = torch.nn.LeakyReLU(True)
-    def forward(self, x):
-        out = self.relu(self.net(x) + x)
-        return out
-
-
-class DeConvBnReLU3D(torch.nn.Module):
-    def __init__(self, ch_in, ch_out, kernel_size=3, stride=1, pad=1,
-                 dilation=1, out_pad=0, norm_act=InPlaceABN):
-        super(DeConvBnReLU3D, self).__init__()
-        self.conv = torch.nn.ConvTranspose3d(ch_in, ch_out, kernel_size,
-                                             stride, padding=pad, output_padding=out_pad, bias=False)
-        self.bn = norm_act(ch_out)
-
-    def forward(self, x):
-        return self.bn(self.conv(x))
-
-
 class DeConv3D(torch.nn.Module):
     def __init__(self, ch_in, ch_out, kernel_size, stride=1, pad=1,
                  dilation=1, out_pad=0, bn=True, relu=True):
@@ -125,6 +73,74 @@ class DeConv3D(torch.nn.Module):
         if self.opts.relu:
             x = F.relu(x)
         return x
+
+
+class ConvBnReLU3D(torch.nn.Module):
+    def __init__(self, ch_in, ch_out, kernel_size=3, stride=1, pad=1,
+                 bn=True, relu=True, bias=False):
+        super(ConvBnReLU3D, self).__init__()
+        self.conv = torch.nn.Conv3d(ch_in, ch_out, kernel_size,
+                                    stride, padding=pad, bias=bias)
+        self.relu = relu
+        self.bn = None
+        if bn:
+            self.bn = torch.nn.BatchNorm3d(ch_out)
+
+    def forward(self, x, residual=None):
+        x = self.conv(x)
+        if self.bn is not None:
+            x= self.bn(x)
+        if residual is not None:
+            if x.shape[-3:] != residual.shape[-3:]:
+                residual = F.interpolate(residual, x.shape[-3:], mode='trilinear', align_corners=True)
+            x = x + residual
+        if self.relu:
+            return F.leaky_relu(x)
+            # return F.relu(x)
+        else:
+            return x
+
+class DeConvBnReLU3D(torch.nn.Module):
+    def __init__(self, ch_in, ch_out, kernel_size=3, stride=1, pad=1, out_pad=0,
+                 bn=True, relu=True, bias=False):
+        super(DeConvBnReLU3D, self).__init__()
+        self.conv = torch.nn.ConvTranspose3d(ch_in, ch_out, kernel_size,
+                                             stride, padding=pad, output_padding=out_pad, bias=bias)
+        self.relu = relu
+        self.bn = None
+        if bn:
+            self.bn = torch.nn.BatchNorm3d(ch_out)
+
+    def forward(self, x, residual=None):
+        x = self.conv(x)
+        if self.bn is not None:
+            x= self.bn(x)
+        if residual is not None:
+            if x.shape[-3:] != residual.shape[-3:]:
+                residual = F.interpolate(residual, x.shape[-3:], mode='trilinear', align_corners=True)
+            x = x + residual
+        if self.relu:
+            return F.leaky_relu(x)
+            # return F.relu(x)
+        else:
+            return x
+
+class ResidualBlock3D(torch.nn.Module):
+    def __init__(self, ch_in, ch_out, kernel_size=3, stride=1, pad=1):
+        super(ResidualBlock3D, self).__init__()
+        self.net = torch.nn.Sequential(
+                        torch.nn.Conv3d(ch_in, ch_out, kernel_size,
+                                        stride, padding=pad, bias=False),
+                        torch.nn.BatchNorm3d(ch_out),
+                        torch.nn.LeakyReLU(True),
+                        torch.nn.Conv3d(ch_out, ch_out, kernel_size,
+                                        stride, padding=pad, bias=False),
+                        torch.nn.BatchNorm3d(ch_out))
+        self.relu = torch.nn.LeakyReLU(True)
+    def forward(self, x):
+        out = self.relu(self.net(x) + x)
+        return out
+
 
 class HorizontalCircularConv2D(torch.nn.Module):
     def __init__(self, ch_in, ch_out, kernel_size, stride=1, pad=1,

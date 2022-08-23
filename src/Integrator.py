@@ -190,367 +190,32 @@ class Integrator(object):
         color = color.permute(1, 2, 0) / 255.
         
         return prob, depth.to(self.mapper_device), color.to(self.mapper_device), entropy.to(self.mapper_device), gt_depth, gt_color
-    
-    def integrate_features(self, stage, raw_feat, geo_feat, prob, c2w):
-        dist_threshold = 10
-        
-        """fusion features"""
-        raw_feat = raw_feat.to(self.device)
-        # geo_feat = geo_feat.to(self.mapper_device)
-        prob = prob.to(self.device)
-        
-        if False and 'fine' in stage:
-            pdb.set_trace()
-            grid_range = [torch.arange(0, n_vox) for n_vox in [192,320,640]]
-            grid = torch.meshgrid(*grid_range)
-            
-            max_indices = torch.max(prob.squeeze(1), dim=1)[1].reshape(1, -1)
-            p_shape = prob.shape
-            prob = prob.reshape(self.num_invdepth, -1)
-            for i in tqdm(range(max_indices.shape[-1])):
-                mask = torch.zeros_like(prob[:, i])
-                mask[max_indices[:, i]] = 1
-                prob[mask==1, i] = 1
-                prob[mask == 0, i] = 0
-            prob = prob.reshape(*p_shape)
-            
-            index = max_indices.reshape(prob.shape[-2:])
-                    
-            pdb.set_trace()
-            invdepth = self.omnimvs.indexToInvdepth(index)
-            self.omnimvs.writeInvdepth(invdepth.cpu().numpy(), 'debug/prob_invdepth.tiff')
-        
-        # prob = F.interpolate(prob.unsqueeze(1), scale_factor=0.5, mode='trilinear', align_corners=True)
-        # prob = F.interpolate(prob.unsqueeze(1), scale_factor=0.5, mode='nearest')
-        geo_feat = F.interpolate(geo_feat, scale_factor=2, mode='trilinear', align_corners=True)
-        
-        trunc_dist = self.cfg['grid_len'][stage[5:]]
-        # trunc_dist = 0.04
-        
-        index = torch.mul(prob, self.omnimvs.invdepth_indices)
-        index = torch.sum(index, 1)
-        depth = 1.0 / self.omnimvs.indexToInvdepth(index)
-        
-        front_trunc_depth = depth - trunc_dist
-        back_trunc_depth = depth + trunc_dist
-        
-        # cam_feature = self.feature_fusion(raw_feat * prob)
-        # cam_feature = raw_feat * prob # grid channel: 64
-        # cam_feature = prob.unsqueeze(1)   # grid_channel: 1
-        cam_feature = geo_feat # grid channel: 64
-        
-        grid_range = [torch.arange(0, n_vox) for n_vox in prob.shape[-3:]]
-        index_grid, _, _ = torch.meshgrid(*grid_range)
-        depth_grid = 1.0 / self.omnimvs.indexToInvdepth(index_grid).to(self.device)
-        
-        dist_valid_mask = depth_grid <= dist_threshold
-        trunc_in_mask = (depth_grid >= front_trunc_depth) & (depth_grid <= back_trunc_depth) & dist_valid_mask
-        back_mask = (depth_grid > back_trunc_depth) & dist_valid_mask
-        trunc_in_mask = trunc_in_mask[None, None, ...]
-        valid_vote_mask = (back_mask[None, None, ...] == False).float()
-        
-        trunc_in_mask = trunc_in_mask.expand(-1, self.c[stage].shape[1], -1, -1, -1)
-        valid_vote_mask = valid_vote_mask.expand(-1, self.c[stage].shape[1], -1, -1, -1)
-        
-        # cam_feature[trunc_in_mask == False] = 0
-        cam_feature[back_mask == True] = 0
-        
-        w2c = torch.tensor(inverseTransform(c2w.cpu().numpy())).to(self.device)
-        
-        """back-project feature"""
-        pts_world = self.coord[stage].contiguous().reshape(3, -1)
-        pts_world = pts_world[[2,1,0]]
-        pts_cam = applyTransform(w2c.cpu().numpy(), pts_world)
-        pts_cam[1, :] *= -1
-        pts_cam[2, :] *= -1
-        invdepth_cam = 1.0 / sqrt(torch.sum(pts_cam ** 2, 0))
-        
-        equi_pix = getEquirectCoordinate(
-                pts_cam, self.equirect_size, self.phi_deg, self.phi_max_deg)
-        equi_didx = self.omnimvs.invdepthToIndex(invdepth_cam)
-        
-        height, width = self.equirect_size
-        
-        equi_grid_x = equi_pix[0, :] / (width - 1) * 2 - 1
-        equi_grid_y = equi_pix[1, :] / (height - 1) * 2 - 1                
-        equi_grid_d = (equi_didx / (self.num_invdepth - 1)) * 2 - 1
-        
-        equi_grid_x = equi_grid_x.reshape(*self.coord[stage].shape[-3:])
-        equi_grid_y = equi_grid_y.reshape(*self.coord[stage].shape[-3:])
-        equi_grid_d = equi_grid_d.reshape(*self.coord[stage].shape[-3:])
-        
-        equi_grid = torch.stack([equi_grid_x, equi_grid_y, equi_grid_d], dim=-1).unsqueeze(0)
-        
-        mask = ((equi_grid.abs() <= 1.0).sum(dim=-1) == 3).unsqueeze(0)
-        equi_grid = equi_grid.float().to(self.device)
-        
-        mask = mask.expand(-1, self.c[stage].shape[1], -1, -1, -1)
-        
-        back_projected_feature = grid_sample(cam_feature, equi_grid.float(),
-                                    padding_mode='border', align_corners=True)
-        """
-        # filtering convolution using sparse conv
-        feat = back_projected_feature.reshape(self.c[stage].shape[1], -1).T
-        coord = self.grid_coord[stage].reshape(3, -1).T
-        coord = torch.cat([coord, torch.zeros(coord.shape[0], 1).to(self.device)], dim=-1).type(torch.int)
-        back_projected_feature_sparse = SparseTensor(feat, coord)
-        filterd_back_projected_feature_sparse = self.filtering_conv[stage[5:]](back_projected_feature_sparse)
-        back_projected_feature = sparse_to_dense(filterd_back_projected_feature_sparse, back_projected_feature, 0)
-        """
-        back_projected_valid_vote_mask = grid_sample(valid_vote_mask, equi_grid.float(),
-                                    padding_mode='border', align_corners=True)
-        mask = mask & (back_projected_valid_vote_mask != 0)
-        back_projected_feature[mask == False] = 0
-        mask = mask.float()
-        
-        """
-        # averaging
-        self.c[stage] = self.c[stage] * self.vote[stage] + back_projected_feature
-        self.vote[stage] = self.vote[stage] + mask
-        invalid_mask = self.vote[stage] == 0
-        mask_vote = self.vote[stage].clone()
-        mask_vote[invalid_mask] = 1
-        self.c[stage] = self.c[stage] / mask_vote
-        """
-        pdb.set_trace()
-        # gru fusion
-        if self.grufusion_h[stage[5:]] == False:
-            self.c[stage] = self.grufusion[stage[5:]](back_projected_feature)
-            self.grufusion_h[stage[5:]] = True
-        else:
-            self.c[stage] = self.grufusion[stage[5:]](back_projected_feature, self.c[stage])
-        
-        if False and self.frame_i == self.n_img - 1:
-            if 'middle' in stage:
-                from mpl_toolkits.mplot3d import Axes3D
-                import plotly.graph_objects as go
-                import plotly.io as po
-                with torch.no_grad():                
-                    pdb.set_trace()
-                    
-                    # index = max_indices.reshape(prob.shape[-2:])
-                    
-                    # invdepth = self.omnimvs.indexToInvdepth(index)
-                    # self.omnimvs.writeInvdepth(invdepth.cpu().numpy(), 'debug/prob_invdepth.png')
-                    
-                    sshape=self.c[stage][0][0].shape
-                    grid_range = [torch.arange(0, n_vox) for n_vox in sshape]
-                    x, y, z = torch.meshgrid(*grid_range)
-                    x = x.cpu().numpy().astype(np.float) * 0.32 + self.bound[2][0].cpu().numpy()
-                    y = y.cpu().numpy().astype(np.float) * 0.32 + self.bound[1][0].cpu().numpy()
-                    z = z.cpu().numpy().astype(np.float) * 0.32 + self.bound[0][0].cpu().numpy()
-                    
-                    values = self.vote[stage][0][0].cpu().numpy().reshape(-1)
-                    fig = go.Figure(data=go.Volume(
-                        x=z.reshape(-1),
-                        y=y.reshape(-1),
-                        z=x.reshape(-1),
-                        value=values.reshape(-1),
-                        isomin=values.min().item(),
-                        isomax=values.max().item(),
-                        opacity=0.05,
-                        surface_count=25,
-                    ))
-                    fig.update_layout(scene_aspectmode='data')
-                    po.write_html(fig, file='debug/html/vote_volume.html', auto_open=False)
-                    
-                    values = back_projected_valid_vote_mask[0][0].cpu().numpy().reshape(-1)
-                    fig = go.Figure(data=go.Volume(
-                        x=z.reshape(-1),
-                        y=y.reshape(-1),
-                        z=x.reshape(-1),
-                        value=values.reshape(-1),
-                        isomin=values.min().item(),
-                        isomax=values.max().item(),
-                        opacity=0.05,
-                        surface_count=25,
-                    ))
-                    fig.update_layout(scene_aspectmode='data')
-                    po.write_html(fig, file='debug/html/valid_vote_volume.html', auto_open=False)
-                    
-                    values = mask[0][0].cpu().numpy().reshape(-1)
-                    fig = go.Figure(data=go.Volume(
-                        x=z.reshape(-1),
-                        y=y.reshape(-1),
-                        z=x.reshape(-1),
-                        value=values.reshape(-1),
-                        isomin=values.min().item(),
-                        isomax=values.max().item(),
-                        opacity=0.05,
-                        surface_count=25,
-                    ))
-                    fig.update_layout(scene_aspectmode='data')
-                    po.write_html(fig, file='debug/html/mask_bound_volume.html', auto_open=False)
-                    
-                    values = back_projected_feature[0][0].cpu().numpy().reshape(-1)
-                    values[values<=0.01] = 0
-                    fig = go.Figure(data=go.Volume(
-                        x=z.reshape(-1),
-                        y=y.reshape(-1),
-                        z=x.reshape(-1),
-                        value=values.reshape(-1),
-                        isomin=values.min().item(),
-                        isomax=values.max().item(),
-                        opacity=0.05,
-                        surface_count=25,
-                    ))
-                    fig.update_layout(scene_aspectmode='data')
-                    po.write_html(fig, file='debug/html/backfeat_volume.html', auto_open=False)
-                    
-                    values = self.c[stage][0][0].cpu().numpy().reshape(-1)
-                    fig = go.Figure(data=go.Volume(
-                        x=z.reshape(-1),
-                        y=y.reshape(-1),
-                        z=x.reshape(-1),
-                        value=values.reshape(-1),
-                        isomin=values.min().item(),
-                        isomax=values.max().item(),
-                        opacity=0.05,
-                        surface_count=25,
-                    ))
-                    fig.update_layout(scene_aspectmode='data')
-                    po.write_html(fig, file='debug/html/intg_volume.html', auto_open=False)
-                    
-                    
-                    sshape=self.coord[stage][0][0].shape
-                    grid_range = [torch.arange(0, n_vox) for n_vox in sshape]
-                    x, y, z = torch.meshgrid(*grid_range)
-                    x = x.cpu().numpy().astype(np.float) * 0.32 + self.bound[2][0].cpu().numpy()
-                    y = y.cpu().numpy().astype(np.float) * 0.32 + self.bound[1][0].cpu().numpy()
-                    z = z.cpu().numpy().astype(np.float) * 0.32 + self.bound[0][0].cpu().numpy()
-                    
-                    
-                    values = ((equi_didx / (self.num_invdepth - 1)) * 2 - 1).cpu().numpy().reshape(-1)
-                    fig = go.Figure(data=go.Volume(
-                        x=z.reshape(-1),
-                        y=y.reshape(-1),
-                        z=x.reshape(-1),
-                        value=values.reshape(-1),
-                        isomin=values.min().item(),
-                        isomax=values.max().item(),
-                        opacity=0.05,
-                        surface_count=25,
-                    ))
-                    fig.update_layout(scene_aspectmode='data')
-                    po.write_html(fig, file='debug/html/didx_volume.html', auto_open=False)
-                    
-                    values = equi_pix[0,:].cpu().numpy().reshape(-1)
-                    fig = go.Figure(data=go.Volume(
-                        x=z.reshape(-1),
-                        y=y.reshape(-1),
-                        z=x.reshape(-1),
-                        value=values.reshape(-1),
-                        isomin=values.min().item(),
-                        isomax=values.max().item(),
-                        opacity=0.05,
-                        surface_count=25,
-                    ))
-                    fig.update_layout(scene_aspectmode='data')
-                    po.write_html(fig, file='debug/html/equi_x_volume.html', auto_open=False)
-                    
-                    values = equi_pix[1,:].cpu().numpy().reshape(-1)
-                    fig = go.Figure(data=go.Volume(
-                        x=z.reshape(-1),
-                        y=y.reshape(-1),
-                        z=x.reshape(-1),
-                        value=values.reshape(-1),
-                        isomin=values.min().item(),
-                        isomax=values.max().item(),
-                        opacity=0.05,
-                        surface_count=25,
-                    ))
-                    fig.update_layout(scene_aspectmode='data')
-                    po.write_html(fig, file='debug/html/equi_y_volume.html', auto_open=False)
-                
-                    values = invdepth_cam.cpu().numpy().reshape(-1)
-                    fig = go.Figure(data=go.Volume(
-                        x=z.reshape(-1),
-                        y=y.reshape(-1),
-                        z=x.reshape(-1),
-                        value=values.reshape(-1),
-                        isomin=values.min().item(),
-                        isomax=values.max().item(),
-                        opacity=0.05,
-                        surface_count=25,
-                    ))
-                    fig.update_layout(scene_aspectmode='data')
-                    # po.write_html(fig, file='intg_volume.html', auto_open=False)
-                    po.write_html(fig, file='debug/html/invdepth_volume.html', auto_open=False)
-                    
-                    values = pts_cam[0, :].cpu().numpy().reshape(-1)
-                    fig = go.Figure(data=go.Volume(
-                        x=z.reshape(-1),
-                        y=y.reshape(-1),
-                        z=x.reshape(-1),
-                        value=values.reshape(-1),
-                        isomin=values.min().item(),
-                        isomax=values.max().item(),
-                        opacity=0.05,
-                        surface_count=25,
-                    ))
-                    fig.update_layout(scene_aspectmode='data')
-                    # po.write_html(fig, file='intg_volume.html', auto_open=False)
-                    po.write_html(fig, file='debug/html/pts_cam_x_volume.html', auto_open=False)
-                                        
-                    values = pts_cam[1, :].cpu().numpy().reshape(-1)
-                    fig = go.Figure(data=go.Volume(
-                        x=z.reshape(-1),
-                        y=y.reshape(-1),
-                        z=x.reshape(-1),
-                        value=values.reshape(-1),
-                        isomin=values.min().item(),
-                        isomax=values.max().item(),
-                        opacity=0.05,
-                        surface_count=25,
-                    ))
-                    fig.update_layout(scene_aspectmode='data')
-                    # po.write_html(fig, file='intg_volume.html', auto_open=False)
-                    po.write_html(fig, file='debug/html/pts_cam_y_volume.html', auto_open=False)
-                    
-                    values = pts_cam[2, :].cpu().numpy().reshape(-1)
-                    fig = go.Figure(data=go.Volume(
-                        x=z.reshape(-1),
-                        y=y.reshape(-1),
-                        z=x.reshape(-1),
-                        value=values.reshape(-1),
-                        isomin=values.min().item(),
-                        isomax=values.max().item(),
-                        opacity=0.05,
-                        surface_count=25,
-                    ))
-                    fig.update_layout(scene_aspectmode='data')
-                    # po.write_html(fig, file='intg_volume.html', auto_open=False)
-                    po.write_html(fig, file='debug/html/pts_cam_z_volume.html', auto_open=False)
-                
-        del back_projected_feature
-        del cam_feature    
-        # del mask_vote
-        del geo_feat
-        del raw_feat
-        del prob
-        torch.cuda.empty_cache()
-        
         
     def backproject_features(self, stage, raw_feat, geo_feat, prob, c2w):
-        dist_threshold = 10
+        dist_threshold = 50
         
         """fusion features"""
-        raw_feat = raw_feat.to(self.device)
-        # geo_feat = geo_feat.to(self.mapper_device)
-        prob = prob.to(self.device)
+        # raw_feat = raw_feat.to(self.device)
+        # # geo_feat = geo_feat.to(self.mapper_device)
+        # prob = prob.to(self.device)
         
         geo_feat = F.interpolate(geo_feat, scale_factor=2, mode='trilinear', align_corners=True)
+        geo_feat = geo_feat * prob
+        # raw_feat = F.interpolate(raw_feat, scale_factor=2, mode='trilinear', align_corners=True)
+        # raw_feat = raw_feat * prob
         
         trunc_dist = self.cfg['grid_len'][stage[5:]]
         
         index = torch.mul(prob, self.omnimvs.invdepth_indices)
         index = torch.sum(index, 1)
         depth = 1.0 / self.omnimvs.indexToInvdepth(index)
+        expanded_depth = depth.expand(prob.shape[1], -1, -1)[None, None, ...]
         
         front_trunc_depth = depth - trunc_dist
         back_trunc_depth = depth + trunc_dist
         
         cam_feature = geo_feat # grid channel: 64
+        # cam_feature = raw_feat # grid channel: 64
         
         grid_range = [torch.arange(0, n_vox) for n_vox in prob.shape[-3:]]
         index_grid, _, _ = torch.meshgrid(*grid_range)
@@ -558,14 +223,18 @@ class Integrator(object):
         
         dist_valid_mask = depth_grid <= dist_threshold
         trunc_in_mask = (depth_grid >= front_trunc_depth) & (depth_grid <= back_trunc_depth) & dist_valid_mask
-        back_mask = (depth_grid > back_trunc_depth) & dist_valid_mask
+        # back_mask = (depth_grid > back_trunc_depth) & dist_valid_mask
+        back_mask = (depth_grid > back_trunc_depth)
         trunc_in_mask = trunc_in_mask[None, None, ...]
         valid_vote_mask = (back_mask[None, None, ...] == False).float()
+        back_mask = back_mask[None, None, ...]
         
         trunc_in_mask = trunc_in_mask.expand(-1, self.c[stage].shape[1], -1, -1, -1)
         valid_vote_mask = valid_vote_mask.expand(-1, self.c[stage].shape[1], -1, -1, -1)
+        back_mask = back_mask.expand(-1, self.c[stage].shape[1], -1, -1, -1)
         
-        cam_feature[trunc_in_mask == False] = 0
+        # cam_feature[trunc_in_mask == False] = 0
+        # cam_feature[back_mask == True] = 0
         
         w2c = torch.tensor(inverseTransform(c2w.cpu().numpy())).to(self.device)
         
@@ -575,7 +244,8 @@ class Integrator(object):
         pts_cam = applyTransform(w2c.cpu().numpy(), pts_world)
         pts_cam[1, :] *= -1
         pts_cam[2, :] *= -1
-        invdepth_cam = 1.0 / sqrt(torch.sum(pts_cam ** 2, 0))
+        depth_cam = sqrt(torch.sum(pts_cam ** 2, 0))
+        invdepth_cam = 1.0 / depth_cam
         
         equi_pix = getEquirectCoordinate(
                 pts_cam, self.equirect_size, self.phi_deg, self.phi_max_deg)
@@ -602,7 +272,23 @@ class Integrator(object):
                                     padding_mode='border', align_corners=True)
         back_projected_valid_vote_mask = grid_sample(valid_vote_mask, equi_grid.float(),
                                     padding_mode='border', align_corners=True)
-        mask = mask & (back_projected_valid_vote_mask != 0)
+        back_projected_depth = grid_sample(expanded_depth, equi_grid.float(),
+                                    padding_mode='border', align_corners=True)
+        
+        depth_cam = depth_cam.reshape(*self.coord[stage].shape[-3:])[None, None, ...]
+        front_trunc_depth_cam = back_projected_depth - trunc_dist
+        back_trunc_depth_cam = back_projected_depth + trunc_dist
+        dist_valid_mask_cam = depth_cam <= dist_threshold
+        trunc_in_mask_cam = (depth_cam >= front_trunc_depth_cam) & (depth_cam <= back_trunc_depth_cam)
+        back_mask_cam = depth_cam > back_trunc_depth_cam
+
+        trunc_in_mask_cam = trunc_in_mask_cam.expand(-1, self.c[stage].shape[1], -1, -1, -1)
+        back_mask_cam = back_mask_cam.expand(-1, self.c[stage].shape[1], -1, -1, -1)
+
+        # mask = mask & dist_valid_mask_cam & trunc_in_mask_cam
+        mask = mask & dist_valid_mask_cam & torch.logical_not(back_mask_cam)
+        # mask = mask & (back_projected_valid_vote_mask != 0)
+
         back_projected_feature[mask == False] = 0
         
         del cam_feature

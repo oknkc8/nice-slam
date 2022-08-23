@@ -1,5 +1,6 @@
 import os
 import time
+import shutil
 
 import numpy as np
 import torch
@@ -50,6 +51,7 @@ class NICE_SLAM_Omni():
         os.makedirs(self.ckptsdir, exist_ok=True)
         os.makedirs(f'{self.output}/log', exist_ok=True)
         os.makedirs(f'{self.output}/mesh', exist_ok=True)
+        shutil.copy(args.config, os.path.join(self.output, 'config.yaml'))
         self.H, self.W, self.fx, self.fy, self.cx, self.cy = cfg['cam']['H'], cfg['cam'][
             'W'], cfg['cam']['fx'], cfg['cam']['fy'], cfg['cam']['cx'], cfg['cam']['cy']
         self.cam_method = cfg['cam']['method']
