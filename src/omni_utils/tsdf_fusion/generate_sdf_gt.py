@@ -92,6 +92,12 @@ def save_tsdf_full(args, depth_list, cam_pose_list, color_list, save_mesh=False)
         pc = applyTransform(cam_pose, pc)
         pc = pc.reshape(3, -1)
         
+        pc_np = pc.T
+        origin = getTr(cam_pose).T
+        mask_ind = np.where((np.linalg.norm(pc_np - origin, axis=1) <= 50))
+        pc_np = pc_np[mask_ind]
+        
+        pc = pc_np.T        
         
         vol_bnds[:, 0] = np.minimum(vol_bnds[:, 0], np.amin(pc, axis=1))
         vol_bnds[:, 1] = np.maximum(vol_bnds[:, 1], np.amax(pc, axis=1))

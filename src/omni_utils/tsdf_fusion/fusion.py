@@ -186,7 +186,7 @@ class TSDFVolume:
             self._cuda_integrate = self._cuda_src_mod.get_function("integrate")
 
             # Determine block/grid size on GPU
-            gpu_dev = cuda.Device(3)
+            gpu_dev = cuda.Device(0)
             self._max_gpu_threads_per_block = gpu_dev.MAX_THREADS_PER_BLOCK
             n_blocks = int(np.ceil(float(np.prod(self._vol_dim)) / float(self._max_gpu_threads_per_block)))
             grid_dim_x = min(gpu_dev.MAX_GRID_DIM_X, int(np.floor(np.cbrt(n_blocks))))
