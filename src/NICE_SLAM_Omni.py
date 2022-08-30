@@ -319,8 +319,8 @@ class NICE_SLAM_Omni():
         c_dim = 64
         # c_dim = 1
         xyz_len = self.bound[:, 1]-self.bound[:, 0]
-        tmp_bound = self.bound.clone()
-        # self.bound[0], self.bound[2] = tmp_bound[2], tmp_bound[0]
+        bound = self.bound.clone()
+        bound = bound[[2,1,0]]
         
         coord = {}
         grid_coord = {}
@@ -339,7 +339,7 @@ class NICE_SLAM_Omni():
             # coarse_val_shape[0], coarse_val_shape[2] = coarse_val_shape[2], coarse_val_shape[0]
             grid_range = [torch.arange(0, n_vox) + 0.5 for n_vox in coarse_val_shape]
             coarse_coord_grid = torch.stack(torch.meshgrid(*grid_range)) * self.coarse_grid_len
-            coarse_coord_grid = coarse_coord_grid.reshape(3, -1) + self.bound[:, 0].unsqueeze(-1) * self.coarse_bound_enlarge
+            coarse_coord_grid = coarse_coord_grid.reshape(3, -1) + bound[:, 0].unsqueeze(-1) * self.coarse_bound_enlarge
             coord[coarse_key] = coarse_coord_grid.reshape(1, 3, *coarse_val_shape)
             
             grid_range = [torch.arange(0, n_vox) for n_vox in coarse_val_shape]
@@ -359,7 +359,7 @@ class NICE_SLAM_Omni():
         # middle_val_shape[0], middle_val_shape[2] = middle_val_shape[2], middle_val_shape[0]
         grid_range = [torch.arange(0, n_vox) + 0.5 for n_vox in middle_val_shape]
         middle_coord_grid = torch.stack(torch.meshgrid(*grid_range)) * self.middle_grid_len
-        middle_coord_grid = middle_coord_grid.reshape(3, -1) + self.bound[:, 0].unsqueeze(-1)
+        middle_coord_grid = middle_coord_grid.reshape(3, -1) + bound[:, 0].unsqueeze(-1)
         coord[middle_key] = middle_coord_grid.reshape(1, 3, *middle_val_shape)
         
         grid_range = [torch.arange(0, n_vox) for n_vox in middle_val_shape]
@@ -379,7 +379,7 @@ class NICE_SLAM_Omni():
         # fine_val_shape[0], fine_val_shape[2] = fine_val_shape[2], fine_val_shape[0]
         grid_range = [torch.arange(0, n_vox) + 0.5 for n_vox in fine_val_shape]
         fine_coord_grid = torch.stack(torch.meshgrid(*grid_range)) * self.fine_grid_len
-        fine_coord_grid = fine_coord_grid.reshape(3, -1) + self.bound[:, 0].unsqueeze(-1)
+        fine_coord_grid = fine_coord_grid.reshape(3, -1) + bound[:, 0].unsqueeze(-1)
         coord[fine_key] = fine_coord_grid.reshape(1, 3, *fine_val_shape)
         
         grid_range = [torch.arange(0, n_vox) for n_vox in fine_val_shape]
@@ -399,7 +399,7 @@ class NICE_SLAM_Omni():
         # color_val_shape[0], color_val_shape[2] = color_val_shape[2], color_val_shape[0]
         grid_range = [torch.arange(0, n_vox) + 0.5 for n_vox in color_val_shape]
         color_coord_grid = torch.stack(torch.meshgrid(*grid_range)) * self.color_grid_len
-        color_coord_grid = color_coord_grid.reshape(3, -1) + self.bound[:, 0].unsqueeze(-1)
+        color_coord_grid = color_coord_grid.reshape(3, -1) + bound[:, 0].unsqueeze(-1)
         coord[color_key] = color_coord_grid.reshape(1, 3, *color_val_shape)
         
         grid_range = [torch.arange(0, n_vox) for n_vox in color_val_shape]
@@ -407,8 +407,6 @@ class NICE_SLAM_Omni():
         grid_coord[color_key] = color_coord_grid.reshape(1, 3, *color_val_shape).type(torch.int)
         
         vote[color_key] = torch.zeros(val_shape)
-
-        self.bound = tmp_bound
         
         self.shared_c = c
         self.shared_coord = coord

@@ -307,37 +307,16 @@ class Integrator(object):
         depth = 1.0 / self.omnimvs.indexToInvdepth(index)
         expanded_depth = depth.expand(prob.shape[1], -1, -1)[None, None, ...]
         
-        front_trunc_depth = depth - trunc_dist
-        back_trunc_depth = depth + trunc_dist
-        
         cam_feature = geo_feat # grid channel: 64
         # cam_feature = raw_feat # grid channel: 64
-        
-        grid_range = [torch.arange(0, n_vox) for n_vox in prob.shape[-3:]]
-        index_grid, _, _ = torch.meshgrid(*grid_range)
-        depth_grid = 1.0 / self.omnimvs.indexToInvdepth(index_grid).to(self.device)
-        
-        dist_valid_mask = depth_grid <= dist_threshold
-        trunc_in_mask = (depth_grid >= front_trunc_depth) & (depth_grid <= back_trunc_depth) & dist_valid_mask
-        # back_mask = (depth_grid > back_trunc_depth) & dist_valid_mask
-        back_mask = (depth_grid > back_trunc_depth)
-        trunc_in_mask = trunc_in_mask[None, None, ...]
-        valid_vote_mask = (back_mask[None, None, ...] == False).float()
-        back_mask = back_mask[None, None, ...]
-        
-        trunc_in_mask = trunc_in_mask.expand(-1, self.c[stage].shape[1], -1, -1, -1)
-        valid_vote_mask = valid_vote_mask.expand(-1, self.c[stage].shape[1], -1, -1, -1)
-        back_mask = back_mask.expand(-1, self.c[stage].shape[1], -1, -1, -1)
-        
-        # cam_feature[trunc_in_mask == False] = 0
-        # cam_feature[back_mask == True] = 0
-        
+
         w2c = torch.tensor(inverseTransform(c2w.cpu().numpy())).to(self.device)
         
         """back-project feature"""
         pts_world = self.coord[stage].contiguous().reshape(3, -1)
         pts_world = pts_world[[2,1,0]]
         pts_cam = applyTransform(w2c.cpu().numpy(), pts_world)
+        # pts_cam[0, :] *= -1
         pts_cam[1, :] *= -1
         pts_cam[2, :] *= -1
         depth_cam = sqrt(torch.sum(pts_cam ** 2, 0))
@@ -358,7 +337,6 @@ class Integrator(object):
         equi_grid_d = equi_grid_d.reshape(*self.coord[stage].shape[-3:])
         
         equi_grid = torch.stack([equi_grid_x, equi_grid_y, equi_grid_d], dim=-1).unsqueeze(0)
-        # equi_grid = torch.stack([equi_grid_d, equi_grid_y, equi_grid_x], dim=-1).unsqueeze(0)
         
         mask = ((equi_grid.abs() <= 1.0).sum(dim=-1) == 3).unsqueeze(0)
         equi_grid = equi_grid.float().to(self.device)
@@ -366,8 +344,6 @@ class Integrator(object):
         mask = mask.expand(-1, self.c[stage].shape[1], -1, -1, -1)
         
         back_projected_feature = grid_sample(cam_feature, equi_grid.float(),
-                                    padding_mode='border', align_corners=True)
-        back_projected_valid_vote_mask = grid_sample(valid_vote_mask, equi_grid.float(),
                                     padding_mode='border', align_corners=True)
         back_projected_depth = grid_sample(expanded_depth, equi_grid.float(),
                                     padding_mode='border', align_corners=True)
@@ -394,8 +370,8 @@ class Integrator(object):
         del prob
         torch.cuda.empty_cache()
         
-        # return back_projected_feature.cpu()
-        return back_projected_feature
+        return back_projected_feature.cpu()
+        # return back_projected_feature
 
     def run_omni(self, data):
         with torch.no_grad():
