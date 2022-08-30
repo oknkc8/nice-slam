@@ -204,10 +204,14 @@ class CostFusion_tmp(torch.nn.Module):
 
     def weight_initialization(self):
         for m in self.modules():
-            if isinstance(m, nn.BatchNorm3d):
+            if isinstance(m, nn.GroupNorm):
                 nn.init.constant_(m.weight, 1)
                 nn.init.constant_(m.bias, 0)
             elif isinstance(m, nn.Conv3d):
+                nn.init.xavier_uniform_(m.weight)
+                if m.bias is not None:
+                    nn.init.zeros_(m.bias)
+            elif isinstance(m, nn.ConvTranspose3d):
                 nn.init.xavier_uniform_(m.weight)
                 if m.bias is not None:
                     nn.init.zeros_(m.bias)

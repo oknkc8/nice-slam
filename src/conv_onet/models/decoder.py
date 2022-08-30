@@ -219,7 +219,8 @@ class MLP(nn.Module):
                 c = torch.cat([c, c_middle], dim=1)
                 # print('c(concat_feature):', c.shape)
 
-        p = p.float()
+        # p = p.float()
+        p = normalize_3d_coordinate(p, self.bound).float()
 
         embedded_pts = self.embedder(p)
         # print('embedded_pts:', embedded_pts.shape)

@@ -663,6 +663,7 @@ class OmniMVS(torch.utils.data.Dataset):
             opts.min_depth = 0.3
             opts.gt_phi = 90
             opts.dtype = 'gt'
+            # opts.dist_threshold = 10
         """else:
             raise KeyError(f'Dataset name error {dbname}')"""
    
@@ -948,17 +949,6 @@ class OmniMVS(torch.utils.data.Dataset):
             resp = Variable(resp, requires_grad=True)
         
         return resp, raw_feat, geo_feat
-        
-        """entropy = torch.sum(-torch.log(prob + EPS) * prob, 1)
-        if output_numpy:
-            index = toNumpy(index.detach()) #toNumpy(index)
-            entropy = scipy.ndimage.gaussian_filter(
-                toNumpy(exp(entropy).detach()), sigma=1) #toNumpy(exp(entropy)), sigma=1) 
-        
-        return index, entropy, prob, resp, raw_feat
-        
-        # if self.out_cost:
-        #     return index, entropy, resp"""
 
     def __len__(self) -> int:
         if self.train:
@@ -1448,6 +1438,7 @@ class OmniMVS(torch.utils.data.Dataset):
                 valid = np.logical_and(
                     gt >= 0, gt < self.num_invdepth).astype(np.bool)
                 gt = torch.tensor(gt).float()
+                gt_invdepth = torch.tensor(gt_invdepth).float()
                 if self.valid_depth_mask is not None:
                     valid = np.logical_and(valid, self.valid_depth_mask)
                 # check gt depth is visible
@@ -1469,7 +1460,7 @@ class OmniMVS(torch.utils.data.Dataset):
         c2w[:3, 2] *= -1
         c2w = torch.from_numpy(c2w).float()
         
-        return (imgs, gt, valid, raw_imgs, c2w, gt_img)
+        return (imgs, gt, valid, raw_imgs, c2w, gt_img, gt_invdepth)
 
     ## File I/O ======================================================
     def loadImages(self, fidx: int, out_raw_imgs=False, use_rgb=False,
@@ -1682,6 +1673,7 @@ class BatchCollator:
             self.imgs = [torch.stack(I, 0) for I in list(zip(*data[0]))]
         all_batch_have_gt = all([gt is not None for gt in data[1]])
         all_batch_have_gt_img = all([gt_img is not None for gt_img in data[5]])
+        all_batch_have_gt_invdepth = all([gt_invdepth is not None for gt_invdepth in data[6]])
 
         if all_batch_have_gt:
             self.gt = torch.stack(data[1], 0)
@@ -1690,10 +1682,15 @@ class BatchCollator:
                 self.gt_img = torch.stack(data[5], 0)
             else:
                 self.gt_img = None
+            if all_batch_have_gt_invdepth:
+                self.gt_invdepth = torch.stack(data[6], 0)
+            else:
+                self.gt_invdepth = None
         else:
             self.gt = None
             self.valid = None
             self.gt_img = None
+            self.gt_invdepth = None
         self.raw_imgs = data[3]
         if len(self.raw_imgs) == 1:
             self.raw_imgs = self.raw_imgs[0]
@@ -1708,6 +1705,8 @@ class BatchCollator:
             self.valid = self.valid.cuda()
         if self.gt_img is not None:
             self.gt_img = self.gt_img.cuda()
+        if self.gt_invdepth is not None:
+            self.gt_invdepth = self.gt_invdepth.cuda()
         return self
 
     @staticmethod

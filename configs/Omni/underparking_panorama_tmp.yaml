@@ -4,8 +4,9 @@ occupancy: True
 data:
   # input_folder: /data/chsung/under_parking_seq
   input_folder: /data5/chnagho/data/under_parking_seq
-  # output: /data5/changho/nice-slam/output/underparking_sparse/34_debug_nice_occ_100_150_geo_feat_multiplyProb_use_pretrain_convgru_1x1conv_nobias_48_16_fix_backmask_trunc1_newcostfusion_noshuffle_change_integration_signarea
-  output: /data5/changho/nice-slam/output/underparking_sparse/37_debug_nice_occ_geo_feat_multiplyProb_use_pretrain_avg_nobias_48_16_backmask_trunc1_newcostfusion_noshuffle_change_integration_5step_25_75
+  # output: /data5/changho/nice-slam/output/underparking_sparse/39_debug_nice_occ_131_geo_feat_multiplyProb_use_pretrain_convgru_1x1conv_nobias_48_16_fix_backmask_trunc1_newcostfusion_noshuffle_change_integration_localfrag_dist10_6frames
+  output: /data5/changho/nice-slam/output/underparking_sparse/59_7_debug_nice_occ_sign_geo_feat_multiplyProb_use_pretrain_avg_nobias_48_16_fix_backmask_trunc1_newcostfusion_noshuffle_change_integration_localfrag_debugging_original_point_nofilter_different_bound
+  # output: /data5/changho/nice-slam/output/underparking_sparse/37_debug_nice_occ_geo_feat_multiplyProb_use_pretrain_avg_nobias_48_16_backmask_trunc1_newcostfusion_noshuffle_change_integration_26step_0_150
   config_file: capture.yaml
   poses_file: trajectory.txt
 grid_len:
@@ -19,10 +20,10 @@ pretrained_decoders:
 meshing:
   level_set: 0
   resolution: 0.04 # change to 512 for higher resolution geometry
-  device: "cuda:5"
+  device: "cuda:0"
   clean_mesh: True
 mapping:
-  device: "cuda:5"
+  device: "cuda:0"
   BA: False
   middle_iter_ratio: 0.0
   fine_iter_ratio: 1.0
@@ -42,8 +43,26 @@ mapping:
   # marching_cubes_bound: [[-24.0, 37.0], [-3.0, 2.0], [-9.0, 63.0]]  # all
   # bound: [[-8.0, 5.0], [-3.0, 2.0], [-8.0, 14.0]] # 표지판
   # marching_cubes_bound: [[-8.0, 5.0], [-3.0, 2.0], [-8.0, 14.0]] # 표지판
-  bound: [[-8.0, 7.0], [-3.0, 2.0], [-10.0, 16.0]] # 100
-  marching_cubes_bound: [[-8.0, 7.0], [-3.0, 2.0], [-10.0, 16.0]] # 100
+  # bound: [[-8.0, 5.0], [-3.0, 2.0], [-0.0, 10.0]] # 표지판
+  # marching_cubes_bound: [[-8.0, 5.0], [-3.0, 2.0], [-0.0, 10.0]] # 표지판
+  bound: [[-5.0, 4.0], [-2.0, 2.0], [-5.0, 10.0]] # 표지판(~65)
+  marching_cubes_bound: [[-5.0, 4.0], [-2.0, 2.0], [-5.0, 10.0]] # 표지판(~65)
+  # bound: [[-6.0, 15.0], [-3.0, 2.0], [1.0, 25.0]] # 150~200
+  # marching_cubes_bound: [[-6.0, 15.0], [-3.0, 2.0], [1.0, 25.0]] # 150~200
+  # bound: [[-7.0, 7.0], [-3.0, 2.0], [-5.0, 18.0]] # 65~100
+  # marching_cubes_bound: [[-7.0, 7.0], [-3.0, 2.0], [-5.0, 18.0]] # 65~100
+  # bound: [[-7.0, 10.0], [-3.0, 2.0], [-5.0, 21.0]] # 65~150
+  # marching_cubes_bound: [[-7.0, 10.0], [-3.0, 2.0], [-5.0, 21.0]] # 65~150
+  # bound: [[-6.0, 15.0], [-3.0, 2.0], [-2.0, 25.0]] # 100~200
+  # marching_cubes_bound: [[-6.0, 15.0], [-3.0, 2.0], [-2.0, 25.0]] # 100~200
+  # bound: [[-6.0, 16.0], [-3.0, 2.0], [5.0, 29.0]] # 200~250
+  # marching_cubes_bound: [[-6.0, 16.0], [-3.0, 2.0], [5.0, 29.0]] # 200~250
+  # bound: [[-5.0, 4.0], [-2.0, 2.0], [-5.0, 10.0]] # 표지판(~65)
+  # marching_cubes_bound: [[-5.0, 4.0], [-2.0, 2.0], [-5.0, 10.0]] # 표지판(~65)
+  # bound: [[-8.0, 7.0], [-3.0, 2.0], [-10.0, 16.0]] # 100
+  # marching_cubes_bound: [[-8.0, 7.0], [-3.0, 2.0], [-10.0, 16.0]] # 100
+  # bound: [[-8.0, 9.0], [-3.0, 2.0], [-9.0, 20.0]] # 130
+  # marching_cubes_bound: [[-8.0, 9.0], [-3.0, 2.0], [-9.0, 20.0]] # 130
   # bound: [[-8.0, 9.0], [-3.0, 2.0], [-9.0, 21.0]] # 150
   # marching_cubes_bound: [[-8.0, 9.0], [-3.0, 2.0], [-9.0, 21.0]] # 150
   # bound: [[-8.0, 15.0], [-3.0, 2.0], [-9.0, 24.0]] # 200
@@ -73,7 +92,7 @@ cam:
   phi_deg: -45.0
   phi_max_deg: 45.0
 omnimvs:
-  device: "cuda:4"
+  device: "cuda:1"
   config_file: config.yaml
   network_type: default
   snapshot_path: pretrained/omnimvs/full3-2x-rgb-reflect2_42.pt
@@ -83,10 +102,12 @@ omnimvs:
   resp_volume_freeze: True
   net_freeze: False
   lr: 0.001
+  n_frames: 10
+  dist_bound: 5.0
   omnimvs_opts:
     poses_file: trajectory_sign.txt
     dtype:
-    step: 5
+    step: 10
     phi_deg: -45
     phi_max_deg: 45
     num_invdepth: 192
@@ -107,6 +128,6 @@ rendering:
   perturb: 0.0
 model:
   c_dim: 32
-  fusion_method: grufusion
+  fusion_method: average
   convgru_ks: 1
   feature_fusion: False

@@ -13,11 +13,11 @@ def setup_seed(seed):
     torch.cuda.manual_seed_all(seed)
     np.random.seed(seed)
     random.seed(seed)
-    torch.backends.cudnn.deterministic = True
+    # torch.backends.cudnn.deterministic = True
 
 
 def main():
-    # setup_seed(20)
+    # setup_seed(13333)
 
     parser = argparse.ArgumentParser(
         description='Arguments for running the NICE-SLAM/iMAP*.'
@@ -39,6 +39,7 @@ def main():
     slam = NICE_SLAM_Omni(cfg, args)
 
     slam.run()
+    # slam.run_tmp()
 
 
 if __name__ == '__main__':

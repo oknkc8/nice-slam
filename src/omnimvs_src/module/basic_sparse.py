@@ -195,6 +195,15 @@ class SConv3d(nn.Module):
         self.pres = pres
         self.vres = vres
 
+        self.weight_initialization()
+        
+    def weight_initialization(self):
+        for m in self.modules():
+            if isinstance(m, nn.Linear):
+                nn.init.xavier_uniform_(m.weight)
+                if m.bias is not None:
+                    nn.init.zeros_(m.bias)
+
     def forward(self, z):
         # return: SparseTensor
         # x = initial_voxelize(z, self.pres, self.vres)

@@ -81,7 +81,6 @@ class Integrator(object):
         self.cam_method = slam.cam_method
         self.phi_deg, self.phi_max_deg = slam.phi_deg, slam.phi_max_deg
         
-        self.raw_imgs = []
         self.target_depths = slam.target_depths
         self.target_colors = slam.target_colors
         self.use_depths = slam.use_depths
@@ -104,7 +103,11 @@ class Integrator(object):
                                    collate_fn=BatchCollator.collate, pin_memory=False)
         self.mvsnet = OmniMVSNet(opts.net_opts).to(self.device)
         self.n_img = len(self.dbloader)
+        self.n_frames = opts.n_frames
+        self.dist_bound = opts.dist_bound
         
+        # self.make_local_fragment_dbloader()
+
         # self.grufusion = {}
         # self.grufusion['middle'] = GRUFusion(ch_in=64, ch_out=64).to(self.device)
         # self.grufusion['fine'] = GRUFusion(ch_in=64, ch_out=64).to(self.device)
@@ -124,6 +127,99 @@ class Integrator(object):
                                 self.omnimvs.num_invdepth, self.omnimvs.min_invdepth, 
                                 self.omnimvs.step_invdepth, self.omnimvs, device_id=self.device)
         self.num_invdepth = self.omnimvs.num_invdepth
+
+    def init_params(self, slam):
+        self.c = slam.shared_c
+        self.coord = slam.shared_coord
+        self.grid_coord = slam.shared_grid_coord
+        self.vote = slam.shared_vote
+        self.bound = slam.bound
+
+        self.target_depths = slam.target_depths
+        self.target_colors = slam.target_colors
+        self.use_depths = slam.use_depths
+        self.use_colors = slam.use_colors
+        self.target_entropys = slam.target_entropys
+        self.resps = slam.resps
+        self.backproj_feats = slam.backproj_feats
+        self.raw_feats = slam.raw_feats
+        self.probs = slam.probs
+        self.target_c2w = slam.target_c2w
+
+    def make_local_fragment_dbloader(self):
+        self.local_frag_idxs = []
+        self.local_frag_bounds = []
+        origin_dist_thrshold = self.dist_bound
+
+        print('\nNew Fragment...')
+        for i, data in tqdm(enumerate(self.dbloader)):
+            pose = toNumpy(data.c2w[0])
+            pose[:3, 1] *= -1
+            pose[:3, 2] *= -1
+            invdepth = data.gt_invdepth
+            pc = self.omnimvs.get3Dpoint(invdepth, pose).T
+            origin = getTr(pose).T
+
+            mask = np.where((np.linalg.norm(pc - origin, axis=1) <= self.dist_bound))
+            pc = pc[mask]
+
+            if i == 0:
+                frag_center_i = 0
+                frag_origin = origin
+                local_frag_i = [i]
+                local_frag_pcs = [pc]
+                continue
+            
+            origin_d = np.linalg.norm((frag_origin - origin).squeeze(0))
+
+            if origin_d <= origin_dist_thrshold:
+                local_frag_i.append(i)
+                local_frag_pcs.append(pc)
+            else:
+                prev_local_frag_i = local_frag_i
+                prev_local_frag_pcs = local_frag_pcs
+
+                total_frames = len(local_frag_i)
+                idx = np.linspace(0, total_frames-1, self.n_frames).astype(np.int).tolist()
+                local_frag_i = [local_frag_i[j] for j in idx]
+                local_frag_pcs = [local_frag_pcs[j] for j in idx]
+
+                frag_origin = origin
+
+                pcs = np.concatenate(local_frag_pcs)
+                bound_min = pcs.min(axis=0)
+                bound_max = pcs.max(axis=0)
+                bound = np.stack([bound_min, bound_max]).T
+                self.local_frag_bounds.append(bound)
+                self.local_frag_idxs.append(local_frag_i)
+
+                print('Fragment indices:', local_frag_i, ' Bound:', bound)
+
+                print('New Fragment...')
+
+                local_frag_i = prev_local_frag_i[frag_center_i:]
+                local_frag_pcs = prev_local_frag_pcs[frag_center_i:]
+                frag_center_i = len(local_frag_i) - 1
+                local_frag_i.append(i)
+                local_frag_pcs.append(pc)
+
+        total_frames = len(local_frag_i)
+        idx = np.linspace(0, total_frames-1, self.n_frames).astype(np.int).tolist()
+        local_frag_i = [local_frag_i[j] for j in idx]
+        local_frag_pcs = [local_frag_pcs[j] for j in idx]
+
+        pcs = np.concatenate(local_frag_pcs)
+        bound_min = pcs.min(axis=0)
+        bound_max = pcs.max(axis=0)
+        bound = np.stack([bound_min, bound_max]).T
+
+        print('Fragment indices:', local_frag_i, ' Bound:', bound)
+        print()
+
+        # pdb.set_trace()
+        self.local_frag_bounds.append(bound)
+        self.local_frag_idxs.append(local_frag_i)
+
 
     def run_omnimvs(self, data):
         """pin memory"""
@@ -192,7 +288,7 @@ class Integrator(object):
         return prob, depth.to(self.mapper_device), color.to(self.mapper_device), entropy.to(self.mapper_device), gt_depth, gt_color
         
     def backproject_features(self, stage, raw_feat, geo_feat, prob, c2w):
-        dist_threshold = 50
+        dist_threshold = 30
         
         """fusion features"""
         # raw_feat = raw_feat.to(self.device)
@@ -262,6 +358,7 @@ class Integrator(object):
         equi_grid_d = equi_grid_d.reshape(*self.coord[stage].shape[-3:])
         
         equi_grid = torch.stack([equi_grid_x, equi_grid_y, equi_grid_d], dim=-1).unsqueeze(0)
+        # equi_grid = torch.stack([equi_grid_d, equi_grid_y, equi_grid_x], dim=-1).unsqueeze(0)
         
         mask = ((equi_grid.abs() <= 1.0).sum(dim=-1) == 3).unsqueeze(0)
         equi_grid = equi_grid.float().to(self.device)
@@ -297,15 +394,14 @@ class Integrator(object):
         del prob
         torch.cuda.empty_cache()
         
+        # return back_projected_feature.cpu()
         return back_projected_feature
 
-    def run_omni(self, data, frame_i):
+    def run_omni(self, data):
         with torch.no_grad():
             resp, raw_feat, geo_feat, c2w, data = self.run_omnimvs(data)
             prob, depth, color, entropy, gt_depth, gt_color = self.generate_prob_depth_color(resp, data)
             del resp
-            
-        self.frame_i = frame_i
         
         """
         for stage, _ in self.c.items():

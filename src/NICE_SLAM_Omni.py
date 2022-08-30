@@ -13,6 +13,7 @@ from src import config
 from src.Mapper_Omni import Mapper
 from src.Tracker import Tracker
 from src.Integrator import Integrator
+from src.omnimvs_src.omnimvs import BatchCollator
 from src.utils.datasets import get_dataset
 from src.utils.Logger import Logger
 from src.utils.Mesher import Mesher
@@ -145,6 +146,8 @@ class NICE_SLAM_Omni():
             self.coarse_mapper = Mapper(cfg, args, self, coarse_mapper=True)
             
         self.costfusion = self.mapper.costfusion
+
+        # self.load_pretrain_frag(cfg, '/data5/changho/nice-slam/output/underparking_sparse/41_debug_nice_occ_65_geo_feat_multiplyProb_use_pretrain_avg_nobias_48_16_fix_backmask_trunc1_newcostfusion_noshuffle_change_integration_localfrag_debugging/ckpts/00027.tar')
         
         self.print_output_desc()
 
@@ -208,6 +211,29 @@ class NICE_SLAM_Omni():
                 self.shared_decoders.coarse_decoder.bound = self.bound*self.coarse_bound_enlarge
         elif self.method == 'omni_feat':
             self.shared_decoders.bound = self.bound
+    
+    def set_bound(self, cfg, bound):
+        """
+        Pass the scene bound parameters to different decoders and self.
+
+        Args:
+            cfg (dict): parsed config dict.
+        """
+        # scale the bound if there is a global scaling factor
+        self.bound = torch.from_numpy((bound)*self.scale)
+        bound_divisable = cfg['grid_len']['bound_divisable']
+        # enlarge the bound a bit to allow it divisable by bound_divisable
+        self.bound[:, 1] = (((self.bound[:, 1]-self.bound[:, 0]) /
+                            bound_divisable).int()+1)*bound_divisable+self.bound[:, 0]
+        if self.method == 'nice':
+            self.shared_decoders.bound = self.bound
+            self.shared_decoders.middle_decoder.bound = self.bound
+            self.shared_decoders.fine_decoder.bound = self.bound
+            self.shared_decoders.color_decoder.bound = self.bound
+            if self.coarse:
+                self.shared_decoders.coarse_decoder.bound = self.bound*self.coarse_bound_enlarge
+        elif self.method == 'omni_feat':
+            self.shared_decoders.bound = self.bound
 
     def load_pretrain(self, cfg):
         """
@@ -256,6 +282,20 @@ class NICE_SLAM_Omni():
         self.gt_c2w_list = ckpt['gt_c2w_list']
         self.shared_c = ckpt['c']
         self.shared_decoders.load_state_dict(ckpt['decoder_state_dict'])
+
+    def load_pretrain_frag(self, cfg, ckpt_path):
+        print('Get ckpt : ', ckpt_path)
+        ckpt = torch.load(ckpt_path, map_location=cfg['mapping']['device'])
+        self.shared_c = ckpt['c']
+        self.shared_decoders.load_state_dict(ckpt['decoder_state_dict'])
+        
+        self.mapper.grufusion['grid_middle'].load_state_dict(ckpt['grufusion_state_dict']['grid_middle'])
+        self.mapper.grufusion['grid_fine'].load_state_dict(ckpt['grufusion_state_dict']['grid_fine'])
+        self.mapper.grufusion['grid_color'].load_state_dict(ckpt['grufusion_state_dict']['grid_color'])
+
+        self.mapper.costfusion['grid_middle'].load_state_dict(ckpt['costfusion_state_dict']['grid_middle'])
+        self.mapper.costfusion['grid_fine'].load_state_dict(ckpt['costfusion_state_dict']['grid_fine'])
+        self.mapper.costfusion['grid_color'].load_state_dict(ckpt['costfusion_state_dict']['grid_color'])
 
     def grid_init(self, cfg):
         """
@@ -382,7 +422,7 @@ class NICE_SLAM_Omni():
             print(Style.RESET_ALL)
         
         for i, data in tqdm(enumerate(self.dbloader)):
-            self.integrator.run_omni(data, i)
+            self.integrator.run_omni(data)
             
         del self.integrator.mvsnet
         del self.integrator.omnimvs
@@ -390,6 +430,100 @@ class NICE_SLAM_Omni():
         for epoch in tqdm(range(500)):
             # self.coarse_mapper.run_omni(epoch)
             self.mapper.run_omni(epoch)
+
+    def run_tmp(self):
+        self.local_frag_idxs = self.integrator.local_frag_idxs
+        self.local_frag_bounds = self.integrator.local_frag_bounds
+        self.n_fragments = len(self.local_frag_idxs)
+        num_iters = self.cfg['mapping']['iters']
+
+        frag_datas = []
+
+        print('\nIntegrate OmniMVS Feature...')
+        for frag_idx in tqdm(range(self.n_fragments)):
+            # init bound / grid
+            local_frag_bound = self.local_frag_bounds[frag_idx]
+            self.set_bound(self.cfg, local_frag_bound)
+            self.grid_init(self.cfg)
+
+            for key, val in self.shared_c.items():
+                val = val.to(self.cfg['omnimvs']['device'])
+                val.share_memory_()
+                self.shared_c[key] = val
+            for key, val in self.shared_coord.items():
+                val = val.to(self.cfg['omnimvs']['device'])
+                val.share_memory_()
+                self.shared_coord[key] = val
+            for key, val in self.shared_grid_coord.items():
+                val = val.to(self.cfg['omnimvs']['device'])
+                val.share_memory_()
+                self.shared_grid_coord[key] = val
+            for key, val in self.shared_vote.items():
+                val = val.to(self.cfg['omnimvs']['device'])
+                val.share_memory_()
+                self.shared_vote[key] = val
+
+            self.target_depths = []
+            self.target_colors = []
+            self.use_depths = []
+            self.use_colors = []
+            self.target_entropys = []
+            self.resps = []
+            self.backproj_feats = {}
+            self.backproj_feats['grid_middle'] = []
+            self.backproj_feats['grid_fine'] = []
+            self.backproj_feats['grid_color'] = []
+            self.raw_feats = []
+            self.probs = []
+            self.target_c2w = []
+            
+            self.integrator.init_params(self)
+
+            for i in range(len(self.local_frag_idxs[frag_idx])):
+                idx = self.local_frag_idxs[frag_idx][i]
+                data = BatchCollator.collate([self.integrator.omnimvs[idx]])
+                self.integrator.run_omni(data)
+
+            frag_datas.append(
+                {
+                    'target_depths': self.integrator.target_depths,
+                    'target_colors': self.integrator.target_colors,
+                    'use_depths': self.integrator.use_depths,
+                    'use_colors': self.integrator.use_colors,
+                    'target_entropys': self.integrator.target_entropys,
+                    'target_c2w': self.integrator.target_c2w,
+                    'backproj_feats': self.integrator.backproj_feats,
+                    'bound': self.bound,
+                    'c': self.integrator.c,
+                    'coord': self.integrator.coord,
+                }
+            )
+            torch.cuda.empty_cache()
+
+        print('\nMapping...')
+        for epoch in tqdm(range(100)):
+            for iter in tqdm(range(num_iters)):
+                for frag_idx in range(self.n_fragments):
+                    local_frag_bound = self.local_frag_bounds[frag_idx]
+                    self.set_bound(self.cfg, local_frag_bound)
+                    self.grid_init(self.cfg)
+
+                    self.target_depths = frag_datas[frag_idx]['target_depths']
+                    self.target_colors = frag_datas[frag_idx]['target_colors']
+                    self.use_depths = frag_datas[frag_idx]['use_depths']
+                    self.use_colors = frag_datas[frag_idx]['use_colors']
+                    self.target_entropys = frag_datas[frag_idx]['target_entropys']
+                    self.target_c2w = frag_datas[frag_idx]['target_c2w']
+                    self.backproj_feats = frag_datas[frag_idx]['backproj_feats']
+                    self.shared_c = frag_datas[frag_idx]['c']
+                    self.shared_coord = frag_datas[frag_idx]['coord']
+                
+                    self.integrator.init_params(self)
+                    self.mapper.init_params(self)
+                    self.renderer.bound = self.bound
+
+                    self.mapper.run_omni_frag(epoch, iter, frag_idx, save_log=(iter == num_iters-1) & (frag_idx == self.n_fragments-1))
+                
 
 
 # This part is required by torch.multiprocessing

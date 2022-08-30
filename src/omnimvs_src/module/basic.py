@@ -77,14 +77,15 @@ class DeConv3D(torch.nn.Module):
 
 class ConvBnReLU3D(torch.nn.Module):
     def __init__(self, ch_in, ch_out, kernel_size=3, stride=1, pad=1,
-                 bn=True, relu=True, bias=False):
+                 bn=True, relu=True, bias=True):
         super(ConvBnReLU3D, self).__init__()
         self.conv = torch.nn.Conv3d(ch_in, ch_out, kernel_size,
                                     stride, padding=pad, bias=bias)
         self.relu = relu
         self.bn = None
         if bn:
-            self.bn = torch.nn.BatchNorm3d(ch_out)
+            # self.bn = torch.nn.BatchNorm3d(ch_out)
+            self.bn = torch.nn.GroupNorm(1, ch_out)
 
     def forward(self, x, residual=None):
         x = self.conv(x)
@@ -102,14 +103,15 @@ class ConvBnReLU3D(torch.nn.Module):
 
 class DeConvBnReLU3D(torch.nn.Module):
     def __init__(self, ch_in, ch_out, kernel_size=3, stride=1, pad=1, out_pad=0,
-                 bn=True, relu=True, bias=False):
+                 bn=True, relu=True, bias=True):
         super(DeConvBnReLU3D, self).__init__()
         self.conv = torch.nn.ConvTranspose3d(ch_in, ch_out, kernel_size,
                                              stride, padding=pad, output_padding=out_pad, bias=bias)
         self.relu = relu
         self.bn = None
         if bn:
-            self.bn = torch.nn.BatchNorm3d(ch_out)
+            # self.bn = torch.nn.BatchNorm3d(ch_out)
+            self.bn = torch.nn.GroupNorm(1, ch_out)
 
     def forward(self, x, residual=None):
         x = self.conv(x)
