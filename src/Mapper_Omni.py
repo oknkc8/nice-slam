@@ -14,7 +14,7 @@ from src.common import (get_camera_from_tensor, get_samples, get_samples_omni,
                         get_tensor_from_camera, random_select, sparse_to_dense)
 from src.utils.datasets import get_dataset
 from src.utils.Visualizer import Visualizer
-from src.omnimvs_src.module.network import CostFusion, ConvGRU, CostFusion_Sparse, SPVCNN, CostFusion_Residual
+from src.omnimvs_src.module.network import CostFusion, CostFusion_tmp, ConvGRU
 from src.omni_utils.common import EPS
 
 import pdb
@@ -106,21 +106,22 @@ class Mapper(object):
         # self.costfusion['grid_middle'] = SPVCNN(ch_in=64, ch_out=self.cfg['model']['c_dim']).to(self.integrator.device)
         # self.costfusion['grid_fine'] = SPVCNN(ch_in=64, ch_out=self.cfg['model']['c_dim']).to(self.integrator.device)
         # self.costfusion['grid_color'] = SPVCNN(ch_in=64, ch_out=self.cfg['model']['c_dim']).to(self.integrator.device)
-        self.costfusion['grid_middle'] = CostFusion(ch_in=64, ch_out=self.cfg['model']['c_dim']).to(self.integrator.device)
-        self.costfusion['grid_fine'] = CostFusion(ch_in=64, ch_out=self.cfg['model']['c_dim']).to(self.integrator.device)
-        self.costfusion['grid_color'] = CostFusion(ch_in=64, ch_out=self.cfg['model']['c_dim']).to(self.integrator.device)
-        # self.costfusion['grid_middle'] = CostFusion_Residual(ch_in=64, ch_out=self.cfg['model']['c_dim']).to(self.integrator.device)
-        # self.costfusion['grid_fine'] = CostFusion_Residual(ch_in=64, ch_out=self.cfg['model']['c_dim']).to(self.integrator.device)
-        # self.costfusion['grid_color'] = CostFusion_Residual(ch_in=64, ch_out=self.cfg['model']['c_dim']).to(self.integrator.device)
+        # self.costfusion['grid_middle'] = CostFusion(ch_in=64, ch_out=self.cfg['model']['c_dim']).to(self.device)
+        # self.costfusion['grid_fine'] = CostFusion(ch_in=64, ch_out=self.cfg['model']['c_dim']).to(self.device)
+        # self.costfusion['grid_color'] = CostFusion(ch_in=64, ch_out=self.cfg['model']['c_dim']).to(self.device)
+        self.costfusion['grid_middle'] = CostFusion_tmp(ch_in=64, ch_out=self.cfg['model']['c_dim']).to(self.device)
+        self.costfusion['grid_fine'] = CostFusion_tmp(ch_in=64, ch_out=self.cfg['model']['c_dim']).to(self.device)
+        self.costfusion['grid_color'] = CostFusion_tmp(ch_in=64, ch_out=self.cfg['model']['c_dim']).to(self.device)
         
         
         self.mvsnet = slam.mvsnet
+        self.fusion_method = self.cfg['model']['fusion_method']
         self.grufusion = {}
-        self.grufusion['grid_middle'] = ConvGRU(hidden_dim=64, input_dim=64, 
+        self.grufusion['grid_middle'] = ConvGRU(hidden_dim=64, input_dim=64, ks=self.cfg['model']['convgru_ks'],
                                                 pres=1, vres=self.cfg['grid_len']['middle']).to(self.integrator.device)
-        self.grufusion['grid_fine'] = ConvGRU(hidden_dim=64, input_dim=64, 
+        self.grufusion['grid_fine'] = ConvGRU(hidden_dim=64, input_dim=64, ks=self.cfg['model']['convgru_ks'],
                                               pres=1, vres=self.cfg['grid_len']['fine']).to(self.integrator.device)
-        self.grufusion['grid_color'] = ConvGRU(hidden_dim=64, input_dim=64, 
+        self.grufusion['grid_color'] = ConvGRU(hidden_dim=64, input_dim=64, ks=self.cfg['model']['convgru_ks'],
                                                pres=1, vres=self.cfg['grid_len']['color']).to(self.integrator.device)
         
         self.target_depths = slam.target_depths
@@ -135,7 +136,7 @@ class Mapper(object):
         
         self.global_iter = 0
 
-    def optimize_map_omni(self, num_joint_iters, lr_factor):
+    def optimize_map_omni(self, num_joint_iters, lr_factor, epoch):
         """
         Mapping iterations. Sample pixels from selected keyframes,
         then optimize scene representation and camera poses(if local BA enables).
@@ -156,75 +157,82 @@ class Mapper(object):
         """
         H, W, fx, fy, cx, cy = self.H, self.W, self.fx, self.fy, self.cx, self.cy
         phi_deg, phi_max_deg = self.phi_deg, self.phi_max_deg
-        # c = self.c
         cfg = self.cfg
         device = self.device
         bottom = torch.from_numpy(np.array([0, 0, 0, 1.]).reshape(
             [1, 4])).type(torch.float32).to(device)
         
-        # pdb.set_trace()
-        optimize_frame = list(np.random.permutation(np.array(range(len(self.target_c2w)))))
+        # optimize_frame = list(np.random.permutation(np.array(range(len(self.target_c2w)))))
+        optimize_frame = list(np.array(range(len(self.target_c2w))))
         pixs_per_image = self.mapping_pixels
 
-        # pdb.set_trace()
-        decoders_para_list = []
+        if epoch == 0:
+            decoders_para_list = []
 
-        if self.method == 'nice':
-            decoders_para_list += list(
-                    self.decoders.coarse_decoder.parameters())
-            decoders_para_list += list(
-                    self.decoders.middle_decoder.parameters())
-            if not self.fix_fine:
+            if self.method == 'nice':
                 decoders_para_list += list(
-                    self.decoders.fine_decoder.parameters())
-            if not self.fix_color:
+                        self.decoders.coarse_decoder.parameters())
                 decoders_para_list += list(
-                    self.decoders.color_decoder.parameters())
-        else:
-            # single MLP
-            decoders_para_list += list(self.decoders.parameters())
+                        self.decoders.middle_decoder.parameters())
+                if not self.fix_fine:
+                    decoders_para_list += list(
+                        self.decoders.fine_decoder.parameters())
+                if not self.fix_color:
+                    decoders_para_list += list(
+                        self.decoders.color_decoder.parameters())
+            else:
+                # single MLP
+                decoders_para_list += list(self.decoders.parameters())
 
-        if self.BA:
-            camera_tensor_list = []
-            for frame in optimize_frame:
-                c2w = self.target_c2w[frame]
-                camera_tensor = get_tensor_from_camera(c2w)
-                camera_tensor = Variable(
-                    camera_tensor.to(device), requires_grad=True)
-                camera_tensor_list.append(camera_tensor)
-        """gru fusion"""
-        grufusion_para_list = []
-        for key, net in self.grufusion.items():
-            grufusion_para_list += list(net.parameters())
-        
-        
-        """cost fusion network"""
-        fusion_para_list = []
-        for key, net in self.costfusion.items():
-            fusion_para_list += list(net.parameters())
-                    
-
-        if self.BA:
-            # The corresponding lr will be set according to which stage the optimization is in
-            optimizer = torch.optim.Adam([{'params': decoders_para_list, 'lr': 0},
-                                          {'params': fusion_para_list, 'lr': 0},
-                                          {'params': grufusion_para_list, 'lr': 0},
-                                          {'params': camera_tensor_list, 'lr': 0}])
-        else:
-            # optimizer = torch.optim.Adam([{'params': decoders_para_list, 'lr': 0},
-            #                             ])
-            optimizer = torch.optim.Adam([{'params': decoders_para_list, 'lr': 0},
-                                          {'params': fusion_para_list, 'lr': 0},
-                                          {'params': grufusion_para_list, 'lr': 0},
-                                        ])
+            if self.BA:
+                camera_tensor_list = []
+                for frame in optimize_frame:
+                    c2w = self.target_c2w[frame]
+                    camera_tensor = get_tensor_from_camera(c2w)
+                    camera_tensor = Variable(
+                        camera_tensor.to(device), requires_grad=True)
+                    camera_tensor_list.append(camera_tensor)
+            """gru fusion"""
+            grufusion_para_list = []
+            for key, net in self.grufusion.items():
+                grufusion_para_list += list(net.parameters())
             
-        # optimizer.param_groups[0]['lr'] = cfg['mapping']['stage']['fine']['decoders_lr']*lr_factor
-        # optimizer.param_groups[1]['lr'] = cfg['omnimvs']['lr']*lr_factor
-        # from torch.optim.lr_scheduler import ReduceLROnPlateau, StepLR
-        # scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=0.8, patience=len(optimize_frame), verbose=True)
-        # scheduler = StepLR(optimizer, step_size=200, gamma=0.8)
+            
+            """cost fusion network"""
+            fusion_para_list = []
+            for key, net in self.costfusion.items():
+                fusion_para_list += list(net.parameters())
+                        
+            if self.BA:
+                # The corresponding lr will be set according to which stage the optimization is in
+                self.optimizer = torch.optim.Adam([{'params': decoders_para_list, 'lr': 0},
+                                            {'params': fusion_para_list, 'lr': 0},
+                                            {'params': grufusion_para_list, 'lr': 0},
+                                            {'params': camera_tensor_list, 'lr': 0}])
+            else:
+                # optimizer = torch.optim.Adam([{'params': decoders_para_list, 'lr': 0},
+                #                             ])
+                self.optimizer = torch.optim.Adam([{'params': decoders_para_list, 'lr': 0},
+                                            {'params': fusion_para_list, 'lr': 0},
+                                            {'params': grufusion_para_list, 'lr': 0},
+                                            ])
+                
+            self.optimizer.param_groups[0]['lr'] = cfg['mapping']['stage']['fine']['decoders_lr']*lr_factor
+            self.optimizer.param_groups[1]['lr'] = cfg['omnimvs']['lr']*lr_factor
+            self.optimizer.param_groups[2]['lr'] = cfg['omnimvs']['lr']*lr_factor
+            if self.BA:
+                if self.stage == 'color':
+                    self.optimizer.param_groups[4]['lr'] = self.BA_cam_lr
 
-        optimizer.zero_grad()
+            # optimizer.param_groups[0]['lr'] = cfg['mapping']['stage']['fine']['decoders_lr']*lr_factor
+            # optimizer.param_groups[1]['lr'] = cfg['omnimvs']['lr']*lr_factor
+            from torch.optim.lr_scheduler import ReduceLROnPlateau, StepLR
+            self.scheduler = ReduceLROnPlateau(self.optimizer, mode='min', factor=0.8, patience=len(optimize_frame)*10, verbose=True)
+            # scheduler = StepLR(optimizer, step_size=200, gamma=0.8)
+
+            
+
+        self.optimizer.zero_grad()
         for joint_iter in tqdm(range(num_joint_iters)):
             # pdb.set_trace()
             # self.global_iter += 1
@@ -240,12 +248,12 @@ class Mapper(object):
             else:
                 self.stage = 'color'
 
-            optimizer.param_groups[0]['lr'] = cfg['mapping']['stage'][self.stage]['decoders_lr']*lr_factor
-            optimizer.param_groups[1]['lr'] = cfg['omnimvs']['lr']*lr_factor
-            optimizer.param_groups[2]['lr'] = cfg['omnimvs']['lr']*lr_factor
-            if self.BA:
-                if self.stage == 'color':
-                    optimizer.param_groups[3]['lr'] = self.BA_cam_lr
+            # self.optimizer.param_groups[0]['lr'] = cfg['mapping']['stage'][self.stage]['decoders_lr']*lr_factor
+            # self.optimizer.param_groups[1]['lr'] = cfg['omnimvs']['lr']*lr_factor
+            # self.optimizer.param_groups[2]['lr'] = cfg['omnimvs']['lr']*lr_factor
+            # if self.BA:
+            #     if self.stage == 'color':
+            #         self.optimizer.param_groups[4]['lr'] = self.BA_cam_lr
 
             self.target_depths = self.integrator.target_depths
             self.target_colors = self.integrator.target_colors
@@ -287,6 +295,10 @@ class Mapper(object):
                     batch_use_color = torch.cat([batch_use_color_1, batch_use_color_2, batch_use_color_3], dim=0)
                     batch_gt_depth = torch.cat([batch_gt_depth_1, batch_gt_depth_2, batch_gt_depth_3], dim=0)
                     batch_gt_color = torch.cat([batch_gt_color_1, batch_gt_color_2, batch_gt_color_3], dim=0)
+
+                    # batch_rays_o, batch_rays_d, batch_use_depth, batch_use_color, batch_gt_depth, batch_gt_color = get_samples_omni(
+                    #     0, H, 0, W, pixs_per_image, H, W, phi_deg, phi_max_deg, c2w, use_depth, use_color, self.device, gt_depth, gt_color)
+                    
                     
                     batch_use_depth = batch_use_depth.float()
                     batch_use_color = batch_use_color.float()
@@ -312,54 +324,52 @@ class Mapper(object):
                 batch_use_color = batch_use_color[inside_mask]
 
 
-                """gru fusion frame feature volume"""
+                """gru fusion / average frame feature volume"""
+                vote_grid = {}
                 for j, fidx in (enumerate(optimize_frame)):
                     for key, grid in self.integrator.c.items():
                         if not('coarse' in key) and not('color' in key):
-                            feat_c_dim = self.integrator.c[key].shape[1]
-                            backproj_feat = self.backproj_feats[key][fidx].to(self.integrator.device)
-                            if j == 0:
-                                self.integrator.c[key] = torch.zeros_like(grid).to(self.integrator.device)
-                                mask = ((backproj_feat != 0).sum(dim=1) != 0)
-                            else:
-                                mask = torch.logical_or(((backproj_feat != 0).sum(dim=1) != 0),
-                                                        ((grid != 0).sum(dim=1) != 0))
-                            coord = torch.nonzero(mask).type(torch.int)
-                            coord = coord[:, [1, 2, 3, 0]] # [N, 4]: [x,y,z,B]
-                            feat = torch.index_select(backproj_feat.reshape(feat_c_dim, -1), 1, 
-                                                      torch.nonzero(mask.reshape(1, -1))[:, 1]).T
-                            new_sparse_feat = SparseTensor(feats=feat, coords=coord)
-                        
-                            hidden_feat = torch.index_select(self.integrator.c[key].reshape(feat_c_dim, -1), 1, \
-                                                             torch.nonzero(mask.reshape(1, -1))[:, 1]).T
-                            hidden_sparse_feat = SparseTensor(feats=hidden_feat, coords=coord)
+                            if self.fusion_method == 'grufusion':
+                                feat_c_dim = self.integrator.c[key].shape[1]
+                                backproj_feat = self.backproj_feats[key][fidx].to(self.integrator.device)
+                                if j == 0:
+                                    self.integrator.c[key] = torch.zeros_like(grid).to(self.integrator.device)
+                                    mask = ((backproj_feat != 0).sum(dim=1) != 0)
+                                else:
+                                    mask = torch.logical_or(((backproj_feat != 0).sum(dim=1) != 0),
+                                                            ((grid != 0).sum(dim=1) != 0))
+                                coord = torch.nonzero(mask).type(torch.int)
+                                coord = coord[:, [1, 2, 3, 0]] # [N, 4]: [x,y,z,B]
+                                feat = torch.index_select(backproj_feat.reshape(feat_c_dim, -1), 1, 
+                                                        torch.nonzero(mask.reshape(1, -1))[:, 1]).T
+                                new_sparse_feat = SparseTensor(feats=feat, coords=coord)
                             
-                            fused_feat = self.grufusion[key](hidden_sparse_feat, new_sparse_feat)
-                        
-                            self.integrator.c[key] = sparse_to_dense(fused_feat, grid)
+                                hidden_feat = torch.index_select(self.integrator.c[key].reshape(feat_c_dim, -1), 1, \
+                                                                torch.nonzero(mask.reshape(1, -1))[:, 1]).T
+                                hidden_sparse_feat = SparseTensor(feats=hidden_feat, coords=coord)
+                                
+                                fused_feat = self.grufusion[key](hidden_sparse_feat, new_sparse_feat)
                             
+                                self.integrator.c[key] = sparse_to_dense(fused_feat, grid)
+                            elif self.fusion_method == 'average':
+                                backproj_feat = self.backproj_feats[key][fidx].to(self.integrator.device)
+                                if j == 0:
+                                    vote_grid[key] = ((backproj_feat != 0).sum(dim=1) != 0).float()
+                                    self.integrator.c[key] = backproj_feat
+                                else:
+                                    vote = ((backproj_feat != 0).sum(dim=1) != 0).float()
+                                    vote_grid[key] = vote_grid[key] + vote
+                                    self.integrator.c[key] = self.integrator.c[key] + backproj_feat
+                                    if j == len(optimize_frame) - 1:
+                                        vote_grid[key][vote_grid[key] == 0] = 1
+                                        self.integrator.c[key] = self.integrator.c[key] / vote_grid[key]
+
                 """refinement feature volume"""
                 c = {}
                 for key, grid in self.integrator.c.items():
                     if not('coarse' in key):
-                        c[key] = self.costfusion[key](grid).to(self.device)
-                # c = {}
-                # for key, grid in self.integrator.c.items():
-                #     if not('coarse' in key) and not('color' in key):
-                #         feat_c_dim = grid.shape[1]
-                #         mask = ((grid != 0).sum(dim=1) != 0)
-                #         coord = torch.nonzero(mask).type(torch.int)
-                #         coord = coord[:, [1, 2, 3, 0]] # [N, 4]: [x,y,z,B]
-                #         feat = torch.index_select(grid.reshape(feat_c_dim, -1), 1, 
-                #                                   torch.nonzero(mask.reshape(1, -1))[:, 1]).T
-                        
-                #         sparse_feat = SparseTensor(feats=feat, coords=coord)
-                #         fused_feat = self.costfusion[key](sparse_feat).to(self.device)
-                        
-                #         c_dim = self.cfg['model']['c_dim']
-                #         dense_zero_tensor = torch.zeros(grid.shape[0], c_dim, *grid.shape[2:])
-                #         c[key] = sparse_to_dense(fused_feat, dense_zero_tensor)
-                
+                        # c[key] = self.costfusion[key](grid).to(self.device)
+                        c[key] = self.costfusion[key](grid.to(self.device))
                 
                         
                 ret = self.renderer.render_batch_ray(c, self.decoders, batch_rays_d,
@@ -384,22 +394,16 @@ class Mapper(object):
                     loss += weighted_color_loss
                     self.summary_writer.add_scalar(f'{self.stage}/mapping_color_loss', color_loss, global_step=self.global_iter)
                     color_loss = color_loss.item()
-
-                # for p in self.decoders.fine_decoder.named_parameters(): print(p[1].grad)
-                # for p in self.grufusion['grid_middle'].named_parameters(): print(p[1].grad)
-                # for p in self.costfusion['grid_middle'].named_parameters(): print(p[1].grad)
                 
                 self.summary_writer.add_scalar(f'{self.stage}/mapping_loss', loss, global_step=self.global_iter)
                 
                 loss.backward(retain_graph=True)
                 
-                # torch.nn.utils.clip_grad_value_(model.parameters(), clip_value=1.0)
+                self.optimizer.step()
                 
-                optimizer.step()
-                
-                # scheduler.step(loss)
+                self.scheduler.step(loss)
                 # scheduler.step()
-                optimizer.zero_grad()
+                self.optimizer.zero_grad()
                 
                 del c
                 torch.cuda.empty_cache()
@@ -409,28 +413,10 @@ class Mapper(object):
                 c = {}
                 for key, grid in self.integrator.c.items():
                     if not('coarse' in key):
-                        c[key] = self.costfusion[key](grid).to(self.device)
-                # c = {}
-                # for key, grid in self.integrator.c.items():
-                #     if not('coarse' in key):
-                #         feat_c_dim = grid.shape[1]
-                #         mask = ((grid != 0).sum(dim=1) != 0)
-                #         coord = torch.nonzero(mask).type(torch.int)
-                #         coord = coord[:, [1, 2, 3, 0]] # [N, 4]: [x,y,z,B]
-                #         feat = torch.index_select(grid.reshape(feat_c_dim, -1), 1, 
-                #                                   torch.nonzero(mask.reshape(1, -1))[:, 1]).T
-                        
-                #         sparse_feat = SparseTensor(feats=feat, coords=coord)
-                #         fused_feat = self.costfusion[key](sparse_feat).to(self.device)
-                        
-                #         c_dim = self.cfg['model']['c_dim']
-                #         dense_zero_tensor = torch.zeros(grid.shape[0], c_dim, *grid.shape[2:])
-                #         c[key] = sparse_to_dense(fused_feat, dense_zero_tensor)
+                        # c[key] = self.costfusion[key](grid).to(self.device)
+                        c[key] = self.costfusion[key](grid.to(self.device))
             
             idx = joint_iter % len(self.target_depths)
-            # self.visualizer.vis_omni(
-            #     self.epoch, joint_iter, num_joint_iters, self.target_depths[idx], self.target_colors[idx], self.target_c2w[idx], 
-            #     self.c, self.decoders, self.stage, self.summary_writer).grad
             self.visualizer.vis_omni(
                 self.epoch, joint_iter, num_joint_iters, self.use_depths[idx], self.use_colors[idx], self.target_c2w[idx], 
                 c, self.decoders, self.stage, self.summary_writer, self.target_depths[idx], self.target_colors[idx],)
@@ -463,7 +449,7 @@ class Mapper(object):
 
         self.epoch = epoch
         self.BA = cfg['mapping']['BA'] and (not self.coarse_mapper)
-        self.optimize_map_omni(num_joint_iters, lr_factor)
+        self.optimize_map_omni(num_joint_iters, lr_factor, epoch)
             
         if self.low_gpu_mem:
             torch.cuda.empty_cache()
@@ -477,7 +463,8 @@ class Mapper(object):
                     c = {}
                     for key, grid in self.integrator.c.items():
                         if not('coarse' in key):
-                            c[key] = self.costfusion[key](grid).to(self.device)
+                            # c[key] = self.costfusion[key](grid).to(self.device)
+                            c[key] = self.costfusion[key](grid.to(self.device))
                     # c = {}
                     # for key, grid in self.integrator.c.items():
                     #     if not('coarse' in key):

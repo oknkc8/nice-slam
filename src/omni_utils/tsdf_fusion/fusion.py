@@ -145,7 +145,7 @@ class TSDFVolume:
           cam_pt_z = d;
           
           // Skip if outside view frustum
-          if (pixel_x < 0 || pixel_x >= im_w || pixel_y < 0 || pixel_y >= im_h || cam_pt_z < 0 || cam_pt_z > 10)
+          if (pixel_x < 0 || pixel_x >= im_w || pixel_y < 0 || pixel_y >= im_h || cam_pt_z < 0 || cam_pt_z > 50)
               return;
           
           // Skip invalid depth
