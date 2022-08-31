@@ -297,7 +297,7 @@ class Visualizer(object):
                         f'\nSaved rendering visualization of color/depth image at {stage}_{epoch:05d}_{iter:04d}.png')
 
 
-    def vis_omni_frag(self, epoch, iter, frag_idx, fidx, use_depth, use_color, c2w_or_camera_tensor, c,
+    def vis_omni_frag(self, epoch, iter, joint_iter, frag_idx, use_depth, use_color, c2w_or_camera_tensor, c,
             decoders, stage, summary_writer=None, gt_depth=None, gt_color=None):
         """
         Visualization of depth, color images and save to file.
@@ -315,7 +315,6 @@ class Visualizer(object):
         iter += 1
         epoch += 1
         frag_idx += 1
-        fidx += 1
         with torch.no_grad():
             if iter % self.inside_freq == 0:
                 if gt_depth is None:
@@ -416,7 +415,7 @@ class Visualizer(object):
                 prev_output = np.round(cv2.vconcat([prev_1, prev_2, prev_3])).astype(np.uint8)
                 
                 prev_output = cv2.cvtColor(prev_output, cv2.COLOR_RGB2BGR)
-                cv2.imwrite(f'{self.vis_dir}/{stage}_{epoch:05d}_{frag_idx:04d}_{fidx:04d}.png', prev_output)
+                cv2.imwrite(f'{self.vis_dir}/{stage}_{epoch:05d}_{joint_iter:04d}_{frag_idx:04d}.png', prev_output)
                 
                 if summary_writer is not None:
                     prev_output = cv2.cvtColor(prev_output, cv2.COLOR_BGR2RGB)
@@ -427,4 +426,4 @@ class Visualizer(object):
                 
                 if self.verbose:
                     print(
-                        f'\nSaved rendering visualization of color/depth image at {stage}_{epoch:05d}_{frag_idx:04d}_{fidx:04d}.png')
+                        f'\nSaved rendering visualization of color/depth image at {stage}_{epoch:05d}_{joint_iter:04d}_{frag_idx:04d}.png')

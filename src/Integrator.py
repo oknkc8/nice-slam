@@ -106,7 +106,7 @@ class Integrator(object):
         self.n_frames = opts.n_frames
         self.dist_bound = opts.dist_bound
         
-        # self.make_local_fragment_dbloader()
+        self.make_local_fragment_dbloader()
 
         # self.grufusion = {}
         # self.grufusion['middle'] = GRUFusion(ch_in=64, ch_out=64).to(self.device)
@@ -151,7 +151,7 @@ class Integrator(object):
         self.local_frag_bounds = []
         origin_dist_thrshold = self.dist_bound
 
-        print('\nNew Fragment...')
+        print(f'\nNew Fragment {len(self.local_frag_idxs)}...')
         for i, data in tqdm(enumerate(self.dbloader)):
             pose = toNumpy(data.c2w[0])
             pose[:3, 1] *= -1
@@ -193,9 +193,10 @@ class Integrator(object):
                 self.local_frag_bounds.append(bound)
                 self.local_frag_idxs.append(local_frag_i)
 
-                print('Fragment indices:', local_frag_i, ' Bound:', bound)
+                print('Fragment indices:', local_frag_i)
+                print('Bound:', bound)
 
-                print('New Fragment...')
+                print(f'\nNew Fragment {len(self.local_frag_idxs)}...')
 
                 local_frag_i = prev_local_frag_i[frag_center_i:]
                 local_frag_pcs = prev_local_frag_pcs[frag_center_i:]
@@ -213,7 +214,8 @@ class Integrator(object):
         bound_max = pcs.max(axis=0)
         bound = np.stack([bound_min, bound_max]).T
 
-        print('Fragment indices:', local_frag_i, ' Bound:', bound)
+        print('Fragment indices:', local_frag_i)
+        print('Bound:', bound)
         print()
 
         # pdb.set_trace()

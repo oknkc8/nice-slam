@@ -1,6 +1,7 @@
 import os
 import time
 import shutil
+import random
 
 import numpy as np
 import torch
@@ -434,6 +435,7 @@ class NICE_SLAM_Omni():
         self.local_frag_bounds = self.integrator.local_frag_bounds
         self.n_fragments = len(self.local_frag_idxs)
         num_iters = self.cfg['mapping']['iters']
+        joint_num_iters = self.cfg['mapping']['joint_iters']
 
         frag_datas = []
 
@@ -499,9 +501,11 @@ class NICE_SLAM_Omni():
             torch.cuda.empty_cache()
 
         print('\nMapping...')
+        frag_idx_list = [i for i in range(self.n_fragments)]
         for epoch in tqdm(range(100)):
-            for iter in tqdm(range(num_iters)):
-                for frag_idx in range(self.n_fragments):
+            for iter in tqdm(range(num_iters // joint_num_iters)):
+                random.shuffle(frag_idx_list)
+                for frag_idx in frag_idx_list:
                     local_frag_bound = self.local_frag_bounds[frag_idx]
                     self.set_bound(self.cfg, local_frag_bound)
                     self.grid_init(self.cfg)
@@ -519,8 +523,12 @@ class NICE_SLAM_Omni():
                     self.integrator.init_params(self)
                     self.mapper.init_params(self)
                     self.renderer.bound = self.bound
+                    self.mesher.bound = self.bound
+                    self.mesher.marching_cubes_bound = self.bound
 
                     self.mapper.run_omni_frag(epoch, iter, frag_idx, save_log=(iter == num_iters-1) & (frag_idx == self.n_fragments-1))
+
+                    torch.cuda.empty_cache()
                 
 
 
