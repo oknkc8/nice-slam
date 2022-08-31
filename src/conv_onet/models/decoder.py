@@ -136,11 +136,11 @@ class MLP(nn.Module):
             self.embedder = Same()
         elif pos_embedding_method == 'nerf':
             if 'color' in name:
-                multires = 10
+                multires = 15
                 self.embedder = Nerf_positional_embedding(
                     multires, log_sampling=True)
             else:
-                multires = 5
+                multires = 15
                 self.embedder = Nerf_positional_embedding(
                     multires, log_sampling=False)
             embedding_size = multires*6+3

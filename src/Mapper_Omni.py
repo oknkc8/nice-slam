@@ -243,7 +243,7 @@ class Mapper(object):
             # optimizer.param_groups[0]['lr'] = cfg['mapping']['stage']['fine']['decoders_lr']*lr_factor
             # optimizer.param_groups[1]['lr'] = cfg['omnimvs']['lr']*lr_factor
             from torch.optim.lr_scheduler import ReduceLROnPlateau, StepLR
-            self.scheduler = ReduceLROnPlateau(self.optimizer, mode='min', factor=0.8, patience=len(optimize_frame)*10, verbose=True)
+            self.scheduler = ReduceLROnPlateau(self.optimizer, mode='min', factor=0.8, patience=5000, verbose=True)
             # scheduler = StepLR(optimizer, step_size=200, gamma=0.8)
 
             
@@ -538,7 +538,7 @@ class Mapper(object):
                     self.optimizer.param_groups[4]['lr'] = self.BA_cam_lr
 
             from torch.optim.lr_scheduler import ReduceLROnPlateau, StepLR
-            self.scheduler = ReduceLROnPlateau(self.optimizer, mode='min', factor=0.8, patience=100, verbose=True)
+            self.scheduler = ReduceLROnPlateau(self.optimizer, mode='min', factor=0.8, patience=1000, verbose=True)
 
         self.optimizer.zero_grad()
         self.stage = 'fine'
@@ -551,9 +551,8 @@ class Mapper(object):
         self.target_c2w = self.integrator.target_c2w
         self.backproj_feats = self.integrator.backproj_feats
 
-        self.global_frag_iter += 1
-
         for joint_iter in tqdm(range(num_joint_iters)):
+            self.global_frag_iter += 1
             for i, frame in tqdm(enumerate(optimize_frame)):
                 use_depth = self.use_depths[frame].to(device).detach()
                 use_color = self.use_colors[frame].to(device).detach()
@@ -593,19 +592,19 @@ class Mapper(object):
                 batch_gt_color = batch_gt_color.float()
             
                 # should pre-filter those out of bounding box depth value
-                # with torch.no_grad():
-                #     det_rays_o = batch_rays_o.clone().detach().unsqueeze(-1)  # (N, 3, 1)
-                #     det_rays_d = batch_rays_d.clone().detach().unsqueeze(-1)  # (N, 3, 1)
-                #     t = (self.bound.unsqueeze(0).to(
-                #         device)-det_rays_o)/det_rays_d
-                #     t, _ = torch.min(torch.max(t, dim=2)[0], dim=1)
-                #     inside_mask = t >= batch_gt_depth
-                # batch_rays_d = batch_rays_d[inside_mask]
-                # batch_rays_o = batch_rays_o[inside_mask]
-                # batch_gt_depth = batch_gt_depth[inside_mask]
-                # batch_gt_color = batch_gt_color[inside_mask]
-                # batch_use_depth = batch_use_depth[inside_mask]
-                # batch_use_color = batch_use_color[inside_mask]
+                with torch.no_grad():
+                    det_rays_o = batch_rays_o.clone().detach().unsqueeze(-1)  # (N, 3, 1)
+                    det_rays_d = batch_rays_d.clone().detach().unsqueeze(-1)  # (N, 3, 1)
+                    t = (self.bound.unsqueeze(0).to(
+                        device)-det_rays_o)/det_rays_d
+                    t, _ = torch.min(torch.max(t, dim=2)[0], dim=1)
+                    inside_mask = t >= batch_gt_depth
+                batch_rays_d = batch_rays_d[inside_mask]
+                batch_rays_o = batch_rays_o[inside_mask]
+                batch_gt_depth = batch_gt_depth[inside_mask]
+                batch_gt_color = batch_gt_color[inside_mask]
+                batch_use_depth = batch_use_depth[inside_mask]
+                batch_use_color = batch_use_color[inside_mask]
 
 
                 """gru fusion / average frame feature volume"""
@@ -762,7 +761,7 @@ class Mapper(object):
                                     self.device, clean_mesh=self.clean_mesh)
                 del c
 
-    def run_omni_frag(self, epoch, iter, frag_idx, save_log=False):
+    def run_omni_frag(self, epoch, iter, frag_idx, i, save_log=False):
         cfg = self.cfg
         num_joint_iters = cfg['mapping']['joint_iters']
         lr_factor = cfg['mapping']['lr_factor']
@@ -770,7 +769,7 @@ class Mapper(object):
         if self.verbose:
             print(Fore.GREEN)
             prefix = 'Coarse ' if self.coarse_mapper else ''
-            print('Epoch ', epoch, 'Frag ', frag_idx, prefix+"Mapping Frame ")
+            print('Epoch', epoch, 'Iter', iter, 'Frag', f'{i}({frag_idx})', prefix+"Mapping Frame ")
             print(Style.RESET_ALL)
 
         self.epoch = epoch

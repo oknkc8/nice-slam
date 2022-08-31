@@ -85,7 +85,7 @@ class ConvBnReLU3D(torch.nn.Module):
         self.bn = None
         if bn:
             # self.bn = torch.nn.BatchNorm3d(ch_out)
-            self.bn = torch.nn.GroupNorm(1, ch_out)
+            self.bn = torch.nn.GroupNorm(4, ch_out)
 
     def forward(self, x, residual=None):
         x = self.conv(x)
@@ -96,8 +96,8 @@ class ConvBnReLU3D(torch.nn.Module):
                 residual = F.interpolate(residual, x.shape[-3:], mode='trilinear', align_corners=True)
             x = x + residual
         if self.relu:
-            return F.leaky_relu(x)
-            # return F.relu(x)
+            # return F.leaky_relu(x)
+            return F.relu(x)
         else:
             return x
 
@@ -111,7 +111,7 @@ class DeConvBnReLU3D(torch.nn.Module):
         self.bn = None
         if bn:
             # self.bn = torch.nn.BatchNorm3d(ch_out)
-            self.bn = torch.nn.GroupNorm(1, ch_out)
+            self.bn = torch.nn.GroupNorm(4, ch_out)
 
     def forward(self, x, residual=None):
         x = self.conv(x)
@@ -122,8 +122,8 @@ class DeConvBnReLU3D(torch.nn.Module):
                 residual = F.interpolate(residual, x.shape[-3:], mode='trilinear', align_corners=True)
             x = x + residual
         if self.relu:
-            return F.leaky_relu(x)
-            # return F.relu(x)
+            # return F.leaky_relu(x)
+            return F.relu(x)
         else:
             return x
 
