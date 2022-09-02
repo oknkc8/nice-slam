@@ -314,7 +314,7 @@ class Mesher(object):
             if len(ret.shape) == 1 and ret.shape[0] == 4:
                 ret = ret.unsqueeze(0)
 
-            ret[~mask, 3] = 100
+            ret[~mask, 3] = -100
             rets.append(ret)
 
         ret = torch.cat(rets, dim=0)
@@ -597,7 +597,7 @@ class Mesher(object):
                       c,
                       decoders,
                       device='cuda:0',
-                      color=True,
+                      color=False,
                       clean_mesh=True):
         """
         Extract mesh from scene representation and save mesh to file.

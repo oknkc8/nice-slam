@@ -149,7 +149,7 @@ class Integrator(object):
     def make_local_fragment_dbloader(self):
         self.local_frag_idxs = []
         self.local_frag_bounds = []
-        origin_dist_thrshold = self.dist_bound
+        origin_dist_thrshold = self.dist_bound / 2
 
         print(f'\nNew Fragment {len(self.local_frag_idxs)}...')
         for i, data in tqdm(enumerate(self.dbloader)):
@@ -189,6 +189,11 @@ class Integrator(object):
                 pcs = np.concatenate(local_frag_pcs)
                 bound_min = pcs.min(axis=0)
                 bound_max = pcs.max(axis=0)
+                # extend bound (for meshing)
+                bound_min[0] -= 1
+                bound_min[2] -= 1
+                bound_max[0] += 1
+                bound_max[2] += 1
                 bound = np.stack([bound_min, bound_max]).T
                 self.local_frag_bounds.append(bound)
                 self.local_frag_idxs.append(local_frag_i)
@@ -212,6 +217,11 @@ class Integrator(object):
         pcs = np.concatenate(local_frag_pcs)
         bound_min = pcs.min(axis=0)
         bound_max = pcs.max(axis=0)
+        # extend bound (for meshing)
+        bound_min[0] -= 1
+        bound_min[2] -= 1
+        bound_max[0] += 1
+        bound_max[2] += 1
         bound = np.stack([bound_min, bound_max]).T
 
         print('Fragment indices:', local_frag_i)
@@ -360,8 +370,8 @@ class Integrator(object):
         trunc_in_mask_cam = trunc_in_mask_cam.expand(-1, self.c[stage].shape[1], -1, -1, -1)
         back_mask_cam = back_mask_cam.expand(-1, self.c[stage].shape[1], -1, -1, -1)
 
-        # mask = mask & dist_valid_mask_cam & trunc_in_mask_cam
-        mask = mask & dist_valid_mask_cam & torch.logical_not(back_mask_cam)
+        mask = mask & dist_valid_mask_cam & trunc_in_mask_cam
+        # mask = mask & dist_valid_mask_cam & torch.logical_not(back_mask_cam)
         # mask = mask & (back_projected_valid_vote_mask != 0)
 
         back_projected_feature[mask == False] = 0

@@ -525,6 +525,12 @@ class NICE_SLAM_Omni():
                     self.renderer.bound = self.bound
                     self.mesher.bound = self.bound
                     self.mesher.marching_cubes_bound = self.bound
+                    # extend bound (for meshing)
+                    self.mesher.marching_cubes_bound[0, 0] -= 1
+                    self.mesher.marching_cubes_bound[2, 0] -= 1
+                    self.mesher.marching_cubes_bound[0, 1] += 1
+                    self.mesher.marching_cubes_bound[2, 1] += 1
+
 
                     self.mapper.run_omni_frag(epoch, iter, frag_idx, idx, save_log=(iter == (num_iters//joint_num_iters)-1))
 
