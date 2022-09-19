@@ -62,7 +62,6 @@ class Integrator(object):
         self.estimate_c2w_list = slam.estimate_c2w_list
         self.mapping_first_frame = slam.mapping_first_frame
         self.coarse_bound_enlarge = slam.coarse_bound_enlarge
-        # self.summary_writer = slam.summary_writer
         self.logdir = slam.logdir
         self.n_img = slam.n_img
 
@@ -73,10 +72,9 @@ class Integrator(object):
         self.occupancy = cfg['occupancy']
         self.sync_method = cfg['sync_method']
         self.c_dim = cfg['model']['c_dim']
+        self.vol_dim = np.array(cfg['grid_len']['vol_dim'])
+        self.fine_grid_len = cfg['grid_len']['fine']
         
-        # self.frame_reader = get_dataset(
-        #     cfg, args, self.scale, device=self.device)
-        # self.n_img = len(self.frame_reader)
         self.H, self.W, self.fx, self.fy, self.cx, self.cy = slam.H, slam.W, slam.fx, slam.fy, slam.cx, slam.cy
         self.cam_method = slam.cam_method
         self.phi_deg, self.phi_max_deg = slam.phi_deg, slam.phi_max_deg
@@ -107,16 +105,6 @@ class Integrator(object):
         self.dist_bound = opts.dist_bound
         
         self.make_local_fragment_dbloader()
-
-        # self.grufusion = {}
-        # self.grufusion['middle'] = GRUFusion(ch_in=64, ch_out=64).to(self.device)
-        # self.grufusion['fine'] = GRUFusion(ch_in=64, ch_out=64).to(self.device)
-        # self.grufusion['color'] = GRUFusion(ch_in=64, ch_out=64).to(self.device)
-        
-        # self.grufusion_h = {}
-        # self.grufusion_h['middle'] = False
-        # self.grufusion_h['fine'] = False
-        # self.grufusion_h['color'] = False
         
         if not osp.exists(opts.snapshot_path):
             sys.exit('%s does not exsits' % (opts.snapshot_path))
@@ -149,7 +137,7 @@ class Integrator(object):
     def make_local_fragment_dbloader(self):
         self.local_frag_idxs = []
         self.local_frag_bounds = []
-        origin_dist_thrshold = self.dist_bound / 2
+        origin_dist_thrshold = self.dist_bound
 
         print(f'\nNew Fragment {len(self.local_frag_idxs)}...')
         for i, data in tqdm(enumerate(self.dbloader)):
@@ -190,11 +178,17 @@ class Integrator(object):
                 bound_min = pcs.min(axis=0)
                 bound_max = pcs.max(axis=0)
                 # extend bound (for meshing)
-                bound_min[0] -= 1
-                bound_min[2] -= 1
-                bound_max[0] += 1
-                bound_max[2] += 1
+                # bound_min[0] -= 1
+                # bound_min[2] -= 1
+                # bound_max[0] += 1
+                # bound_max[2] += 1
                 bound = np.stack([bound_min, bound_max]).T
+
+                frag_origin = (bound[:,0] + bound[:,1]) / 2
+                bound_min = frag_origin - self.fine_grid_len * (self.vol_dim / 2)
+                bound_max = frag_origin + self.fine_grid_len * (self.vol_dim / 2)
+                bound = np.stack([bound_min, bound_max]).T
+
                 self.local_frag_bounds.append(bound)
                 self.local_frag_idxs.append(local_frag_i)
 
@@ -218,17 +212,21 @@ class Integrator(object):
         bound_min = pcs.min(axis=0)
         bound_max = pcs.max(axis=0)
         # extend bound (for meshing)
-        bound_min[0] -= 1
-        bound_min[2] -= 1
-        bound_max[0] += 1
-        bound_max[2] += 1
+        # bound_min[0] -= 1
+        # bound_min[2] -= 1
+        # bound_max[0] += 1
+        # bound_max[2] += 1
+        bound = np.stack([bound_min, bound_max]).T
+
+        frag_origin = (bound[:,0] + bound[:,1]) / 2
+        bound_min = frag_origin - self.fine_grid_len * (self.vol_dim / 2)
+        bound_max = frag_origin + self.fine_grid_len * (self.vol_dim / 2)
         bound = np.stack([bound_min, bound_max]).T
 
         print('Fragment indices:', local_frag_i)
         print('Bound:', bound)
         print()
 
-        # pdb.set_trace()
         self.local_frag_bounds.append(bound)
         self.local_frag_idxs.append(local_frag_i)
 
@@ -354,9 +352,12 @@ class Integrator(object):
         equi_grid = equi_grid.float().to(self.device)
         
         mask = mask.expand(-1, self.c[stage].shape[1], -1, -1, -1)
+        prob = prob.unsqueeze(1).expand(-1, self.c[stage].shape[1], -1, -1, -1)
         
         back_projected_feature = grid_sample(cam_feature, equi_grid.float(),
-                                    padding_mode='border', align_corners=True)
+                                    padding_mode='zeros', align_corners=True)
+        back_projected_prob = grid_sample(prob, equi_grid.float(),
+                                    padding_mode='zeros', align_corners=True)
         back_projected_depth = grid_sample(expanded_depth, equi_grid.float(),
                                     padding_mode='border', align_corners=True)
         
@@ -370,9 +371,10 @@ class Integrator(object):
         trunc_in_mask_cam = trunc_in_mask_cam.expand(-1, self.c[stage].shape[1], -1, -1, -1)
         back_mask_cam = back_mask_cam.expand(-1, self.c[stage].shape[1], -1, -1, -1)
 
-        mask = mask & dist_valid_mask_cam & trunc_in_mask_cam
-        # mask = mask & dist_valid_mask_cam & torch.logical_not(back_mask_cam)
-        # mask = mask & (back_projected_valid_vote_mask != 0)
+        # mask = mask & dist_valid_mask_cam & trunc_in_mask_cam
+        mask = mask & dist_valid_mask_cam & torch.logical_not(back_mask_cam)
+
+        # back_projected_feature = back_projected_feature * back_projected_prob
 
         back_projected_feature[mask == False] = 0
         
@@ -383,7 +385,6 @@ class Integrator(object):
         torch.cuda.empty_cache()
         
         return back_projected_feature.cpu()
-        # return back_projected_feature
 
     def run_omni(self, data):
         with torch.no_grad():

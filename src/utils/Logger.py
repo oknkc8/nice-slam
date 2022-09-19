@@ -34,11 +34,10 @@ class Logger(object):
         if self.verbose:
             print('Saved checkpoints at', path)
             
-    def log_omni(self, epoch, costfusion, grufusion, optimizer):
+    def log_omni(self, epoch, decoders, costfusion, grufusion, optimizer):
         path = os.path.join(self.ckptsdir, '{:05d}.tar'.format(epoch))
         torch.save({
-            'c': self.shared_c,
-            'decoder_state_dict': self.shared_decoders.state_dict(),
+            'decoder_state_dict': decoders.state_dict(),
             'grufusion_state_dict': {
                 'grid_middle': grufusion['grid_middle'].state_dict(),
                 'grid_fine': grufusion['grid_fine'].state_dict(),

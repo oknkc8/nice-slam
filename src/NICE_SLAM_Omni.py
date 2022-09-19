@@ -148,7 +148,7 @@ class NICE_SLAM_Omni():
             
         self.costfusion = self.mapper.costfusion
 
-        # self.load_pretrain_frag(cfg, '/data5/changho/nice-slam/output/underparking_sparse/41_debug_nice_occ_65_geo_feat_multiplyProb_use_pretrain_avg_nobias_48_16_fix_backmask_trunc1_newcostfusion_noshuffle_change_integration_localfrag_debugging/ckpts/00027.tar')
+        self.load_pretrain_frag(cfg, '/data5/changho/nice-slam/output/underparking_sparse_frag/21_nice_occ_600_geo_feat_multiplyProb_use_pretrain_variance_48_16_fix_nomask_trunc1_newcostfusion_noshuffle_localfrag_addJointIter5_normalizePoints_filtered_GN4_extendBound_addRandomBatch_addVarianceFusion_posencodingNerf_concatMean_sameDimBound_continue/ckpts/00000.tar')
         
         self.print_output_desc()
 
@@ -224,8 +224,8 @@ class NICE_SLAM_Omni():
         self.bound = torch.from_numpy((bound)*self.scale)
         bound_divisable = cfg['grid_len']['bound_divisable']
         # enlarge the bound a bit to allow it divisable by bound_divisable
-        self.bound[:, 1] = (((self.bound[:, 1]-self.bound[:, 0]) /
-                            bound_divisable).int()+1)*bound_divisable+self.bound[:, 0]
+        # self.bound[:, 1] = (((self.bound[:, 1]-self.bound[:, 0]) /
+        #                     bound_divisable).int()+1)*bound_divisable+self.bound[:, 0]
         if self.method == 'nice':
             self.shared_decoders.bound = self.bound
             self.shared_decoders.middle_decoder.bound = self.bound
@@ -287,8 +287,8 @@ class NICE_SLAM_Omni():
     def load_pretrain_frag(self, cfg, ckpt_path):
         print('Get ckpt : ', ckpt_path)
         ckpt = torch.load(ckpt_path, map_location=cfg['mapping']['device'])
-        self.shared_c = ckpt['c']
         self.shared_decoders.load_state_dict(ckpt['decoder_state_dict'])
+        self.mapper.decoders = self.shared_decoders
         
         self.mapper.grufusion['grid_middle'].load_state_dict(ckpt['grufusion_state_dict']['grid_middle'])
         self.mapper.grufusion['grid_fine'].load_state_dict(ckpt['grufusion_state_dict']['grid_fine'])
@@ -483,7 +483,6 @@ class NICE_SLAM_Omni():
                 idx = self.local_frag_idxs[frag_idx][i]
                 data = BatchCollator.collate([self.integrator.omnimvs[idx]])
                 self.integrator.run_omni(data)
-
             frag_datas.append(
                 {
                     'target_depths': self.integrator.target_depths,
@@ -525,12 +524,6 @@ class NICE_SLAM_Omni():
                     self.renderer.bound = self.bound
                     self.mesher.bound = self.bound
                     self.mesher.marching_cubes_bound = self.bound
-                    # extend bound (for meshing)
-                    self.mesher.marching_cubes_bound[0, 0] -= 1
-                    self.mesher.marching_cubes_bound[2, 0] -= 1
-                    self.mesher.marching_cubes_bound[0, 1] += 1
-                    self.mesher.marching_cubes_bound[2, 1] += 1
-
 
                     self.mapper.run_omni_frag(epoch, iter, frag_idx, idx, save_log=(iter == (num_iters//joint_num_iters)-1))
 
