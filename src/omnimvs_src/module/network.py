@@ -17,7 +17,7 @@ from src.omni_utils.torchsparse_utils import *
 
 import pdb
 
-torch.autograd.set_detect_anomaly(True)
+# torch.autograd.set_detect_anomaly(True)
 
 class FeatureLayers(torch.nn.Module):
     def __init__(self, CH=32, use_rgb=False):
@@ -404,6 +404,69 @@ class CostFusion_Sparse(nn.Module):
         return y4
 """
         
+
+class FeatureNet_Panorama(torch.nn.Module):
+    def __init__(self):
+        super(FeatureNet_Panorama, self).__init__()
+
+        self.conv1 = ConvBnReLU2D(3, 16)
+        self.conv2 = ConvBnReLU2D(16, 16)
+        
+        self.conv3 = ConvBnReLU2D(16, 32, stride=2)
+        self.conv4 = ConvBnReLU2D(32, 32)
+        
+        self.conv5 = ConvBnReLU2D(32, 64, stride=2)
+        self.conv6 = ConvBnReLU2D(64, 64)
+        
+        self.conv7 = DeConvBnReLU2D(64, 64, stride=2)
+        self.conv8 = DeConvBnReLU2D(64, 64, stride=2)
+        self.conv9 = DeConvBnReLU2D(64, 64)
+        
+        self.residual1 = ConvBnReLU2D(16, 64)
+        self.residual2 = ConvBnReLU2D(32, 64)
+
+        self.weight_initialization()
+
+    def weight_initialization(self):
+        for m in self.modules():
+            if isinstance(m, nn.GroupNorm):
+                nn.init.constant_(m.weight, 1)
+                nn.init.constant_(m.bias, 0)
+            elif isinstance(m, nn.Conv2d):
+                nn.init.xavier_uniform_(m.weight)
+                if m.bias is not None:
+                    nn.init.zeros_(m.bias)
+            elif isinstance(m, nn.ConvTranspose2d):
+                nn.init.xavier_uniform_(m.weight)
+                if m.bias is not None:
+                    nn.init.zeros_(m.bias)
+
+    def forward(self, x):
+        c1 = self.conv1(x)
+        c2 = self.conv2(c1)
+        
+        c3 = self.conv3(c2)
+        c4 = self.conv4(c3)
+
+        x = self.conv5(c4)
+        x = self.conv6(x)
+        
+        res2 = self.residual1(c2)
+        res4 = self.residual2(c4)
+        
+        x = self.conv7(x, res4)
+        x = self.conv8(x, res2)
+        x = self.conv9(x)
+        
+        del res2
+        del res4
+        del c1
+        del c2
+        del c3
+        del c4
+        
+        return x
+
 
 class OmniMVSNet(torch.nn.Module):
 

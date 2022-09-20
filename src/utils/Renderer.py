@@ -4,7 +4,7 @@ from src.common import get_rays, get_rays_omni, raw2outputs_nerf_color, sample_p
 
 import pdb
 
-torch.autograd.set_detect_anomaly(True)
+# torch.autograd.set_detect_anomaly(True)
 
 class Renderer(object):
     def __init__(self, cfg, args, slam, points_batch_size=500000, ray_batch_size=100000):

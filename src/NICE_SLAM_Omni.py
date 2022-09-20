@@ -23,7 +23,7 @@ from src.utils.Renderer import Renderer
 torch.multiprocessing.set_sharing_strategy('file_system')
 
 import pdb
-torch.autograd.set_detect_anomaly(True)
+# torch.autograd.set_detect_anomaly(True)
 
 class NICE_SLAM_Omni():
     """
@@ -148,7 +148,10 @@ class NICE_SLAM_Omni():
             
         self.costfusion = self.mapper.costfusion
 
-        self.load_pretrain_frag(cfg, '/data5/changho/nice-slam/output/underparking_sparse_frag/21_nice_occ_600_geo_feat_multiplyProb_use_pretrain_variance_48_16_fix_nomask_trunc1_newcostfusion_noshuffle_localfrag_addJointIter5_normalizePoints_filtered_GN4_extendBound_addRandomBatch_addVarianceFusion_posencodingNerf_concatMean_sameDimBound_continue/ckpts/00000.tar')
+        self.finetune = self.cfg['model']['finetune']
+        self.train_continue = self.cfg['model']['train_continue']
+        if self.finetune or self.train_continue:
+            self.load_pretrain_frag(cfg, self.cfg['model']['ckpt_path'])
         
         self.print_output_desc()
 
@@ -525,7 +528,9 @@ class NICE_SLAM_Omni():
                     self.mesher.bound = self.bound
                     self.mesher.marching_cubes_bound = self.bound
 
-                    self.mapper.run_omni_frag(epoch, iter, frag_idx, idx, save_log=(iter == (num_iters//joint_num_iters)-1))
+                    self.mapper.run_omni_frag(epoch, iter, frag_idx, idx,
+                                              save_log=(iter == (num_iters//joint_num_iters)-1),
+                                              finetune=self.finetune)
 
                     torch.cuda.empty_cache()
                 

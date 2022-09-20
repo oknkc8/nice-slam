@@ -162,7 +162,7 @@ def get_ij_from_rays_omni(pts, c2w, H, W, phi_deg, phi_max_deg, device):
     # return concat([equi_x, equi_y], axis=0)
 
 
-def select_uv(i, j, n, depth, color, device='cuda:0'):
+def select_uv(i, j, n, depth, color, entropy=None, device='cuda:0'):
     """
     Select n uv from dense uv.
 
@@ -177,24 +177,32 @@ def select_uv(i, j, n, depth, color, device='cuda:0'):
     color = color.reshape(-1, 3)
     depth = depth[indices]  # (n)
     color = color[indices]  # (n,3)
-    return i, j, depth, color
+    if entropy is not None:
+        entropy = entropy.reshape(-1)
+        entropy = entropy[indices]
+        return i, j, depth, color, entropy
+    return i, j, depth, color, None
 
 
-def get_sample_uv(H0, H1, W0, W1, n, depth, color, device='cuda:0'):
+def get_sample_uv(H0, H1, W0, W1, n, depth, color, entropy=None, device='cuda:0'):
     """
     Sample n uv coordinates from an image region H0..H1, W0..W1
 
     """
     depth = depth[H0:H1, W0:W1]
     color = color[H0:H1, W0:W1]
+    if entropy is not None:
+        entropy = entropy[H0:H1, W0:W1]
     i, j = torch.meshgrid(torch.linspace(
         W0, W1-1, W1-W0).to(device), torch.linspace(H0, H1-1, H1-H0).to(device))
     i = i.t()  # transpose
     j = j.t()
-    i, j, depth, color = select_uv(i, j, n, depth, color, device=device)
+    i, j, depth, color, entropy = select_uv(i, j, n, depth, color, entropy, device=device)
+    if entropy is not None:
+        return i, j, depth, color, entropy
     return i, j, depth, color
 
-def select_uv_omni(i, j, n, depth, color, gt_depth, gt_color, device='cuda:0'):
+def select_uv_omni(i, j, n, depth, color, entropy, gt_depth, gt_color, device='cuda:0'):
     """
     Select n uv from dense uv.
 
@@ -207,30 +215,33 @@ def select_uv_omni(i, j, n, depth, color, gt_depth, gt_color, device='cuda:0'):
     j = j[indices]  # (n)
     depth = depth.reshape(-1)
     color = color.reshape(-1, 3)
+    entropy = entropy.reshape(-1)
     depth = depth[indices]  # (n)
     color = color[indices]  # (n,3)
+    entropy = entropy[indices]  # (n,3)
     gt_depth = gt_depth.reshape(-1)
     gt_color = gt_color.reshape(-1, 3)
     gt_depth = gt_depth[indices]  # (n)
     gt_color = gt_color[indices]  # (n,3)
-    return i, j, depth, color, gt_depth, gt_color
+    return i, j, depth, color, entropy, gt_depth, gt_color
 
 
-def get_sample_uv_omni(H0, H1, W0, W1, n, depth, color, gt_depth, gt_color, device='cuda:0'):
+def get_sample_uv_omni(H0, H1, W0, W1, n, depth, color, entropy, gt_depth, gt_color, device='cuda:0'):
     """
     Sample n uv coordinates from an image region H0..H1, W0..W1
 
     """
     depth = depth[H0:H1, W0:W1]
     color = color[H0:H1, W0:W1]
+    entropy = entropy[H0:H1, W0:W1]
     gt_depth = gt_depth[H0:H1, W0:W1]
     gt_color = gt_color[H0:H1, W0:W1]
     i, j = torch.meshgrid(torch.linspace(
         W0, W1-1, W1-W0).to(device), torch.linspace(H0, H1-1, H1-H0).to(device))
     i = i.t()  # transpose
     j = j.t()
-    i, j, depth, color, gt_depth, gt_color = select_uv_omni(i, j, n, depth, color, gt_depth, gt_color, device=device)
-    return i, j, depth, color, gt_depth, gt_color
+    i, j, depth, color, entropy, gt_depth, gt_color = select_uv_omni(i, j, n, depth, color, entropy, gt_depth, gt_color, device=device)
+    return i, j, depth, color, entropy, gt_depth, gt_color
 
 
 def get_samples(H0, H1, W0, W1, n, H, W, fx, fy, cx, cy, c2w, depth, color, device):
@@ -245,22 +256,28 @@ def get_samples(H0, H1, W0, W1, n, H, W, fx, fy, cx, cy, c2w, depth, color, devi
     return rays_o, rays_d, sample_depth, sample_color
 
 
-def get_samples_omni(H0, H1, W0, W1, n, H, W, phi_deg, phi_max_deg, c2w, depth, color, device, gt_depth=None, gt_color=None):
+def get_samples_omni(H0, H1, W0, W1, n, H, W, phi_deg, phi_max_deg, c2w, depth, color, device, entropy=None, gt_depth=None, gt_color=None):
     """
     Get n rays from the image region H0..H1, W0..W1.
     c2w is its camera pose and depth/color is the corresponding image tensor.
 
     """
-    if gt_depth is None:
+    if entropy is None:
         i, j, sample_depth, sample_color = get_sample_uv(
             H0, H1, W0, W1, n, depth, color, device=device)
         rays_o, rays_d = get_rays_from_uv_omni(i, j, c2w, H, W, phi_deg, phi_max_deg, device)
         return rays_o, rays_d, sample_depth, sample_color, None, None
-    else:
-        i, j, sample_depth, sample_color, sample_gt_depth, sample_gt_color = get_sample_uv_omni(
-            H0, H1, W0, W1, n, depth, color, gt_depth, gt_color, device=device)
+    
+    if gt_depth is None:
+        i, j, sample_depth, sample_color, sample_entropy = get_sample_uv(
+            H0, H1, W0, W1, n, depth, color, entropy, device=device)
         rays_o, rays_d = get_rays_from_uv_omni(i, j, c2w, H, W, phi_deg, phi_max_deg, device)
-        return rays_o, rays_d, sample_depth, sample_color, sample_gt_depth, sample_gt_color
+        return rays_o, rays_d, sample_depth, sample_color, sample_entropy, None, None
+    else:
+        i, j, sample_depth, sample_color, sample_entropy, sample_gt_depth, sample_gt_color = get_sample_uv_omni(
+            H0, H1, W0, W1, n, depth, color, entropy, gt_depth, gt_color, device=device)
+        rays_o, rays_d = get_rays_from_uv_omni(i, j, c2w, H, W, phi_deg, phi_max_deg, device)
+        return rays_o, rays_d, sample_depth, sample_color, sample_entropy, sample_gt_depth, sample_gt_color
 
 
 def quad2rotation(quad):

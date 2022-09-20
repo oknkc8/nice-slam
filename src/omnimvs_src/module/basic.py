@@ -74,6 +74,53 @@ class DeConv3D(torch.nn.Module):
             x = F.relu(x)
         return x
 
+class ConvBnReLU2D(torch.nn.Module):
+    def __init__(self, ch_in, ch_out, kernel_size=3, stride=1, pad=1,
+                 bn=True, relu=True, bias=True):
+        super(ConvBnReLU2D, self).__init__()
+        self.conv = torch.nn.Conv2d(ch_in, ch_out, kernel_size,
+                                    stride, padding=pad, bias=bias)
+        self.relu = relu
+        self.bn = None
+        if bn:
+            self.bn = torch.nn.GroupNorm(4, ch_out)
+
+    def forward(self, x, residual=None):
+        x = self.conv(x)
+        if self.bn is not None:
+            x= self.bn(x)
+        if residual is not None:
+            if x.shape[-2:] != residual.shape[-2:]:
+                x = F.interpolate(x, residual.shape[-2:], mode='bilinear', align_corners=True)
+            x = x + residual
+        if self.relu:
+            return F.relu(x)
+        else:
+            return x
+        
+class DeConvBnReLU2D(torch.nn.Module):
+    def __init__(self, ch_in, ch_out, kernel_size=3, stride=1, pad=1, out_pad=0,
+                 bn=True, relu=True, bias=True):
+        super(DeConvBnReLU2D, self).__init__()
+        self.conv = torch.nn.ConvTranspose2d(ch_in, ch_out, kernel_size,
+                                             stride, padding=pad, output_padding=out_pad, bias=bias)
+        self.relu = relu
+        self.bn = None
+        if bn:
+            self.bn = torch.nn.GroupNorm(4, ch_out)
+
+    def forward(self, x, residual=None):
+        x = self.conv(x)
+        if self.bn is not None:
+            x= self.bn(x)
+        if residual is not None:
+            if x.shape[-2:] != residual.shape[-2:]:
+                x = F.interpolate(x, residual.shape[-2:], mode='bilinear', align_corners=True)
+            x = x + residual
+        if self.relu:
+            return F.relu(x)
+        else:
+            return x
 
 class ConvBnReLU3D(torch.nn.Module):
     def __init__(self, ch_in, ch_out, kernel_size=3, stride=1, pad=1,

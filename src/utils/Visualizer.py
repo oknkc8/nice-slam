@@ -298,7 +298,7 @@ class Visualizer(object):
 
 
     def vis_omni_frag(self, epoch, iter, joint_iter, frag_idx, use_depth, use_color, c2w_or_camera_tensor, c,
-            decoders, stage, summary_writer=None, gt_depth=None, gt_color=None):
+            decoders, stage, summary_writer=None, gt_depth=None, gt_color=None, entropy=None, finetune=False):
         """
         Visualization of depth, color images and save to file.
 
@@ -343,6 +343,7 @@ class Visualizer(object):
                 depth_np = depth.detach().cpu().numpy()
                 color_np = color.detach().cpu().numpy()
                 use_depth_np = use_depth.detach().cpu().numpy()
+                entropy_np = entropy.detach().cpu().numpy()
                 depth_residual = np.abs(gt_depth_np - depth_np)
                 depth_residual[gt_depth_np == 0.0] = 0.0
                 color_residual = np.abs(gt_color_np - color_np)
@@ -385,6 +386,7 @@ class Visualizer(object):
                 # gt_depth_np = colorMap('plasma', gt_depth_np, gt_min_depth, gt_max_depth)
                 # depth_np = colorMap('plasma', depth_np, gen_min_depth, gen_max_depth)
                 depth_residual = colorMap('plasma', depth_residual, 0, np.max(depth_residual))
+                entropy_np = colorMap('inferno', entropy_np, 0, np.max(entropy_np))
                                 
                 # prev_1 = cv2.hconcat([gt_depth_np.astype(np.float64), depth_np.astype(np.float64), depth_residual.astype(np.float64)])
                 # prev_2 = cv2.hconcat([gt_invdepth_np.astype(np.float64), invdepth_np.astype(np.float64), invdepth_residual.astype(np.float64)])
@@ -402,16 +404,34 @@ class Visualizer(object):
                 gt_color_np = np.pad(gt_color_np, ((2,2), (2,2), (0,0)), 'constant', constant_values=1)
                 color_np = np.pad(color_np, ((2,2), (2,2), (0,0)), 'constant', constant_values=1)
                 color_residual = np.pad(color_residual, ((2,2), (2,2), (0,0)), 'constant', constant_values=1)
+                entropy_np = np.pad(entropy_np, ((2,2), (2,2), (0,0)), 'constant', constant_values=1)
                 
                 # prev_1 = cv2.hconcat([gt_depth_np.astype(np.float64), depth_np.astype(np.float64), depth_np_2.astype(np.float64)])
                 # prev_2 = cv2.hconcat([gt_invdepth_np.astype(np.float64), invdepth_np.astype(np.float64), invdepth_np_2.astype(np.float64)])
                 # prev_3 = cv2.hconcat([gt_color_np*255, color_np*255, color_residual*255])                
                 # prev_output = np.round(cv2.vconcat([prev_1, prev_2, prev_3])).astype(np.uint8)
                 
-                prev_1 = cv2.hconcat([gt_depth_np.astype(np.float64), depth_np.astype(np.float64)])
-                prev_2 = cv2.hconcat([gt_invdepth_np.astype(np.float64), invdepth_np.astype(np.float64)])
-                # prev_3 = cv2.hconcat([gt_color_np*255, color_np*255])
-                prev_3 = cv2.hconcat([gt_color_np*255, use_invdepth_np.astype(np.float64)])
+                if not finetune:
+                    if not 'color' in stage:
+                        prev_1 = cv2.hconcat([gt_depth_np.astype(np.float64), depth_np.astype(np.float64)])
+                        prev_2 = cv2.hconcat([gt_invdepth_np.astype(np.float64), invdepth_np.astype(np.float64)])
+                        # prev_3 = cv2.hconcat([gt_color_np*255, color_np*255])
+                        prev_3 = cv2.hconcat([gt_color_np*255, use_invdepth_np.astype(np.float64)])
+                    else:
+                        prev_1 = cv2.hconcat([gt_depth_np.astype(np.float64), use_invdepth_np.astype(np.float64)])
+                        prev_2 = cv2.hconcat([gt_invdepth_np.astype(np.float64), invdepth_np.astype(np.float64)])
+                        prev_3 = cv2.hconcat([gt_color_np*255, color_np*255])
+                else:
+                    if not 'color' in stage:
+                        prev_1 = cv2.hconcat([gt_invdepth_np.astype(np.float64), depth_np.astype(np.float64)])
+                        prev_2 = cv2.hconcat([use_invdepth_np.astype(np.float64), invdepth_np.astype(np.float64)])
+                        # prev_3 = cv2.hconcat([gt_color_np*255, color_np*255])
+                        prev_3 = cv2.hconcat([gt_color_np*255, entropy_np.astype(np.float64)])
+                    else:
+                        prev_1 = cv2.hconcat([gt_invdepth_np.astype(np.float64), entropy_np.astype(np.float64)])
+                        prev_2 = cv2.hconcat([use_invdepth_np.astype(np.float64), invdepth_np.astype(np.float64)])
+                        prev_3 = cv2.hconcat([gt_color_np*255, color_np*255])
+                    stage = 'finetune'
                 prev_output = np.round(cv2.vconcat([prev_1, prev_2, prev_3])).astype(np.uint8)
                 
                 prev_output = cv2.cvtColor(prev_output, cv2.COLOR_RGB2BGR)

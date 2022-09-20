@@ -31,7 +31,7 @@ from src.omni_utils.sensor_data import SensorDataReader, SensorDataType
 import src.omni_utils.dbhelper
 
 import pdb
-torch.autograd.set_detect_anomaly(True)
+# torch.autograd.set_detect_anomaly(True)
 
 def getEquirectCoordinate(
         pts: np.ndarray, equirect_size: Tuple[int, int],
@@ -524,7 +524,7 @@ class OmniMVS(torch.utils.data.Dataset):
         _opts = Edict()
         #_opts.img_fmt = 'cam%d/%05d.png' # [cam_idx, fidx]
         _opts.img_fmt = 'cam%d_square_832/%05d.png' # [cam_idx, fidx]
-        _opts.gt_depth_fmt = 'omnidepth_gt_%d/%05d.tiff' # [equi_w, fidx]
+        _opts.gt_depth_fmt = 'cam_center_square_%d_depth/%05d.tiff' # [equi_w, fidx]
         _opts.gt_img_fmt = 'cam_center_square_%d/%05d.png' #[equi_w, fidx]
         _opts.read_input_image = True # for evaluation, False if read only GT
         _opts.start, _opts.step, _opts.end = 0, 1, 4061 # frame read indices
@@ -660,6 +660,13 @@ class OmniMVS(torch.utils.data.Dataset):
             opts.end = 2049
             opts.train_idx = list(range(1, 2049))
             opts.test_idx = list(range(1, 2049))
+            opts.min_depth = 0.3
+            opts.gt_phi = 90
+            opts.dtype = 'gt'
+            # opts.dist_threshold = 10
+        elif self.dbname == 'garage_nerf':
+            opts.gt_depth_fmt = 'cam_center_square_%d_depth/%05d.tiff' # [equi_w, fidx]
+            opts.gt_img_fmt = 'cam_center_square_%d/%05d.png' #[equi_w, fidx]
             opts.min_depth = 0.3
             opts.gt_phi = 90
             opts.dtype = 'gt'
@@ -1418,6 +1425,7 @@ class OmniMVS(torch.utils.data.Dataset):
         opts = argparse(opts, args)
         imgs, raw_imgs, gt, valid = None, None, None, None
         gt_img = None
+        gt_invdepth = None
         if read_input_image:
             input_images = self.loadImages(
                 fidx, out_raw_imgs=True, use_rgb=self.opts.use_rgb,

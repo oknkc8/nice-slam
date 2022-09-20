@@ -17,7 +17,7 @@ from torch.utils.data.dataloader import DataLoader
 from torchsparse.tensor import SparseTensor
 
 from src.omnimvs_src.omnimvs import *
-from src.omnimvs_src.module.network import OmniMVSNet, GRUFusion
+from src.omnimvs_src.module.network import OmniMVSNet, GRUFusion, FeatureNet_Panorama
 from src.omnimvs_src.module.network_fast import OmniMVSNet as OmniMVSNetFast
 from src.omnimvs_src.module.loss_functions import *
 from src.omnimvs_src.module.basic_sparse import FilteringConv
@@ -31,7 +31,7 @@ import matplotlib.pyplot as plt
 
 import pdb
 
-torch.autograd.set_detect_anomaly(True)
+# torch.autograd.set_detect_anomaly(True)
 
 class Integrator(object):
     """
@@ -103,6 +103,8 @@ class Integrator(object):
         self.n_img = len(self.dbloader)
         self.n_frames = opts.n_frames
         self.dist_bound = opts.dist_bound
+        
+        self.featurenet_pano = FeatureNet_Panorama().to(self.device)
         
         self.make_local_fragment_dbloader()
         
@@ -297,7 +299,7 @@ class Integrator(object):
         
         return prob, depth.to(self.mapper_device), color.to(self.mapper_device), entropy.to(self.mapper_device), gt_depth, gt_color
         
-    def backproject_features(self, stage, raw_feat, geo_feat, prob, c2w):
+    def backproject_features(self, stage, raw_feat, geo_feat, prob, c2w, color=None):
         dist_threshold = 30
         
         """fusion features"""
@@ -305,10 +307,17 @@ class Integrator(object):
         # # geo_feat = geo_feat.to(self.mapper_device)
         # prob = prob.to(self.device)
         
-        geo_feat = F.interpolate(geo_feat, scale_factor=2, mode='trilinear', align_corners=True)
-        geo_feat = geo_feat * prob
-        # raw_feat = F.interpolate(raw_feat, scale_factor=2, mode='trilinear', align_corners=True)
-        # raw_feat = raw_feat * prob
+        if not ('color' in stage):
+            geo_feat = F.interpolate(geo_feat, scale_factor=2, mode='trilinear', align_corners=True)
+            geo_feat = geo_feat * prob.unsqueeze(1)
+            cam_feature = geo_feat
+            # raw_feat = F.interpolate(raw_feat, scale_factor=2, mode='trilinear', align_corners=True)
+            # raw_feat = raw_feat * prob
+        else:
+            color = color.permute(2, 0, 1).to(self.device)
+            color_feat = self.featurenet_pano(color.unsqueeze(0)).unsqueeze(2)
+            # color_feat = color_feat.expand(-1, -1, prob.shape[1], -1, -1)
+            cam_feature = color_feat
         
         trunc_dist = self.cfg['grid_len'][stage[5:]]
         
@@ -317,7 +326,7 @@ class Integrator(object):
         depth = 1.0 / self.omnimvs.indexToInvdepth(index)
         expanded_depth = depth.expand(prob.shape[1], -1, -1)[None, None, ...]
         
-        cam_feature = geo_feat # grid channel: 64
+        # cam_feature = geo_feat # grid channel: 64
         # cam_feature = raw_feat # grid channel: 64
 
         w2c = torch.tensor(inverseTransform(c2w.cpu().numpy())).to(self.device)
@@ -401,7 +410,8 @@ class Integrator(object):
         for stage, _ in self.c.items():
             if 'coarse' in stage:
                 continue
-            self.backproj_feats[stage].append(self.backproject_features(stage, raw_feat, geo_feat, prob, c2w))
+            self.backproj_feats[stage].append(
+                self.backproject_features(stage, raw_feat, geo_feat, prob, c2w, color if 'color' in stage else None))
         
         self.target_depths.append(gt_depth)
         self.target_colors.append(gt_color)
