@@ -1,0 +1,109 @@
+
+method: nice
+dataset: 'ocam_panorama'
+occupancy: True
+data:
+  input_folder: /data/multipleye/garage_nerf
+  # output: output/inference/garage/21_02_inference_016_finetune_withOmni_entropy_nofinetune
+  output: output/garage/01_applyColorNet
+  config_file: capture.yaml
+  poses_file: trajectory.txt
+grid_len:
+  coarse: 2
+  middle: 0.32
+  fine: 0.16
+  color: 0.16
+  bound_divisable: 0.32
+  vol_dim: [144, 48, 144]
+pretrained_decoders:
+  use: True
+meshing:
+  level_set: 0
+  resolution: 0.04 # change to 512 for higher resolution geometry
+  device: "cuda:0"
+  clean_mesh: True
+mapping:
+  device: "cuda:0"
+  BA: False
+  middle_iter_ratio: 0.0
+  fine_iter_ratio: 1.0
+  every_frame: 1
+  vis_freq: 1
+  vis_inside_freq: 1
+  mesh_freq: 1
+  ckpt_freq: 1
+  keyframe_every: 1
+  mapping_window_size: 10
+  frustum_feature_selection: False
+  pixels: 7500
+  iters_first: 10
+  iters: 1
+  joint_iters: 1
+  w_color_loss: 0.1
+  # bound: [[-12.39115295,  10.64884705], [ -4.4706484, 3.2093516 ], [-12.29228741, 10.74771259]] #0.16
+  # marching_cubes_bound: [[-12.39115295,  10.64884705], [ -4.4706484, 3.2093516 ], [-12.29228741, 10.74771259]] #0.16
+  bound: [[-6.63115295,  4.88884705], [0.5506484,   3.2893516 ], [-6.53228741,  4.98771259]] #0.08
+  marching_cubes_bound: [[-6.63115295,  4.88884705], [0.5506484,   3.2893516 ], [-6.53228741,  4.98771259]] #0.08
+  no_vis_on_first_frame: False
+  stage:
+    middle:
+      decoders_lr: 0.000001
+      # decoders_lr: 0.0
+    fine:
+      decoders_lr: 0.000001
+      # decoders_lr: 0.0
+    color:
+      decoders_lr: 0.000001
+      # decoders_lr: 0.0
+cam:
+  H: 160
+  W: 640
+  crop_edge: 0
+  method: 'panorama'
+  phi_deg: -45.0
+  phi_max_deg: 45.0
+omnimvs:
+  device: "cuda:0"
+  config_file: config.yaml
+  network_type: default
+  snapshot_path: pretrained/omnimvs/full3-2x-rgb-reflect2_42.pt
+  dbname: garage_nerf
+  # db_root: /data5/changho/data
+  db_root: /data/multipleye/
+  db_config_idxs: []
+  resp_volume_freeze: True
+  net_freeze: False
+  lr: 0.0001
+  n_frames: 10
+  dist_bound: 10.0
+  omnimvs_opts:
+    poses_file: trajectory_train.txt
+    dtype: gt
+    step: 1
+    phi_deg: -45
+    phi_max_deg: 45
+    num_invdepth: 192
+    equirect_size: [160, 640]
+    out_cost: True
+    lt_equirect_sample_ratio: 1
+    lt_depth_sample_ratio: 2
+  net_opts:
+    CH: 32
+    circular_pad: True
+    upsample: False
+    use_rgb: True
+rendering:
+  N_samples: 128
+  N_surface: 48
+  N_importance: 16
+  lindisp: False
+  perturb: 0.0
+model:
+  c_dim: 32
+  fusion_method: variance
+  pos_embedding_method: nerf
+  convgru_ks: 1
+  feature_fusion: False
+  train_continue: False
+  finetune: False
+  ckpt_path: pretrained/00002_21.tar
