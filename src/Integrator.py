@@ -2,6 +2,7 @@ from curses import raw
 from math import trunc
 import os
 import time
+import gc
 from tkinter import N
 
 import cv2
@@ -110,7 +111,7 @@ class Integrator(object):
         
         if not osp.exists(opts.snapshot_path):
             sys.exit('%s does not exsits' % (opts.snapshot_path))
-        snapshot = torch.load(opts.snapshot_path)
+        snapshot = torch.load(opts.snapshot_path, map_location=self.device)
         self.mvsnet.load_state_dict(snapshot['net_state_dict'])
         
         self.grid_cams = buildIndividualLookupTable(self.omnimvs.ocams,
@@ -135,6 +136,26 @@ class Integrator(object):
         self.raw_feats = slam.raw_feats
         self.probs = slam.probs
         self.target_c2w = slam.target_c2w
+
+    def del_params(self):
+        del self.c
+        del self.coord
+        del self.bound
+        del self.grid_coord
+        del self.vote
+        
+        del self.probs
+        del self.target_depths
+        del self.target_colors
+        del self.use_depths
+        del self.use_colors
+        del self.target_entropys
+        del self.target_c2w
+        del self.backproj_feats
+
+        gc.collect()
+        with torch.cuda.device(self.device):
+            torch.cuda.empty_cache()
 
     def make_local_fragment_dbloader(self):
         self.local_frag_idxs = []
@@ -297,9 +318,10 @@ class Integrator(object):
         depth = depth.squeeze(0)
         color = color.permute(1, 2, 0) / 255.
         
-        return prob, depth.to(self.mapper_device), color.to(self.mapper_device), entropy.to(self.mapper_device), gt_depth, gt_color
+        return prob.cpu(), depth.cpu(), color.cpu(), entropy.cpu(), gt_depth.cpu(), gt_color.cpu()
+        # return prob, depth, color, entropy, gt_depth, gt_color
         
-    def backproject_features(self, stage, raw_feat, geo_feat, prob, c2w, color=None):
+    def backproject_features(self, stage, raw_feat, geo_feat, prob, c2w):
         dist_threshold = 30
         
         """fusion features"""
@@ -307,17 +329,12 @@ class Integrator(object):
         # # geo_feat = geo_feat.to(self.mapper_device)
         # prob = prob.to(self.device)
         
-        if not ('color' in stage):
-            geo_feat = F.interpolate(geo_feat, scale_factor=2, mode='trilinear', align_corners=True)
-            geo_feat = geo_feat * prob.unsqueeze(1)
-            cam_feature = geo_feat
-            # raw_feat = F.interpolate(raw_feat, scale_factor=2, mode='trilinear', align_corners=True)
-            # raw_feat = raw_feat * prob
-        else:
-            color = color.permute(2, 0, 1).to(self.device)
-            color_feat = self.featurenet_pano(color.unsqueeze(0)).unsqueeze(2)
-            # color_feat = color_feat.expand(-1, -1, prob.shape[1], -1, -1)
-            cam_feature = color_feat
+        geo_feat = F.interpolate(geo_feat, scale_factor=2, mode='trilinear', align_corners=True)
+        geo_feat = geo_feat * prob.unsqueeze(1)
+        cam_feature = geo_feat
+        # raw_feat = F.interpolate(raw_feat, scale_factor=2, mode='trilinear', align_corners=True)
+        # raw_feat = raw_feat * prob
+        
         
         trunc_dist = self.cfg['grid_len'][stage[5:]]
         
@@ -395,6 +412,155 @@ class Integrator(object):
         
         return back_projected_feature.cpu()
 
+    def backproject_features_color(self, stage, prob, c2w, device):
+        dist_threshold = 30
+        
+        """fusion features"""
+        # raw_feat = raw_feat.to(self.device)
+        # # geo_feat = geo_feat.to(self.mapper_device)
+        # cam_feature = feat.unsqueeze(0)
+        with torch.no_grad():
+            prob = prob.to(device)
+            
+            trunc_dist = self.cfg['grid_len'][stage[5:]]
+            
+            # with torch.no_grad():
+            # color = color.permute(2, 0, 1).unsqueeze(0).unsqueeze(-3).to(device)
+            index = torch.mul(prob, self.omnimvs.invdepth_indices.to(device))
+            index = torch.sum(index, 1)
+            depth = 1.0 / self.omnimvs.indexToInvdepth(index).to(device)
+            expanded_depth = depth.expand(prob.shape[1], -1, -1)[None, None, ...]
+
+            # del index
+            # del depth
+
+            # cam_feature = geo_feat # grid channel: 64
+            # cam_feature = raw_feat # grid channel: 64
+
+            w2c = torch.tensor(inverseTransform(c2w.cpu().numpy())).to(device).detach()
+            
+            """back-project feature"""
+            pts_world = self.coord[stage].reshape(3, -1).to(device).detach()
+            pts_world = pts_world[[2,1,0]]
+            pts_cam = applyTransform(w2c, pts_world)
+            # pts_cam[0, :] *= -1
+            pts_cam[1, :] *= -1
+            pts_cam[2, :] *= -1
+            depth_cam = sqrt(torch.sum(pts_cam ** 2, 0))
+            invdepth_cam = 1.0 / depth_cam
+            
+            equi_pix = getEquirectCoordinate(
+                    pts_cam, self.equirect_size, self.phi_deg, self.phi_max_deg)
+            equi_didx = self.omnimvs.invdepthToIndex(invdepth_cam).to(device)
+
+            height, width = self.equirect_size
+            
+            equi_grid_x = equi_pix[0, :] / (width - 1) * 2 - 1
+            equi_grid_y = equi_pix[1, :] / (height - 1) * 2 - 1                
+            equi_grid_d = (equi_didx / (self.num_invdepth - 1)) * 2 - 1
+
+            # del equi_pix
+            # del equi_didx
+            
+            equi_grid_x = equi_grid_x.reshape(*self.coord[stage].shape[-3:])
+            equi_grid_y = equi_grid_y.reshape(*self.coord[stage].shape[-3:])
+            equi_grid_d = equi_grid_d.reshape(*self.coord[stage].shape[-3:])
+            
+            equi_grid = torch.stack([equi_grid_x, equi_grid_y, equi_grid_d], dim=-1).unsqueeze(0)
+
+            # del equi_grid_x
+            # del equi_grid_y
+            # del equi_grid_d
+            
+            mask_ori = ((equi_grid.abs() <= 1.0).sum(dim=-1) == 3).unsqueeze(0)
+            equi_grid = equi_grid.float().to(device)
+            
+            mask_f = mask_ori.expand(-1, 64, -1, -1, -1)
+            prob = prob.unsqueeze(1).expand(-1, 64, -1, -1, -1)
+
+            back_projected_prob = grid_sample(prob, equi_grid.float(),
+                                        padding_mode='zeros', align_corners=True)
+            back_projected_depth = grid_sample(expanded_depth, equi_grid.float(),
+                                        padding_mode='border', align_corners=True)
+
+            depth_cam = depth_cam.reshape(*self.coord[stage].shape[-3:])[None, None, ...]
+            front_trunc_depth_cam = back_projected_depth - trunc_dist
+            back_trunc_depth_cam = back_projected_depth + trunc_dist
+            dist_valid_mask_cam = depth_cam <= dist_threshold
+            trunc_in_mask_cam = (depth_cam >= front_trunc_depth_cam) & (depth_cam <= back_trunc_depth_cam)
+            back_mask_cam = depth_cam > back_trunc_depth_cam
+
+            trunc_in_mask_cam = trunc_in_mask_cam.expand(-1, 64, -1, -1, -1)
+            back_mask_cam = back_mask_cam.expand(-1, 64, -1, -1, -1)
+
+            # mask = mask & dist_valid_mask_cam & trunc_in_mask_cam
+            mask_feat = mask_f & dist_valid_mask_cam & torch.logical_not(back_mask_cam)
+            # del mask_f
+            # del mask_ori
+            
+            # del c2w
+            # del w2c
+            # del pts_world
+            # del pts_cam
+
+            # del depth_cam
+            # del invdepth_cam
+            # del front_trunc_depth_cam
+            # del back_trunc_depth_cam
+            # del dist_valid_mask_cam
+            # del trunc_in_mask_cam
+            # del back_mask_cam
+            # del expanded_depth
+
+            # del prob
+            # del back_projected_depth
+            
+            # gc.collect()
+            # with torch.cuda.device(device):
+            #     torch.cuda.empty_cache()
+
+            return equi_grid.float(), back_projected_prob, mask_feat
+
+            back_projected_color = grid_sample(color, equi_grid.float(), 
+                                        padding_mode='zeros', align_corners=True)
+            
+        # pdb.set_trace()
+        back_projected_feature = grid_sample(cam_feature, equi_grid.float(),
+                                    padding_mode='zeros', align_corners=True)
+        
+        back_projected_feature = back_projected_feature * back_projected_prob
+
+        back_projected_feature[mask_feat == False] = 0
+        
+        del c2w
+        del w2c
+        del pts_world
+        del pts_cam
+
+        del depth_cam
+        del invdepth_cam
+        del front_trunc_depth_cam
+        del back_trunc_depth_cam
+        del dist_valid_mask_cam
+        del trunc_in_mask_cam
+        del back_mask_cam
+        del expanded_depth
+
+        feat_device = feat.device
+        del feat
+        del cam_feature
+        del prob
+        del equi_grid
+        del back_projected_prob
+        del back_projected_depth
+        del mask_feat
+        del color
+        gc.collect()
+        with torch.cuda.device(feat_device):
+            torch.cuda.empty_cache()
+        
+        return back_projected_feature, back_projected_color
+
     def run_omni(self, data):
         with torch.no_grad():
             resp, raw_feat, geo_feat, c2w, data = self.run_omnimvs(data)
@@ -410,8 +576,7 @@ class Integrator(object):
         for stage, _ in self.c.items():
             if 'coarse' in stage:
                 continue
-            self.backproj_feats[stage].append(
-                self.backproject_features(stage, raw_feat, geo_feat, prob, c2w, color if 'color' in stage else None))
+            self.backproj_feats[stage].append(self.backproject_features(stage, raw_feat, geo_feat, prob, c2w))
         
         self.target_depths.append(gt_depth)
         self.target_colors.append(gt_color)
@@ -424,3 +589,23 @@ class Integrator(object):
         del geo_feat
         del prob
         torch.cuda.empty_cache()
+
+    def run_omni_color(self, data):
+        with torch.no_grad():
+            resp, raw_feat, geo_feat, c2w, data = self.run_omnimvs(data)
+            prob, depth, color, entropy, gt_depth, gt_color = self.generate_prob_depth_color(resp, data)
+            del resp
+        
+        self.probs.append(prob)
+        self.target_depths.append(gt_depth)
+        self.target_colors.append(gt_color)
+        self.use_depths.append(depth)
+        self.use_colors.append(color)
+        self.target_entropys.append(entropy)
+        self.target_c2w.append(c2w)
+        
+        del raw_feat
+        del geo_feat
+        del prob
+        with torch.cuda.device(self.device):
+            torch.cuda.empty_cache()

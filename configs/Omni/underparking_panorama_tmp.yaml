@@ -4,9 +4,7 @@ occupancy: True
 data:
   # input_folder: /data/chsung/under_parking_seq
   input_folder: /data5/chnagho/data/under_parking_seq
-  # output: /data5/changho/nice-slam/output/underparking_sparse/39_debug_nice_occ_131_geo_feat_multiplyProb_use_pretrain_convgru_1x1conv_nobias_48_16_fix_backmask_trunc1_newcostfusion_noshuffle_change_integration_localfrag_dist10_6frames
-  output: /data5/changho/nice-slam/output/underparking_sparse/59_7_debug_nice_occ_sign_geo_feat_multiplyProb_use_pretrain_avg_nobias_48_16_fix_backmask_trunc1_newcostfusion_noshuffle_change_integration_localfrag_debugging_original_point_nofilter_different_bound
-  # output: /data5/changho/nice-slam/output/underparking_sparse/37_debug_nice_occ_geo_feat_multiplyProb_use_pretrain_avg_nobias_48_16_backmask_trunc1_newcostfusion_noshuffle_change_integration_26step_0_150
+  output: /data5/changho/nice-slam/output/underparking_sparse_frag/59_debug_nice_occ_100_geo_feat_multiplyProb_use_pretrain_variance_48_16_localfrag_normalizePoints_concatMean_sameDimBound_singleFeatureNet_wColor_concatDir_realColorVal_append10Colors_onlyColorinMLP_withoutDir_onlyGPU
   config_file: capture.yaml
   poses_file: trajectory.txt
 grid_len:
@@ -15,6 +13,7 @@ grid_len:
   fine: 0.16
   color: 0.16
   bound_divisable: 0.32
+  vol_dim: [96, 48, 96]
 pretrained_decoders:
   use: True
 meshing:
@@ -37,53 +36,44 @@ mapping:
   frustum_feature_selection: False
   pixels: 7500
   iters_first: 10
-  iters: 100
-  w_color_loss: 0.1
-  # bound: [[-24.0, 37.0], [-3.0, 2.0], [-9.0, 63.0]] # all
-  # marching_cubes_bound: [[-24.0, 37.0], [-3.0, 2.0], [-9.0, 63.0]]  # all
-  # bound: [[-8.0, 5.0], [-3.0, 2.0], [-8.0, 14.0]] # 표지판
-  # marching_cubes_bound: [[-8.0, 5.0], [-3.0, 2.0], [-8.0, 14.0]] # 표지판
-  # bound: [[-8.0, 5.0], [-3.0, 2.0], [-0.0, 10.0]] # 표지판
-  # marching_cubes_bound: [[-8.0, 5.0], [-3.0, 2.0], [-0.0, 10.0]] # 표지판
+  iters: 15
+  joint_iters: 5
+  w_color_loss: 5
+  w_geo_loss: 1
   bound: [[-5.0, 4.0], [-2.0, 2.0], [-5.0, 10.0]] # 표지판(~65)
   marching_cubes_bound: [[-5.0, 4.0], [-2.0, 2.0], [-5.0, 10.0]] # 표지판(~65)
-  # bound: [[-6.0, 15.0], [-3.0, 2.0], [1.0, 25.0]] # 150~200
-  # marching_cubes_bound: [[-6.0, 15.0], [-3.0, 2.0], [1.0, 25.0]] # 150~200
-  # bound: [[-7.0, 7.0], [-3.0, 2.0], [-5.0, 18.0]] # 65~100
-  # marching_cubes_bound: [[-7.0, 7.0], [-3.0, 2.0], [-5.0, 18.0]] # 65~100
-  # bound: [[-7.0, 10.0], [-3.0, 2.0], [-5.0, 21.0]] # 65~150
-  # marching_cubes_bound: [[-7.0, 10.0], [-3.0, 2.0], [-5.0, 21.0]] # 65~150
-  # bound: [[-6.0, 15.0], [-3.0, 2.0], [-2.0, 25.0]] # 100~200
-  # marching_cubes_bound: [[-6.0, 15.0], [-3.0, 2.0], [-2.0, 25.0]] # 100~200
-  # bound: [[-6.0, 16.0], [-3.0, 2.0], [5.0, 29.0]] # 200~250
-  # marching_cubes_bound: [[-6.0, 16.0], [-3.0, 2.0], [5.0, 29.0]] # 200~250
-  # bound: [[-5.0, 4.0], [-2.0, 2.0], [-5.0, 10.0]] # 표지판(~65)
-  # marching_cubes_bound: [[-5.0, 4.0], [-2.0, 2.0], [-5.0, 10.0]] # 표지판(~65)
-  # bound: [[-8.0, 7.0], [-3.0, 2.0], [-10.0, 16.0]] # 100
-  # marching_cubes_bound: [[-8.0, 7.0], [-3.0, 2.0], [-10.0, 16.0]] # 100
-  # bound: [[-8.0, 9.0], [-3.0, 2.0], [-9.0, 20.0]] # 130
-  # marching_cubes_bound: [[-8.0, 9.0], [-3.0, 2.0], [-9.0, 20.0]] # 130
-  # bound: [[-8.0, 9.0], [-3.0, 2.0], [-9.0, 21.0]] # 150
-  # marching_cubes_bound: [[-8.0, 9.0], [-3.0, 2.0], [-9.0, 21.0]] # 150
-  # bound: [[-8.0, 15.0], [-3.0, 2.0], [-9.0, 24.0]] # 200
-  # marching_cubes_bound: [[-8.0, 15.0], [-3.0, 2.0], [-9.0, 24.0]] # 200
-  # bound: [[-16.0, 26.0], [-4.0, 2.0], [-9.0, 40.0]] # 400
-  # marching_cubes_bound: [[-16.0, 26.0], [-4.0, 2.0], [-9.0, 40.0]] # 400
-  # bound: [[-16.0, 34.0], [-4.0, 2.0], [-9.0, 54.0]] # 600
-  # marching_cubes_bound: [[-16.0, 34.0], [-4.0, 2.0], [-9.0, 54.0]] # 600
-  # bound: [[-24.0, 37.0], [-3.0, 2.0], [-9.0, 63.0]] # 1000
-  # marching_cubes_bound: [[-24.0, 37.0], [-3.0, 2.0], [-9.0, 63.0]]  # 1000
   no_vis_on_first_frame: False
   stage:
     middle:
-      decoders_lr: 0.000001
-      # decoders_lr: 0.0
+      middle_decoder_lr: 0.0
+      fine_decoder_lr: 0.0
+      color_decoder_lr: 0.0
+      grufusion_lr: 0.0
+      costfusion_lr:
+        middle: 0.001
+        fine: 0.0
+        color: 0.0
+      featnet_lr: 0.001
     fine:
-      decoders_lr: 0.000001
-      # decoders_lr: 0.0
+      middle_decoder_lr: 0.0
+      fine_decoder_lr: 0.0
+      color_decoder_lr: 0.0
+      grufusion_lr: 0.0
+      costfusion_lr:
+        middle: 0.0005
+        fine: 0.0005
+        color: 0.0
+      featnet_lr: 0.001
     color:
-      decoders_lr: 0.000001
-      # decoders_lr: 0.0
+      middle_decoder_lr: 0.0000001
+      fine_decoder_lr: 0.0000001
+      color_decoder_lr: 0.001
+      grufusion_lr: 0.0
+      costfusion_lr:
+        middle: 0.0000001
+        fine: 0.0000001
+        color: 0.001
+      featnet_lr: 0.001
 cam:
   H: 160
   W: 640
@@ -92,7 +82,7 @@ cam:
   phi_deg: -45.0
   phi_max_deg: 45.0
 omnimvs:
-  device: "cuda:1"
+  device: "cuda:0"
   config_file: config.yaml
   network_type: default
   snapshot_path: pretrained/omnimvs/full3-2x-rgb-reflect2_42.pt
@@ -101,13 +91,13 @@ omnimvs:
   db_config_idxs: []
   resp_volume_freeze: True
   net_freeze: False
-  lr: 0.001
+  lr: 0.0001
   n_frames: 10
   dist_bound: 5.0
   omnimvs_opts:
-    poses_file: trajectory_sign.txt
+    poses_file: trajectory_100.txt
     dtype:
-    step: 10
+    step: 1
     phi_deg: -45
     phi_max_deg: 45
     num_invdepth: 192
@@ -128,6 +118,10 @@ rendering:
   perturb: 0.0
 model:
   c_dim: 32
-  fusion_method: average
+  fusion_method: variance
+  pos_embedding_method: nerf
   convgru_ks: 1
   feature_fusion: False
+  train_continue: False
+  finetune: False
+  ckpt_path: /data5/changho/nice-slam/output/underparking_sparse_frag/54_nice_sdf_600_geo_feat_multiplyProb_use_pretrain_variance_48_16_localfrag_normalizePoints_concatMean_sameDimBound_singleFeatureNet_wColor_concatDir_realColorVal_append10Colors_onlyColorinMLP_withoutDir/ckpts/00000.tar

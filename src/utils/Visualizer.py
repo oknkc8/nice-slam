@@ -298,7 +298,7 @@ class Visualizer(object):
 
 
     def vis_omni_frag(self, epoch, iter, joint_iter, frag_idx, use_depth, use_color, c2w_or_camera_tensor, c,
-            decoders, stage, summary_writer=None, gt_depth=None, gt_color=None, entropy=None, finetune=False):
+            color_c, decoders, stage, summary_writer=None, gt_depth=None, gt_color=None, entropy=None, finetune=False):
         """
         Visualization of depth, color images and save to file.
 
@@ -334,15 +334,18 @@ class Visualizer(object):
 
                 depth, uncertainty, color = self.renderer.render_img(
                     c,
+                    color_c, 
                     decoders,
                     c2w,
                     self.device,
-                    stage='color',
+                    # stage='color',
+                    stage=stage,
                     gt_depth=use_depth)
                     # gt_depth=None)
                 depth_np = depth.detach().cpu().numpy()
                 color_np = color.detach().cpu().numpy()
                 use_depth_np = use_depth.detach().cpu().numpy()
+                use_color_np = use_color.detach().cpu().numpy()
                 entropy_np = entropy.detach().cpu().numpy()
                 depth_residual = np.abs(gt_depth_np - depth_np)
                 depth_residual[gt_depth_np == 0.0] = 0.0
@@ -370,11 +373,13 @@ class Visualizer(object):
                 invdepth_residual = colorMap('oliver', 1/depth_residual, 1/np.max(depth_residual), 1/(np.unique(depth_residual)[1]))
                 
                 gt_color_np = np.clip(gt_color_np, 0, 1)
+                use_color_np = np.clip(use_color_np, 0, 1)
                 color_np = np.clip(color_np, 0, 1)
                 color_residual = np.clip(color_residual, 0, 1)
                 
                 gt_depth_np = gt_depth_np.astype(np.float64)
                 gt_color_np = gt_color_np.astype(np.float64)
+                use_color_np = use_color_np.astype(np.float64)
                 color_np = color_np.astype(np.float64)
                 color_residual = color_residual.astype(np.float64)
                 use_depth_np = use_depth_np.astype(np.float64)
@@ -402,6 +407,7 @@ class Visualizer(object):
                 use_invdepth_np = np.pad(use_invdepth_np, ((2,2), (2,2), (0,0)), 'constant', constant_values=255)
                 
                 gt_color_np = np.pad(gt_color_np, ((2,2), (2,2), (0,0)), 'constant', constant_values=1)
+                use_color_np = np.pad(use_color_np, ((2,2), (2,2), (0,0)), 'constant', constant_values=1)
                 color_np = np.pad(color_np, ((2,2), (2,2), (0,0)), 'constant', constant_values=1)
                 color_residual = np.pad(color_residual, ((2,2), (2,2), (0,0)), 'constant', constant_values=1)
                 entropy_np = np.pad(entropy_np, ((2,2), (2,2), (0,0)), 'constant', constant_values=1)
@@ -418,9 +424,9 @@ class Visualizer(object):
                         # prev_3 = cv2.hconcat([gt_color_np*255, color_np*255])
                         prev_3 = cv2.hconcat([gt_color_np*255, use_invdepth_np.astype(np.float64)])
                     else:
-                        prev_1 = cv2.hconcat([gt_depth_np.astype(np.float64), use_invdepth_np.astype(np.float64)])
-                        prev_2 = cv2.hconcat([gt_invdepth_np.astype(np.float64), invdepth_np.astype(np.float64)])
-                        prev_3 = cv2.hconcat([gt_color_np*255, color_np*255])
+                        prev_1 = cv2.hconcat([gt_invdepth_np.astype(np.float64), gt_color_np*255])
+                        prev_2 = cv2.hconcat([use_invdepth_np.astype(np.float64), use_color_np*255])
+                        prev_3 = cv2.hconcat([invdepth_np.astype(np.float64), color_np*255])
                 else:
                     if not 'color' in stage:
                         prev_1 = cv2.hconcat([gt_invdepth_np.astype(np.float64), depth_np.astype(np.float64)])

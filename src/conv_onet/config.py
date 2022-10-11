@@ -21,11 +21,12 @@ def get_model(cfg,  model='nice'):
     c_dim = cfg['model']['c_dim']  # feature dimensions
     feature_fusion = cfg['model']['feature_fusion']
     pos_embedding_method = cfg['model']['pos_embedding_method']
+    n_frames = cfg['omnimvs']['n_frames']
     if model == 'nice':
         decoder = models.decoder_dict['nice'](
             dim=dim, c_dim=c_dim, coarse=cfg['coarse'], coarse_grid_len=coarse_grid_len,
             middle_grid_len=middle_grid_len, fine_grid_len=fine_grid_len,
-            color_grid_len=color_grid_len, pos_embedding_method=pos_embedding_method, feature_fusion=feature_fusion)
+            color_grid_len=color_grid_len, pos_embedding_method=pos_embedding_method, feature_fusion=feature_fusion, n_frames=n_frames)
     elif model == 'imap':
         decoder = models.decoder_dict['imap'](
             dim=dim, c_dim=0, color=True,

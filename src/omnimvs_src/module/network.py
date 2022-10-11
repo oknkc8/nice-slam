@@ -3,6 +3,7 @@
 # Author: Changhee Won (chwon@hanyang.ac.kr)
 #
 #
+from calendar import c
 import torch
 import torch.nn.functional as F
 from src.omnimvs_src.module.basic import *
@@ -216,7 +217,10 @@ class CostFusion_tmp(torch.nn.Module):
                 if m.bias is not None:
                     nn.init.zeros_(m.bias)
 
-    def forward(self, x):
+    def forward(self, x, colors=None):
+        if colors is not None:
+            x = torch.cat([x, colors], dim=1)
+            del colors
         grid_shape = x.shape[-3:]
 
         c1 = self.conv1(x)
@@ -239,6 +243,17 @@ class CostFusion_tmp(torch.nn.Module):
 
         c = self.deconv5(c)
         c = F.interpolate(c, grid_shape, mode='trilinear', align_corners=True)
+        
+        del c1
+        del c2
+        del c3
+        del c4
+        del c5
+        del c6
+        del res1
+        del res2
+        del res3
+        del res4
 
         return c
 

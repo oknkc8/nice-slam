@@ -1705,17 +1705,17 @@ class BatchCollator:
 
         self.c2w = torch.stack(data[4], 0)
 
-    def pin_memory(self):
-        self.imgs = [I.cuda() for I in self.imgs]
-        self.c2w = self.c2w.cuda()  # change to device
-        if self.gt is not None:
-            self.gt = self.gt.cuda()
-            self.valid = self.valid.cuda()
-        if self.gt_img is not None:
-            self.gt_img = self.gt_img.cuda()
-        if self.gt_invdepth is not None:
-            self.gt_invdepth = self.gt_invdepth.cuda()
-        return self
+    # def pin_memory(self):
+    #     self.imgs = [I.cuda() for I in self.imgs]
+    #     self.c2w = self.c2w.cuda()  # change to device
+    #     if self.gt is not None:
+    #         self.gt = self.gt.cuda()
+    #         self.valid = self.valid.cuda()
+    #     if self.gt_img is not None:
+    #         self.gt_img = self.gt_img.cuda()
+    #     if self.gt_invdepth is not None:
+    #         self.gt_invdepth = self.gt_invdepth.cuda()
+    #     return self
 
     @staticmethod
     def collate(data):

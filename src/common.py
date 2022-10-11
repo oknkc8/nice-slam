@@ -5,6 +5,7 @@ import torch.nn.functional as F
 from src.omni_utils.array import asin, atan2, cos, sqrt
 
 import pdb
+import gc
 
 def as_intrinsics_matrix(intrinsics):
     """
@@ -223,6 +224,7 @@ def select_uv_omni(i, j, n, depth, color, entropy, gt_depth, gt_color, device='c
     gt_color = gt_color.reshape(-1, 3)
     gt_depth = gt_depth[indices]  # (n)
     gt_color = gt_color[indices]  # (n,3)
+    del indices
     return i, j, depth, color, entropy, gt_depth, gt_color
 
 
@@ -277,6 +279,11 @@ def get_samples_omni(H0, H1, W0, W1, n, H, W, phi_deg, phi_max_deg, c2w, depth, 
         i, j, sample_depth, sample_color, sample_entropy, sample_gt_depth, sample_gt_color = get_sample_uv_omni(
             H0, H1, W0, W1, n, depth, color, entropy, gt_depth, gt_color, device=device)
         rays_o, rays_d = get_rays_from_uv_omni(i, j, c2w, H, W, phi_deg, phi_max_deg, device)
+        # del i
+        # del j
+        # gc.collect()
+        # with torch.cuda.device(device):
+        #     torch.cuda.empty_cache()
         return rays_o, rays_d, sample_depth, sample_color, sample_entropy, sample_gt_depth, sample_gt_color
 
 
@@ -382,7 +389,7 @@ def raw2outputs_nerf_color(raw, z_vals, rays_d, occupancy=False, device='cuda:0'
         global_step = summary_writer[1]
         writer = summary_writer[0]
         # if global_step % 1 == 0:
-        writer.add_histogram('occupancy' if occupancy else 'density', raw[..., -1].reshape(-1), global_step)
+        writer.add_histogram('occupancy' if occupancy else 'density', raw[..., -1].reshape(-1).data, global_step)
 
     # different ray angle corresponds to different unit length
     dists = dists * torch.norm(rays_d[..., None, :], dim=-1)
@@ -391,19 +398,18 @@ def raw2outputs_nerf_color(raw, z_vals, rays_d, occupancy=False, device='cuda:0'
         # """occ"""
         raw[..., 3] = torch.sigmoid(10*raw[..., -1])
         alpha = raw[..., -1]
-        """sdf"""
-        # s = 0.04
-        # raw[..., 3] = 4 * (torch.sigmoid(raw[..., -1] / s) * torch.sigmoid(-raw[..., -1] / s))
-        # alpha = raw[..., -1]
-        
     else:
         # original nerf, volume density
-        alpha = raw2alpha(raw[..., -1], dists)  # (N_rays, N_samples)
+        # alpha = raw2alpha(raw[..., -1], dists)  # (N_rays, N_samples)
+        """sdf"""
+        s = 0.04
+        raw[..., 3] = 4 * (torch.sigmoid(raw[..., -1] / s) * torch.sigmoid(-raw[..., -1] / s))
+        alpha = raw[..., -1]
         
     if summary_writer is not None:
         global_step = summary_writer[1]
         writer = summary_writer[0]
-        writer.add_histogram('alpha', alpha.reshape(-1), global_step)
+        writer.add_histogram('alpha', alpha.reshape(-1).data, global_step)
 
     weights = alpha.float() * torch.cumprod(torch.cat([torch.ones((alpha.shape[0], 1)).to(
         device).float(), (1.-alpha + 1e-10).float()], -1).float(), -1)[:, :-1]
@@ -528,3 +534,158 @@ def sparse_to_dense_np(locs, values, dim, default_val):
     dense.fill(default_val)
     dense[locs[:, 0], locs[:, 1], locs[:, 2]] = values
     return dense
+
+
+def grid_sample_3d(volume, optical):
+    """
+    bilinear sampling cannot guarantee continuous first-order gradient
+    mimic pytorch grid_sample function
+    The 8 corner points of a volume noted as: 4 points (front view); 4 points (back view)
+    fnw (front north west) point
+    bse (back south east) point
+    :param volume: [B, C, X, Y, Z]
+    :param optical: [B, x, y, z, 3]
+    :return:
+    """
+    N, C, ID, IH, IW = volume.shape
+    _, D, H, W, _ = optical.shape
+
+    ix = optical[..., 0]
+    iy = optical[..., 1]
+    iz = optical[..., 2]
+
+    ix = ((ix + 1) / 2) * (IW - 1)
+    iy = ((iy + 1) / 2) * (IH - 1)
+    iz = ((iz + 1) / 2) * (ID - 1)
+
+    mask_x = (ix > 0) & (ix < IW)
+    mask_y = (iy > 0) & (iy < IH)
+    mask_z = (iz > 0) & (iz < ID)
+
+    mask = mask_x & mask_y & mask_z  # [B, x, y, z]
+    mask = mask[:, None, :, :, :].repeat(1, C, 1, 1, 1)  # [B, C, x, y, z]
+
+    with torch.no_grad():
+        # back north west
+        ix_bnw = torch.floor(ix)
+        iy_bnw = torch.floor(iy)
+        iz_bnw = torch.floor(iz)
+
+        ix_bne = ix_bnw + 1
+        iy_bne = iy_bnw
+        iz_bne = iz_bnw
+
+        ix_bsw = ix_bnw
+        iy_bsw = iy_bnw + 1
+        iz_bsw = iz_bnw
+
+        ix_bse = ix_bnw + 1
+        iy_bse = iy_bnw + 1
+        iz_bse = iz_bnw
+
+        # front view
+        ix_fnw = ix_bnw
+        iy_fnw = iy_bnw
+        iz_fnw = iz_bnw + 1
+
+        ix_fne = ix_bnw + 1
+        iy_fne = iy_bnw
+        iz_fne = iz_bnw + 1
+
+        ix_fsw = ix_bnw
+        iy_fsw = iy_bnw + 1
+        iz_fsw = iz_bnw + 1
+
+        ix_fse = ix_bnw + 1
+        iy_fse = iy_bnw + 1
+        iz_fse = iz_bnw + 1
+
+    # back view
+    bnw = (ix_fse - ix) * (iy_fse - iy) * (iz_fse - iz)  # smaller volume, larger weight
+    bne = (ix - ix_fsw) * (iy_fsw - iy) * (iz_fsw - iz)
+    bsw = (ix_fne - ix) * (iy - iy_fne) * (iz_fne - iz)
+    bse = (ix - ix_fnw) * (iy - iy_fnw) * (iz_fnw - iz)
+
+    # front view
+    fnw = (ix_bse - ix) * (iy_bse - iy) * (iz - iz_bse)  # smaller volume, larger weight
+    fne = (ix - ix_bsw) * (iy_bsw - iy) * (iz - iz_bsw)
+    fsw = (ix_bne - ix) * (iy - iy_bne) * (iz - iz_bne)
+    fse = (ix - ix_bnw) * (iy - iy_bnw) * (iz - iz_bnw)
+
+    with torch.no_grad():
+        # back view
+        torch.clamp(ix_bnw, 0, IW - 1, out=ix_bnw)
+        torch.clamp(iy_bnw, 0, IH - 1, out=iy_bnw)
+        torch.clamp(iz_bnw, 0, ID - 1, out=iz_bnw)
+
+        torch.clamp(ix_bne, 0, IW - 1, out=ix_bne)
+        torch.clamp(iy_bne, 0, IH - 1, out=iy_bne)
+        torch.clamp(iz_bne, 0, ID - 1, out=iz_bne)
+
+        torch.clamp(ix_bsw, 0, IW - 1, out=ix_bsw)
+        torch.clamp(iy_bsw, 0, IH - 1, out=iy_bsw)
+        torch.clamp(iz_bsw, 0, ID - 1, out=iz_bsw)
+
+        torch.clamp(ix_bse, 0, IW - 1, out=ix_bse)
+        torch.clamp(iy_bse, 0, IH - 1, out=iy_bse)
+        torch.clamp(iz_bse, 0, ID - 1, out=iz_bse)
+
+        # front view
+        torch.clamp(ix_fnw, 0, IW - 1, out=ix_fnw)
+        torch.clamp(iy_fnw, 0, IH - 1, out=iy_fnw)
+        torch.clamp(iz_fnw, 0, ID - 1, out=iz_fnw)
+
+        torch.clamp(ix_fne, 0, IW - 1, out=ix_fne)
+        torch.clamp(iy_fne, 0, IH - 1, out=iy_fne)
+        torch.clamp(iz_fne, 0, ID - 1, out=iz_fne)
+
+        torch.clamp(ix_fsw, 0, IW - 1, out=ix_fsw)
+        torch.clamp(iy_fsw, 0, IH - 1, out=iy_fsw)
+        torch.clamp(iz_fsw, 0, ID - 1, out=iz_fsw)
+
+        torch.clamp(ix_fse, 0, IW - 1, out=ix_fse)
+        torch.clamp(iy_fse, 0, IH - 1, out=iy_fse)
+        torch.clamp(iz_fse, 0, ID - 1, out=iz_fse)
+
+    # xxx = volume[:, :, iz_bnw.long(), iy_bnw.long(), ix_bnw.long()]
+    volume = volume.view(N, C, ID * IH * IW)
+    # yyy = volume[:, :, (iz_bnw * ID + iy_bnw * IW + ix_bnw).long()]
+
+    # back view
+    bnw_val = torch.gather(volume, 2,
+                           (iz_bnw * ID ** 2 + iy_bnw * IW + ix_bnw).long().view(N, 1, D * H * W).repeat(1, C, 1))
+    bne_val = torch.gather(volume, 2,
+                           (iz_bne * ID ** 2 + iy_bne * IW + ix_bne).long().view(N, 1, D * H * W).repeat(1, C, 1))
+    bsw_val = torch.gather(volume, 2,
+                           (iz_bsw * ID ** 2 + iy_bsw * IW + ix_bsw).long().view(N, 1, D * H * W).repeat(1, C, 1))
+    bse_val = torch.gather(volume, 2,
+                           (iz_bse * ID ** 2 + iy_bse * IW + ix_bse).long().view(N, 1, D * H * W).repeat(1, C, 1))
+
+    # front view
+    fnw_val = torch.gather(volume, 2,
+                           (iz_fnw * ID ** 2 + iy_fnw * IW + ix_fnw).long().view(N, 1, D * H * W).repeat(1, C, 1))
+    fne_val = torch.gather(volume, 2,
+                           (iz_fne * ID ** 2 + iy_fne * IW + ix_fne).long().view(N, 1, D * H * W).repeat(1, C, 1))
+    fsw_val = torch.gather(volume, 2,
+                           (iz_fsw * ID ** 2 + iy_fsw * IW + ix_fsw).long().view(N, 1, D * H * W).repeat(1, C, 1))
+    fse_val = torch.gather(volume, 2,
+                           (iz_fse * ID ** 2 + iy_fse * IW + ix_fse).long().view(N, 1, D * H * W).repeat(1, C, 1))
+
+    out_val = (
+        # back
+            bnw_val.view(N, C, D, H, W) * bnw.view(N, 1, D, H, W) +
+            bne_val.view(N, C, D, H, W) * bne.view(N, 1, D, H, W) +
+            bsw_val.view(N, C, D, H, W) * bsw.view(N, 1, D, H, W) +
+            bse_val.view(N, C, D, H, W) * bse.view(N, 1, D, H, W) +
+            # front
+            fnw_val.view(N, C, D, H, W) * fnw.view(N, 1, D, H, W) +
+            fne_val.view(N, C, D, H, W) * fne.view(N, 1, D, H, W) +
+            fsw_val.view(N, C, D, H, W) * fsw.view(N, 1, D, H, W) +
+            fse_val.view(N, C, D, H, W) * fse.view(N, 1, D, H, W)
+
+    )
+    
+    # * zero padding
+    out_val = torch.where(mask, out_val, torch.zeros_like(out_val).float().to(out_val.device))
+
+    return out_val

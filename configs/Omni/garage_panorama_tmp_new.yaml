@@ -5,7 +5,7 @@ occupancy: True
 data:
   input_folder: /data/multipleye/garage_nerf
   # output: output/inference/garage/21_02_inference_016_finetune_withOmni_entropy_nofinetune
-  output: output/garage/01_applyColorNet
+  output: /data5/changho/nice-slam/output/garage/01_applyColorNet
   config_file: capture.yaml
   poses_file: trajectory.txt
 grid_len:
@@ -14,7 +14,7 @@ grid_len:
   fine: 0.16
   color: 0.16
   bound_divisable: 0.32
-  vol_dim: [144, 48, 144]
+  vol_dim: [96, 48, 96]
 pretrained_decoders:
   use: True
 meshing:
@@ -37,9 +37,9 @@ mapping:
   frustum_feature_selection: False
   pixels: 7500
   iters_first: 10
-  iters: 1
-  joint_iters: 1
-  w_color_loss: 0.1
+  iters: 20
+  joint_iters: 5
+  w_color_loss: 0.001
   # bound: [[-12.39115295,  10.64884705], [ -4.4706484, 3.2093516 ], [-12.29228741, 10.74771259]] #0.16
   # marching_cubes_bound: [[-12.39115295,  10.64884705], [ -4.4706484, 3.2093516 ], [-12.29228741, 10.74771259]] #0.16
   bound: [[-6.63115295,  4.88884705], [0.5506484,   3.2893516 ], [-6.53228741,  4.98771259]] #0.08
@@ -63,13 +63,13 @@ cam:
   phi_deg: -45.0
   phi_max_deg: 45.0
 omnimvs:
-  device: "cuda:0"
+  device: "cuda:1"
   config_file: config.yaml
   network_type: default
   snapshot_path: pretrained/omnimvs/full3-2x-rgb-reflect2_42.pt
   dbname: garage_nerf
-  # db_root: /data5/changho/data
-  db_root: /data/multipleye/
+  db_root: /data5/changho/data
+  # db_root: /data/multipleye/
   db_config_idxs: []
   resp_volume_freeze: True
   net_freeze: False

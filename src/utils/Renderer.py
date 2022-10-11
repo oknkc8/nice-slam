@@ -3,6 +3,7 @@ import torch.nn.functional as F
 from src.common import get_rays, get_rays_omni, raw2outputs_nerf_color, sample_pdf
 
 import pdb
+import gc
 
 # torch.autograd.set_detect_anomaly(True)
 
@@ -26,7 +27,7 @@ class Renderer(object):
 
         self.H, self.W, self.fx, self.fy, self.cx, self.cy = slam.H, slam.W, slam.fx, slam.fy, slam.cx, slam.cy
 
-    def eval_points(self, p, decoders, c=None, stage='color', device='cuda:0'):
+    def eval_points(self, p, dir, decoders, c=None, stage='color', color_c=None, device='cuda:0'):
         """
         Evaluates the occupancy and/or color value for the points.
 
@@ -42,9 +43,11 @@ class Renderer(object):
         """
 
         p_split = torch.split(p, self.points_batch_size)
+        dir_split = torch.split(dir, self.points_batch_size)
         bound = self.bound
         rets = []
-        for pi in p_split:
+        for pi, diri in zip(p_split, dir_split):
+        # for pi in p_split:
             # mask for points out of bound
             mask_x = (pi[:, 0] < bound[0][1]) & (pi[:, 0] > bound[0][0])
             mask_y = (pi[:, 1] < bound[1][1]) & (pi[:, 1] > bound[1][0])
@@ -53,7 +56,7 @@ class Renderer(object):
 
             pi = pi.unsqueeze(0)
             if self.method == 'nice':
-                ret = decoders(pi, c_grid=c, stage=stage)
+                ret = decoders(pi, diri, c_grid=c, stage=stage, color_c=color_c)
             elif self.method == 'omni_feat':
                 ret = decoders(pi, c_grid=c)
             else:
@@ -65,14 +68,14 @@ class Renderer(object):
             if self.occupancy:
                 ret[~mask, 3] = 100
             else:
-                ret[~mask, 3] = 100
-                pass
+                # ret[~mask, 3] = 100 # density
+                ret[~mask, 3] = 0 # sdf
             rets.append(ret)
 
         ret = torch.cat(rets, dim=0)
         return ret
 
-    def render_batch_ray(self, c, decoders, rays_d, rays_o, device, stage, gt_depth=None, summary_writer=None):
+    def render_batch_ray(self, c, color_c, decoders, rays_d, rays_o, device, stage, gt_depth=None, summary_writer=None):
         """
         Render color, depth and uncertainty of a batch of rays.
 
@@ -183,10 +186,10 @@ class Renderer(object):
 
         pts = rays_o[..., None, :] + rays_d[..., None, :] * \
             z_vals[..., :, None]  # [N_rays, N_samples+N_surface, 3]
-
+        dir = rays_d[..., None, :].expand(-1, z_vals.shape[-1], -1).reshape(-1, 3)
         pointsf = pts.reshape(-1, 3)        
 
-        raw = self.eval_points(pointsf, decoders, c, stage, device)
+        raw = self.eval_points(pointsf, dir, decoders, c, stage, color_c, device)
         
         raw = raw.reshape(N_rays, N_samples+N_surface, -1)
         
@@ -202,8 +205,9 @@ class Renderer(object):
 
             pts = rays_o[..., None, :] + \
                 rays_d[..., None, :] * z_vals[..., :, None]
+            dir = rays_d[..., None, :].expand(-1, z_vals.shape[-1], -1).reshape(-1, 3)
             pts = pts.reshape(-1, 3)
-            raw = self.eval_points(pts, decoders, c, stage, device)
+            raw = self.eval_points(pts, dir, decoders, c, stage, color_c, device)
             raw = raw.reshape(N_rays, N_samples+N_importance+N_surface, -1)
 
             depth, uncertainty, color, weights = raw2outputs_nerf_color(
@@ -212,7 +216,7 @@ class Renderer(object):
 
         return depth, uncertainty, color
 
-    def render_img(self, c, decoders, c2w, device, stage, gt_depth=None):
+    def render_img(self, c, color_c, decoders, c2w, device, stage, gt_depth=None):
         """
         Renders out depth, uncertainty, and color images.
 
@@ -254,11 +258,11 @@ class Renderer(object):
                 rays_o_batch = rays_o[i:i+ray_batch_size]
                 if gt_depth is None:
                     ret = self.render_batch_ray(
-                        c, decoders, rays_d_batch, rays_o_batch, device, stage, gt_depth=None)
+                        c, color_c, decoders, rays_d_batch, rays_o_batch, device, stage, gt_depth=None)
                 else:
                     gt_depth_batch = gt_depth[i:i+ray_batch_size]
                     ret = self.render_batch_ray(
-                        c, decoders, rays_d_batch, rays_o_batch, device, stage, gt_depth=gt_depth_batch)
+                        c, color_c, decoders, rays_d_batch, rays_o_batch, device, stage, gt_depth=gt_depth_batch)
 
                 depth, uncertainty, color = ret
                 depth_list.append(depth.double())
@@ -275,7 +279,7 @@ class Renderer(object):
             return depth, uncertainty, color
 
     # this is only for imap*
-    def regulation(self, c, decoders, rays_d, rays_o, gt_depth, device, stage='color'):
+    def regulation(self, c, color_c, decoders, rays_d, rays_o, gt_depth, device, stage='color'):
         """
         Regulation that disencourage any geometry from the camera center to 0.85*depth.
         For imap, the geometry will not be as good if this loss is not added.
@@ -296,7 +300,7 @@ class Renderer(object):
         gt_depth = gt_depth.repeat(1, self.N_samples)
         t_vals = torch.linspace(0., 1., steps=self.N_samples).to(device)
         near = 0.0
-        far = gt_depth*0.85
+        far = gt_depth*1.2
         z_vals = near * (1.-t_vals) + far * (t_vals)
         perturb = 1.0
         if perturb > 0.:
@@ -310,7 +314,8 @@ class Renderer(object):
 
         pts = rays_o[..., None, :] + rays_d[..., None, :] * \
             z_vals[..., :, None]  # (N_rays, N_samples, 3)
+        dir = rays_d[..., None, :].expand(-1, z_vals.shape[-1], -1).reshape(-1, 3)
         pointsf = pts.reshape(-1, 3)
-        raw = self.eval_points(pointsf, decoders, c, stage, device)
+        raw = self.eval_points(pointsf, dir, decoders, c, stage, color_c, device)
         sigma = raw[:, -1]
         return sigma

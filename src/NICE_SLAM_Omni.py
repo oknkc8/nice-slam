@@ -2,6 +2,7 @@ import os
 import time
 import shutil
 import random
+import gc
 
 import numpy as np
 import torch
@@ -68,8 +69,9 @@ class NICE_SLAM_Omni():
 
         self.load_bound(cfg)
         if self.method != 'imap':
-            if self.method == 'nice' and cfg['pretrained_decoders']['use']:
+            if self.method == 'nice' and cfg['pretrained_decoders']['use'] and self.occupancy:
                 self.load_pretrain(cfg)
+                print('Load pretrained decoders...')
             self.grid_init(cfg)
         else:
             self.shared_c = {}
@@ -297,9 +299,12 @@ class NICE_SLAM_Omni():
         self.mapper.grufusion['grid_fine'].load_state_dict(ckpt['grufusion_state_dict']['grid_fine'])
         self.mapper.grufusion['grid_color'].load_state_dict(ckpt['grufusion_state_dict']['grid_color'])
 
+        self.mapper.featurenet_pano.load_state_dict(ckpt['featurenet_state_dict'])
+
         self.mapper.costfusion['grid_middle'].load_state_dict(ckpt['costfusion_state_dict']['grid_middle'])
         self.mapper.costfusion['grid_fine'].load_state_dict(ckpt['costfusion_state_dict']['grid_fine'])
         self.mapper.costfusion['grid_color'].load_state_dict(ckpt['costfusion_state_dict']['grid_color'])
+        print('Load ckpt!')
 
     def grid_init(self, cfg):
         """
@@ -451,19 +456,15 @@ class NICE_SLAM_Omni():
 
             for key, val in self.shared_c.items():
                 val = val.to(self.cfg['omnimvs']['device'])
-                val.share_memory_()
                 self.shared_c[key] = val
             for key, val in self.shared_coord.items():
                 val = val.to(self.cfg['omnimvs']['device'])
-                val.share_memory_()
                 self.shared_coord[key] = val
             for key, val in self.shared_grid_coord.items():
                 val = val.to(self.cfg['omnimvs']['device'])
-                val.share_memory_()
                 self.shared_grid_coord[key] = val
             for key, val in self.shared_vote.items():
                 val = val.to(self.cfg['omnimvs']['device'])
-                val.share_memory_()
                 self.shared_vote[key] = val
 
             self.target_depths = []
@@ -533,6 +534,133 @@ class NICE_SLAM_Omni():
                                               finetune=self.finetune)
 
                     torch.cuda.empty_cache()
+    
+    def run_tmp_color(self):
+        self.local_frag_idxs = self.integrator.local_frag_idxs
+        self.local_frag_bounds = self.integrator.local_frag_bounds
+        self.n_fragments = len(self.local_frag_idxs)
+        num_iters = self.cfg['mapping']['iters']
+        joint_num_iters = self.cfg['mapping']['joint_iters']
+
+        frag_datas = []
+
+        print('\nIntegrate OmniMVS Feature...')
+        for frag_idx in tqdm(range(self.n_fragments)):
+            # init bound / grid
+            local_frag_bound = self.local_frag_bounds[frag_idx]
+            self.set_bound(self.cfg, local_frag_bound)
+            self.grid_init(self.cfg)
+
+            self.target_depths = []
+            self.target_colors = []
+            self.use_depths = []
+            self.use_colors = []
+            self.target_entropys = []
+            self.resps = []
+            self.probs = []
+            self.raw_feats = []
+            self.target_c2w = []
+            
+            self.integrator.init_params(self)
+
+            for i in range(len(self.local_frag_idxs[frag_idx])):
+                idx = self.local_frag_idxs[frag_idx][i]
+                data = BatchCollator.collate([self.integrator.omnimvs[idx]])
+                self.integrator.run_omni_color(data)
+            frag_datas.append(
+                {
+                    'target_depths': self.integrator.target_depths,
+                    'target_colors': self.integrator.target_colors,
+                    'use_depths': self.integrator.use_depths,
+                    'use_colors': self.integrator.use_colors,
+                    'target_entropys': self.integrator.target_entropys,
+                    'target_c2w': self.integrator.target_c2w,
+                    'probs': self.integrator.probs,
+                    'bound': self.bound,
+                    'c': self.integrator.c,
+                    'coord': self.integrator.coord,
+                }
+            )
+            # with torch.cuda.device(self.mapper.device):
+            #     torch.cuda.empty_cache()
+            # with torch.cuda.device(self.integrator.device):
+            #     torch.cuda.empty_cache()
+
+        del self.integrator.mvsnet
+        print('\nMapping...')
+        frag_idx_list = [i for i in range(self.n_fragments)]
+        for epoch in tqdm(range(100)):
+            for iter in tqdm(range(num_iters // joint_num_iters)):
+                # if iter < (num_iters // joint_num_iters) / 3:
+                #     self.mapper.stage = 'middle'
+                # elif iter < (num_iters // joint_num_iters) / 3 * 2:
+                #     self.mapper.stage = 'fine'
+                # else:
+                self.mapper.stage = 'color'
+                # if iter < (num_iters // joint_num_iters) / 2:
+                #     self.mapper.stage = 'middle'
+                # else:
+                #     self.mapper.stage = 'color'
+                random.shuffle(frag_idx_list)
+                for idx, frag_idx in enumerate(frag_idx_list):
+                    local_frag_bound = self.local_frag_bounds[frag_idx]
+                    self.set_bound(self.cfg, local_frag_bound)
+                    self.grid_init(self.cfg)
+
+                    self.target_depths = frag_datas[frag_idx]['target_depths']
+                    self.target_colors = frag_datas[frag_idx]['target_colors']
+                    self.use_depths = frag_datas[frag_idx]['use_depths']
+                    self.use_colors = frag_datas[frag_idx]['use_colors']
+                    self.target_entropys = frag_datas[frag_idx]['target_entropys']
+                    self.target_c2w = frag_datas[frag_idx]['target_c2w']
+                    self.probs = frag_datas[frag_idx]['probs']
+                    self.shared_c = frag_datas[frag_idx]['c']
+                    self.shared_coord = frag_datas[frag_idx]['coord']
+                    
+                    for key, val in self.shared_c.items():
+                        val = val.to(self.cfg['omnimvs']['device'])
+                        self.shared_c[key] = val
+                    for key, val in self.shared_coord.items():
+                        val = val.to(self.cfg['omnimvs']['device'])
+                        self.shared_coord[key] = val
+                    for key, val in self.shared_grid_coord.items():
+                        val = val.to(self.cfg['omnimvs']['device'])
+                        self.shared_grid_coord[key] = val
+                    for key, val in self.shared_vote.items():
+                        val = val.to(self.cfg['omnimvs']['device'])
+                        self.shared_vote[key] = val
+                
+                    self.integrator.init_params(self)
+                    self.mapper.init_params(self)
+                    self.renderer.bound = self.bound
+                    self.mesher.bound = self.bound
+                    self.mesher.marching_cubes_bound = self.bound
+
+                    # with torch.cuda.device(self.mapper.device):
+                    #     torch.cuda.empty_cache()
+                    # with torch.cuda.device(self.integrator.device):
+                    #     torch.cuda.empty_cache()
+                    self.mapper.run_omni_frag(epoch, iter, frag_idx, idx,
+                                              save_log=((iter == (num_iters//joint_num_iters)-1) and ((epoch + 1) % self.cfg['mapping']['mesh_freq'] == 0)),
+                                              finetune=self.finetune)
+
+                    self.integrator.del_params()
+                    self.mapper.del_params()
+                    
+                    del self.target_depths
+                    del self.target_colors
+                    del self.use_depths
+                    del self.use_colors
+                    del self.target_entropys
+                    del self.target_c2w
+                    del self.probs
+                    del self.shared_c
+                    del self.shared_coord
+                    gc.collect()                    
+                    with torch.cuda.device(self.mapper.device):
+                        torch.cuda.empty_cache()
+                    with torch.cuda.device(self.integrator.device):
+                        torch.cuda.empty_cache()
                 
 
 

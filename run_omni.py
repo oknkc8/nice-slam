@@ -39,7 +39,7 @@ def main():
     slam = NICE_SLAM_Omni(cfg, args)
 
     # slam.run()
-    slam.run_tmp()
+    slam.run_tmp_color()
 
 
 if __name__ == '__main__':

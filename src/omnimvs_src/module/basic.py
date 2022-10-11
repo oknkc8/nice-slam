@@ -93,6 +93,7 @@ class ConvBnReLU2D(torch.nn.Module):
             if x.shape[-2:] != residual.shape[-2:]:
                 x = F.interpolate(x, residual.shape[-2:], mode='bilinear', align_corners=True)
             x = x + residual
+            del residual
         if self.relu:
             return F.relu(x)
         else:
@@ -117,6 +118,7 @@ class DeConvBnReLU2D(torch.nn.Module):
             if x.shape[-2:] != residual.shape[-2:]:
                 x = F.interpolate(x, residual.shape[-2:], mode='bilinear', align_corners=True)
             x = x + residual
+            del residual
         if self.relu:
             return F.relu(x)
         else:

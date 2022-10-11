@@ -276,7 +276,7 @@ class Mesher(object):
         return_mesh = trimesh.Trimesh(vertices=points, faces=faces)
         return return_mesh
 
-    def eval_points(self, p, decoders, c=None, stage='color', device='cuda:0'):
+    def eval_points(self, p, decoders, c=None, stage='color', color_c=None, device='cuda:0'):
         """
         Evaluates the occupancy and/or color value for the points.
 
@@ -305,7 +305,8 @@ class Mesher(object):
 
             pi = pi.unsqueeze(0)
             if self.method == 'nice':
-                ret = decoders(pi, c_grid=c, stage=stage)
+                diri = torch.zeros_like(pi, device=device)
+                ret = decoders(pi, diri, c_grid=c, stage=stage, color_c=color_c)
             elif self.method == 'omni_feat':
                 ret = decoders(pi, c_grid=c)
             else:
@@ -595,9 +596,10 @@ class Mesher(object):
     def get_mesh_omni(self,
                       mesh_out_file,
                       c,
+                      color_c,
                       decoders,
                       device='cuda:0',
-                      color=False,
+                      color=True,
                       clean_mesh=True):
         """
         Extract mesh from scene representation and save mesh to file.
@@ -626,8 +628,10 @@ class Mesher(object):
 
             z = []
             for i, pnts in enumerate(torch.split(points, self.points_batch_size, dim=0)):
-                z.append(self.eval_points(pnts, decoders, c, 'fine',
+                z.append(self.eval_points(pnts, decoders, c, 'fine', color_c, 
                                             device).cpu().numpy()[:, -1])
+                # z.append(self.eval_points(pnts, decoders, c, 'color', color_c, 
+                #                             device).cpu().numpy()[:, -1])
 
             z = np.concatenate(z, axis=0)
 
@@ -693,7 +697,7 @@ class Mesher(object):
                     for i, pnts in enumerate(
                             torch.split(points, self.points_batch_size, dim=0)):
                         z_color = self.eval_points(
-                            pnts.to(device).float(), decoders, c, 'color',
+                            pnts.to(device).float(), decoders, c, 'color', color_c,
                             device).cpu()[..., :3]
                         z.append(z_color)
                     z = torch.cat(z, axis=0)
