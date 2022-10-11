@@ -4,7 +4,7 @@ occupancy: True
 data:
   # input_folder: /data/chsung/under_parking_seq
   input_folder: /data5/chnagho/data/under_parking_seq
-  output: /data5/changho/nice-slam/output/underparking_sparse_frag/59_debug_nice_occ_100_geo_feat_multiplyProb_use_pretrain_variance_48_16_localfrag_normalizePoints_concatMean_sameDimBound_singleFeatureNet_wColor_concatDir_realColorVal_append10Colors_onlyColorinMLP_withoutDir_onlyGPU
+  output: /data5/changho/nice-slam/output/underparking_sparse_frag/61_nice_occ_600_geo_feat_multiplyProb_use_pretrain_variance_48_16_localfrag_normalizePoints_concatMean_sameDimBound_singleFeatureNet_wColor_concatDir_realColorVal_appendColors_onlyColorinMLP_newColorMLPv2_concatGeoFeat
   config_file: capture.yaml
   poses_file: trajectory.txt
 grid_len:
@@ -19,10 +19,10 @@ pretrained_decoders:
 meshing:
   level_set: 0
   resolution: 0.04 # change to 512 for higher resolution geometry
-  device: "cuda:0"
+  device: "cuda:1"
   clean_mesh: True
 mapping:
-  device: "cuda:0"
+  device: "cuda:1"
   BA: False
   middle_iter_ratio: 0.0
   fine_iter_ratio: 1.0
@@ -36,9 +36,9 @@ mapping:
   frustum_feature_selection: False
   pixels: 7500
   iters_first: 10
-  iters: 15
+  iters: 50
   joint_iters: 5
-  w_color_loss: 5
+  w_color_loss: 1
   w_geo_loss: 1
   bound: [[-5.0, 4.0], [-2.0, 2.0], [-5.0, 10.0]] # 표지판(~65)
   marching_cubes_bound: [[-5.0, 4.0], [-2.0, 2.0], [-5.0, 10.0]] # 표지판(~65)
@@ -82,7 +82,7 @@ cam:
   phi_deg: -45.0
   phi_max_deg: 45.0
 omnimvs:
-  device: "cuda:0"
+  device: "cuda:1"
   config_file: config.yaml
   network_type: default
   snapshot_path: pretrained/omnimvs/full3-2x-rgb-reflect2_42.pt
@@ -95,7 +95,7 @@ omnimvs:
   n_frames: 10
   dist_bound: 5.0
   omnimvs_opts:
-    poses_file: trajectory_100.txt
+    poses_file: trajectory_600.txt
     dtype:
     step: 1
     phi_deg: -45

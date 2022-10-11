@@ -591,12 +591,12 @@ class NICE_SLAM_Omni():
         frag_idx_list = [i for i in range(self.n_fragments)]
         for epoch in tqdm(range(100)):
             for iter in tqdm(range(num_iters // joint_num_iters)):
-                # if iter < (num_iters // joint_num_iters) / 3:
-                #     self.mapper.stage = 'middle'
-                # elif iter < (num_iters // joint_num_iters) / 3 * 2:
-                #     self.mapper.stage = 'fine'
-                # else:
-                self.mapper.stage = 'color'
+                if iter < (num_iters // joint_num_iters) / 3:
+                    self.mapper.stage = 'middle'
+                elif iter < (num_iters // joint_num_iters) / 3 * 2:
+                    self.mapper.stage = 'fine'
+                else:
+                    self.mapper.stage = 'color'
                 # if iter < (num_iters // joint_num_iters) / 2:
                 #     self.mapper.stage = 'middle'
                 # else:

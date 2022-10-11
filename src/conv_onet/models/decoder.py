@@ -299,7 +299,7 @@ class MLP_color(nn.Module):
 
 
         # option 1: geo_feat + points
-        self.bottleneck_linear_1 = DenseLayer(hidden_size + embedding_size, hidden_size, activation='relu')
+        # self.bottleneck_linear_1 = DenseLayer(hidden_size + embedding_size, hidden_size, activation='relu')
         # option 2: geo_feat + points + color_feature_grid
         self.bottleneck_linear_1 = DenseLayer(hidden_size + c_dim + embedding_size, hidden_size, activation='relu')
         
@@ -336,7 +336,7 @@ class MLP_color(nn.Module):
         embedded_dir = self.embedderdir(dir)
         
         # option 1: geo_feat + points
-        h = torch.cat([geo_feat, embedded_pts], dim=-1)
+        # h = torch.cat([geo_feat, embedded_pts], dim=-1)
         # option 2: geo_feat + points + color_feature_grid
         c = self.sample_grid_feature(
             p, c_grid['grid_' + self.name])
