@@ -268,17 +268,7 @@ class MLP_color(nn.Module):
         self.grid_len = grid_len
         self.n_blocks = n_blocks
         self.n_frames = n_frames
-
-        if c_dim != 0:
-            if 'color' in name:
-                # c_dim += (128 + 3 + 3)
-                # c_dim += (128 + 3 * self.n_frames)
-                c_dim += (3 * self.n_frames)
-                # c_dim += 3
-            self.fc_c = nn.ModuleList([
-                nn.Linear(c_dim, hidden_size) for i in range(n_blocks)
-            ])
-
+        
         if pos_embedding_method == 'fourier':
             embedding_size = 93
             self.embedder = GaussianFourierFeatureTransform(
@@ -304,10 +294,15 @@ class MLP_color(nn.Module):
         self.bottleneck_linear_1 = DenseLayer(hidden_size + c_dim + embedding_size, hidden_size, activation='relu')
         
         # feat + colors + dir
+        # self.pts_linears = nn.ModuleList(
+        #     [DenseLayer(hidden_size + (3 * self.n_frames) + embedding_size, hidden_size, activation="relu")] +
+        #     [DenseLayer(hidden_size, hidden_size, activation="relu") if i not in self.skips
+        #      else DenseLayer(hidden_size + embedding_size, hidden_size, activation="relu") for i in range(n_blocks-1)])
+        # feat + colors
         self.pts_linears = nn.ModuleList(
-            [DenseLayer(hidden_size + (3 * self.n_frames) + embedding_size, hidden_size, activation="relu")] +
+            [DenseLayer(hidden_size + (3 * self.n_frames), hidden_size, activation="relu")] +
             [DenseLayer(hidden_size, hidden_size, activation="relu") if i not in self.skips
-             else DenseLayer(hidden_size + embedding_size, hidden_size, activation="relu") for i in range(n_blocks-1)])
+             else DenseLayer(hidden_size + (3 * self.n_frames), hidden_size, activation="relu") for i in range(n_blocks-1)])
 
         self.output_linear = DenseLayer(
                 hidden_size, 3, activation="linear")
@@ -345,12 +340,14 @@ class MLP_color(nn.Module):
         
         h = self.bottleneck_linear_1(h)
         
-        h = torch.cat([h, color_c, embedded_dir], dim=-1)
+        # h = torch.cat([h, color_c, embedded_dir], dim=-1)
+        h = torch.cat([h, color_c], dim=-1)
         for i, l in enumerate(self.pts_linears):
             h = self.pts_linears[i](h)
             h = F.relu(h)
             if i in self.skips:
-                h = torch.cat([embedded_dir, h], dim=-1)
+                # h = torch.cat([embedded_dir, h], dim=-1)
+                h = torch.cat([h, color_c], dim=-1)
         
         out = self.output_linear(h)
         return out
